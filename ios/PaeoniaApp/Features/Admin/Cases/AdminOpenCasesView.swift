@@ -2,10 +2,13 @@ import SwiftUI
 import UIKit
 
 /// The reports and correction requests nobody has handled yet, the one that has waited longest
-/// first. A row opens the person it is about, where an admin can ban them.
+/// first. A row opens the person it is about, where an admin can ban them. A swipe or a long
+/// press marks a case as handled, which closes it.
 struct AdminOpenCasesView: View {
     private let gateway: any AdminGateway
     @State private var viewModel: AdminOpenCasesViewModel
+    /// The case the admin asked to mark as handled, while the confirmation is up.
+    @State private var caseToClose: AdminOpenCase?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
 
     @MainActor
@@ -44,6 +47,23 @@ struct AdminOpenCasesView: View {
             bannerCenter.show(notice.banner)
             viewModel.dismissNotice()
         }
+        .alert(
+            Text(.adminCasesMarkHandledConfirmTitle),
+            isPresented: Binding(get: { caseToClose != nil }, set: { if !$0 { caseToClose = nil } }),
+            presenting: caseToClose
+        ) { openCase in
+            Button {
+                Task { await viewModel.markHandled(openCase) }
+            } label: {
+                Text(.adminCasesMarkHandled)
+            }
+
+            Button(role: .cancel, action: {}) {
+                Text(.commonCancel)
+            }
+        } message: { _ in
+            Text(.adminCasesMarkHandledConfirmMessage)
+        }
     }
 
     private var reportsSection: some View {
@@ -54,7 +74,11 @@ struct AdminOpenCasesView: View {
                 } label: {
                     AdminOpenReportRow(report: report)
                 }
+                .swipeActions(edge: .trailing) {
+                    markHandledButton(.report(report.id))
+                }
                 .contextMenu {
+                    markHandledButton(.report(report.id))
                     // The moderation commands take the report's id.
                     Button {
                         UIPasteboard.general.string = report.id.uuidString.lowercased()
@@ -80,10 +104,30 @@ struct AdminOpenCasesView: View {
                 } label: {
                     AdminCorrectionRequestRow(request: request)
                 }
+                .swipeActions(edge: .trailing) {
+                    markHandledButton(.correctionRequest(request.id))
+                }
+                .contextMenu {
+                    markHandledButton(.correctionRequest(request.id))
+                }
             }
         } header: {
             Text(.adminCasesCorrectionsSection)
         }
+    }
+
+    /// Asks first, because a closed case does not come back to this list.
+    private func markHandledButton(_ openCase: AdminOpenCase) -> some View {
+        Button {
+            caseToClose = openCase
+        } label: {
+            Label {
+                Text(.adminCasesMarkHandled)
+            } icon: {
+                Image(systemName: "checkmark.circle")
+            }
+        }
+        .tint(.paeoniaAccentPrimary)
     }
 
     private func userDetail(_ userID: UUID) -> some View {

@@ -91,6 +91,9 @@ nonisolated struct AdminAuditEntry: Decodable, Equatable, Identifiable, Sendable
     enum Action: String, Decodable, Equatable, Sendable {
         case userBanned = "user_banned"
         case userUnbanned = "user_unbanned"
+        /// The target is the person who sent the report or the request.
+        case reportClosed = "report_closed"
+        case correctionRequestClosed = "correction_request_closed"
         /// An action this app version does not know.
         case other
 
@@ -155,6 +158,18 @@ nonisolated struct AdminOpenReport: Decodable, Equatable, Identifiable, Sendable
         case reportedUserID = "reported_user_id"
         case reportedDisplayName = "reported_display_name"
         case createdAt = "created_at"
+    }
+}
+
+/// An open report or correction request, named by its ID, for the call that closes it.
+nonisolated enum AdminOpenCase: Equatable, Identifiable, Sendable {
+    case report(UUID)
+    case correctionRequest(UUID)
+
+    var id: UUID {
+        switch self {
+        case let .report(id), let .correctionRequest(id): id
+        }
     }
 }
 

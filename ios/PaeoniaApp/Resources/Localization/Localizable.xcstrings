@@ -92,6 +92,24 @@
         }
       }
     },
+    "admin.audit.correctionRequestClosed" : {
+      "comment" : "Admin log entry for a correction request an admin marked as handled. The placeholder is the name of the person who sent the request.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marked a correction request from %@ as handled"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Markerte en forespørsel om retting fra %@ som behandlet"
+          }
+        }
+      }
+    },
     "admin.audit.emptyMessage" : {
       "comment" : "Message shown when the admin log has no entries.",
       "extractionState" : "manual",
@@ -160,6 +178,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Grunn: %@"
+          }
+        }
+      }
+    },
+    "admin.audit.reportClosed" : {
+      "comment" : "Admin log entry for a report an admin marked as handled. The placeholder is the name of the person who sent the report.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marked a report from %@ as handled"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Markerte en rapport fra %@ som behandlet"
           }
         }
       }
@@ -412,6 +448,60 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ingenting venter"
+          }
+        }
+      }
+    },
+    "admin.cases.markHandled" : {
+      "comment" : "Swipe action and menu item on an open report or correction request in the admin list. Closes the case so it leaves the list.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as handled"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marker som behandlet"
+          }
+        }
+      }
+    },
+    "admin.cases.markHandledConfirmMessage" : {
+      "comment" : "Message of the confirmation before an admin closes a report or correction request. Tells the admin what happens to the case.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It leaves this list. We keep a record of it for three years."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den forsvinner fra denne listen. Vi beholder en oversikt over den i tre år."
+          }
+        }
+      }
+    },
+    "admin.cases.markHandledConfirmTitle" : {
+      "comment" : "Title of the confirmation before an admin closes a report or correction request.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as handled?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Markere som behandlet?"
           }
         }
       }
@@ -992,6 +1082,24 @@
         }
       }
     },
+    "admin.error.caseNotFound" : {
+      "comment" : "Banner when an admin tried to close a report or correction request that no longer exists.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is no longer here. Pull down to update the list."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denne finnes ikke lenger. Dra ned for å oppdatere listen."
+          }
+        }
+      }
+    },
     "admin.error.loadFailed" : {
       "comment" : "Banner when an admin screen could not load.",
       "extractionState" : "manual",
@@ -1006,6 +1114,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kunne ikke laste dette. Dra ned for å prøve igjen."
+          }
+        }
+      }
+    },
+    "admin.error.markHandledFailed" : {
+      "comment" : "Banner when closing a report or correction request failed because the phone is offline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't mark this as handled. Check your connection and try again."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kunne ikke markere dette som behandlet. Sjekk tilkoblingen og prøv igjen."
           }
         }
       }
@@ -1240,6 +1366,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Brukeren er stengt ute."
+          }
+        }
+      }
+    },
+    "admin.notice.caseHandled" : {
+      "comment" : "Banner after an admin closed a report or correction request.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marked as handled."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Markert som behandlet."
           }
         }
       }

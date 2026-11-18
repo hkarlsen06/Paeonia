@@ -167,6 +167,14 @@ final class AdminFakeGateway: AdminGateway, @unchecked Sendable {
         }
     }
 
+    func close(_ openCase: AdminOpenCase) async throws {
+        try locked { state in
+            if let changeError = state.changeError {
+                throw changeError
+            }
+        }
+    }
+
     private static func applyChange(_ state: inout State) throws {
         if let changeError = state.changeError {
             throw changeError

@@ -29,7 +29,8 @@
   // The gateway protocol is async, and this one answers at once.
   // swiftlint:disable async_without_await
 
-  /// Answers the admin calls from fixed data. Bans change nothing.
+  /// Answers the admin calls from fixed data. Bans change nothing, and a case marked as handled
+  /// leaves the list until the screen loads again.
   nonisolated struct DeveloperAdminGateway: AdminGateway {
     private static let reporterID = DeveloperScenarioFixture.partnerUserID
     private static let reportedID = DeveloperScenarioFixture.currentUserID
@@ -40,6 +41,7 @@
     func banUser(id _: UUID, reason _: String) async throws {}
     func unbanUser(id _: UUID) async throws {}
     func loadAuditLog(targetUserID _: UUID?) async throws -> [AdminAuditEntry] { [] }
+    func close(_: AdminOpenCase) async throws {}
 
     func loadOpenReports() async throws -> [AdminOpenReport] {
       [

@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 
 /// The reports and correction requests that wait for an admin.
@@ -9,6 +10,8 @@ final class AdminOpenCasesViewModel {
     private(set) var hasLoaded = false
     private(set) var loadFailure: PaeoniaFailure?
     private(set) var notice: AdminNotice?
+    /// The cases a close call is running for, so a second tap does nothing.
+    private var closing = Set<UUID>()
 
     private let gateway: any AdminGateway
 
@@ -36,6 +39,28 @@ final class AdminOpenCasesViewModel {
             notice = failure
             loadFailure = PaeoniaFailure(error)
         }
+    }
+
+    /// Marks a case as handled and takes it off the list. Returns true when it went through.
+    @discardableResult
+    func markHandled(_ openCase: AdminOpenCase) async -> Bool {
+        guard closing.insert(openCase.id).inserted else {
+            return false
+        }
+        defer { closing.remove(openCase.id) }
+
+        do {
+            try await gateway.close(openCase)
+        } catch {
+            notice = AdminNotice(closeError: error)
+            return false
+        }
+        switch openCase {
+        case let .report(id): reports.removeAll { $0.id == id }
+        case let .correctionRequest(id): correctionRequests.removeAll { $0.id == id }
+        }
+        notice = .caseHandled
+        return true
     }
 
     func dismissNotice() {

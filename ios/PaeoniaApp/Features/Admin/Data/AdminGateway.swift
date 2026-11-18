@@ -18,6 +18,8 @@ nonisolated protocol AdminGateway: Sendable {
     func loadOpenReports() async throws -> [AdminOpenReport]
     /// The open requests to correct something, the one that has waited longest first, up to 100.
     func loadOpenCorrectionRequests() async throws -> [AdminCorrectionRequest]
+    /// Marks an open report or correction request as handled, which closes it for good.
+    func close(_ openCase: AdminOpenCase) async throws
 }
 
 nonisolated struct LiveAdminGateway: AdminGateway {
@@ -65,6 +67,18 @@ nonisolated struct LiveAdminGateway: AdminGateway {
     func loadOpenCorrectionRequests() async throws -> [AdminCorrectionRequest] {
         try await client.query("admin:list_open_correction_requests")
     }
+
+    func close(_ openCase: AdminOpenCase) async throws {
+        switch openCase {
+        case let .report(id):
+            try await client.mutation("admin:close_report", args: CloseReportRequest(reportID: id))
+        case let .correctionRequest(id):
+            try await client.mutation(
+                "admin:close_correction_request",
+                args: CloseCorrectionRequestRequest(requestID: id)
+            )
+        }
+    }
 }
 
 nonisolated enum AdminGatewayFactory {
@@ -103,6 +117,22 @@ nonisolated private struct BanUserRequest: Encodable {
     enum CodingKeys: String, CodingKey {
         case userID = "p_user_id"
         case reason = "p_reason"
+    }
+}
+
+nonisolated private struct CloseReportRequest: Encodable {
+    let reportID: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case reportID = "p_report_id"
+    }
+}
+
+nonisolated private struct CloseCorrectionRequestRequest: Encodable {
+    let requestID: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case requestID = "p_request_id"
     }
 }
 

@@ -10,6 +10,8 @@ nonisolated enum AdminFailure: Equatable, Sendable {
     case cannotBan
     case reasonInvalid
     case userNotFound
+    /// The report or correction request is gone, for example after its three years.
+    case caseNotFound
     case other
 
     init(_ error: any Error) {
@@ -29,6 +31,8 @@ nonisolated enum AdminFailure: Equatable, Sendable {
             self = .reasonInvalid
         } else if message.contains("user not found") {
             self = .userNotFound
+        } else if message.contains("report not found") || message.contains("correction request not found") {
+            self = .caseNotFound
         } else {
             self = .other
         }
@@ -44,8 +48,11 @@ nonisolated enum AdminNotice: Equatable, Sendable {
     case cannotBan
     case reasonInvalid
     case userNotFound
+    case closeFailed(PaeoniaFailure)
+    case caseNotFound
     case banned
     case unbanned
+    case caseHandled
 
     /// The notice for a failed read. Nil when the screen just went away.
     init?(loadError error: any Error) {
@@ -53,7 +60,17 @@ nonisolated enum AdminNotice: Equatable, Sendable {
         case .cancelled: return nil
         case .notAdmin: self = .notAdmin
         case .userNotFound: self = .userNotFound
-        case .cannotBan, .reasonInvalid, .other: self = .loadFailed
+        case .cannotBan, .reasonInvalid, .caseNotFound, .other: self = .loadFailed
+        }
+    }
+
+    /// The notice for a report or correction request that could not be marked as handled.
+    init?(closeError error: any Error) {
+        switch AdminFailure(error) {
+        case .cancelled: return nil
+        case .notAdmin: self = .notAdmin
+        case .caseNotFound: self = .caseNotFound
+        case .cannotBan, .reasonInvalid, .userNotFound, .other: self = .closeFailed(PaeoniaFailure(error))
         }
     }
 
@@ -64,7 +81,7 @@ nonisolated enum AdminNotice: Equatable, Sendable {
         case .cannotBan: self = .cannotBan
         case .reasonInvalid: self = .reasonInvalid
         case .userNotFound: self = .userNotFound
-        case .other: self = .banFailed(PaeoniaFailure(error))
+        case .caseNotFound, .other: self = .banFailed(PaeoniaFailure(error))
         }
     }
 
@@ -73,7 +90,7 @@ nonisolated enum AdminNotice: Equatable, Sendable {
         case .cancelled: return nil
         case .notAdmin: self = .notAdmin
         case .userNotFound: self = .userNotFound
-        case .cannotBan, .reasonInvalid, .other: self = .unbanFailed(PaeoniaFailure(error))
+        case .cannotBan, .reasonInvalid, .caseNotFound, .other: self = .unbanFailed(PaeoniaFailure(error))
         }
     }
 }
@@ -86,12 +103,16 @@ extension AdminNotice {
         // Only a phone without a connection is told to check it.
         case .banFailed(.offline): .error(message: String(localized: .adminErrorBanFailed))
         case .unbanFailed(.offline): .error(message: String(localized: .adminErrorUnbanFailed))
-        case .banFailed(.other), .unbanFailed(.other): .error(message: String(localized: .commonActionFailedMessage))
+        case .closeFailed(.offline): .error(message: String(localized: .adminErrorMarkHandledFailed))
+        case .banFailed(.other), .unbanFailed(.other), .closeFailed(.other):
+            .error(message: String(localized: .commonActionFailedMessage))
+        case .caseNotFound: .error(message: String(localized: .adminErrorCaseNotFound))
         case .cannotBan: .error(message: String(localized: .adminErrorCannotBan))
         case .reasonInvalid: .error(message: String(localized: .adminErrorReasonInvalid))
         case .userNotFound: .error(message: String(localized: .adminErrorUserNotFound))
         case .banned: .info(message: String(localized: .adminNoticeBanned))
         case .unbanned: .info(message: String(localized: .adminNoticeUnbanned))
+        case .caseHandled: .info(message: String(localized: .adminNoticeCaseHandled))
         }
     }
 }

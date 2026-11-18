@@ -40,6 +40,8 @@ struct AdminAuditRow: View {
         switch entry.action {
         case .userBanned: Text(.adminAuditBanned(targetName))
         case .userUnbanned: Text(.adminAuditUnbanned(targetName))
+        case .reportClosed: Text(.adminAuditReportClosed(targetName))
+        case .correctionRequestClosed: Text(.adminAuditCorrectionRequestClosed(targetName))
         case .other: Text(.adminAuditOther(targetName))
         }
     }
