@@ -254,7 +254,7 @@ export const marketingNo = {
     emailBody: 'Hei!\n\nJeg er interessert i Paeonia og vil gjerne vite mer.',
   },
   footer: {
-    copyright: '© 2026 Paeonia',
+    copyright: '© 2026 Hjalmar Karlsen',
     logoAlt: 'Paeonia, et privat sted for dere to.',
     tagline: 'Et privat sted for to mellom besøk.',
     note: 'Laget med omtanke for private forhold.',

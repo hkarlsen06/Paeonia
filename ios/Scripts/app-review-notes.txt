@@ -33,3 +33,6 @@ Paeonia has Home Screen and Lock Screen widgets. The main widget shows the lates
 
 LOCATION
 Location is optional and off until the person turns it on. Paeonia then shares only the person's latest location with their partner and never keeps a location history. Right after sharing is turned on, the app asks whether it may also update while Paeonia is closed. That needs Always permission and is the person's choice. While the app is closed, it sends a new location only after a significant move. Sharing can be turned off at any time in Settings.
+
+REPORTING AND BLOCKING
+Paeonia has no public content, profiles or search. Two people connect with a private invite code, and only they see what they share. Either can report and block the other under More > Privacy and safety > Report and leave, which closes the shared space at once. We review reports within three working days. Contact: support@paeonia.no.
