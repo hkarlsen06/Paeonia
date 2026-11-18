@@ -19,6 +19,10 @@ const RELAY_TICKET_FILE = "relay/src/ticket.ts";
 const SWIFT_GAME_KIND_FILE = "ios/PaeoniaApp/Features/Games/Models/GameKind.swift";
 const SWIFT_TRIAL_FILE = "ios/PaeoniaApp/Services/Subscription/PaeoniaSubscriptionModels.swift";
 const BACKEND_TRIAL_FILE = "backend/convex/storekit.ts";
+const TERMS_VERSION_FILE = "backend/convex/lib/terms.ts";
+const TERMS_TEXT_FILE = "marketing/src/lib/i18n/dictionaries/legal.en.ts";
+const PACKAGE_PINS_FILE = "ios/Paeonia.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved";
+const PACKAGE_LICENCES_FILE = "ios/PaeoniaApp/Resources/Licences/PackageLicences.txt";
 const userVisible = [
   ...tracked("*.xcstrings", "ios/app-store/metadata", "marketing/src", "marketing/static"),
   ...tracked("backend/convex/*.ts", "backend/convex/lib/*.ts").filter((path) => !/\.(test|testing|setup|fixtures)\.ts$|\/_generated\//.test(path)),
@@ -28,7 +32,10 @@ let base = root;
 if (process.argv.includes("--staged")) {
   base = mkdtempSync(join(tmpdir(), "paeonia-repo-rules-"));
   process.on("exit", () => rmSync(base, { recursive: true, force: true }));
-  const inputs = new Set([GAME_KINDS_FILE, RELAY_TICKET_FILE, SWIFT_GAME_KIND_FILE, SWIFT_TRIAL_FILE, BACKEND_TRIAL_FILE, ...userVisible]);
+  const inputs = new Set([
+    GAME_KINDS_FILE, RELAY_TICKET_FILE, SWIFT_GAME_KIND_FILE, SWIFT_TRIAL_FILE, BACKEND_TRIAL_FILE,
+    TERMS_VERSION_FILE, TERMS_TEXT_FILE, PACKAGE_PINS_FILE, PACKAGE_LICENCES_FILE, ...userVisible,
+  ]);
   execFileSync("git", ["checkout-index", "-z", "--stdin", `--prefix=${base}/`], { cwd: root, input: [...inputs].join("\0") });
 }
 const read = (path) => readFileSync(join(base, path), "utf8");
@@ -85,6 +92,31 @@ if (!swiftTrialDays || !backendTrialDays) {
   fail(
     `PaeoniaFreeTrial.reminderDaysBeforeEnd is ${swiftTrialDays} but TRIAL_REMINDER_DAYS_BEFORE_END in backend/convex/storekit.ts is ${backendTrialDays}.`,
   );
+}
+
+// A new account stores TERMS_VERSION as the terms it agreed to, so it must be the date on the terms.
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const termsVersion = read(TERMS_VERSION_FILE).match(/export const TERMS_VERSION = "(\d{4}-\d{2}-\d{2})"/)?.[1];
+const termsUpdated = read(TERMS_TEXT_FILE).match(/\n  terms: \{[\s\S]*?\n    updated: 'Last updated (\d{1,2}) (\w+) (\d{4})'/);
+if (!termsVersion || !termsUpdated || !MONTHS.includes(termsUpdated[2])) {
+  fail(`Could not find TERMS_VERSION in ${TERMS_VERSION_FILE} or the terms' "Last updated" date in ${TERMS_TEXT_FILE}.`);
+} else {
+  const [, day, month, year] = termsUpdated;
+  const termsDate = `${year}-${String(MONTHS.indexOf(month) + 1).padStart(2, "0")}-${day.padStart(2, "0")}`;
+  if (termsVersion !== termsDate) {
+    fail(`TERMS_VERSION in ${TERMS_VERSION_FILE} is ${termsVersion} but the terms in ${TERMS_TEXT_FILE} say ${termsDate}.`);
+  }
+}
+
+// The Licences screen lists every Swift package the app links, at the version it links.
+const licenceHeadings = read(PACKAGE_LICENCES_FILE)
+  .split("\n\f\n")
+  .map((entry) => entry.split("\n", 1)[0]);
+const pinHeadings = JSON.parse(read(PACKAGE_PINS_FILE)).pins.map(
+  ({ location, state }) => `${location.replace(/\/$/, "").split("/").pop().replace(/\.git$/, "")} ${state.version ?? state.revision.slice(0, 12)}`,
+);
+if ([...licenceHeadings].sort().join("\n") !== [...pinHeadings].sort().join("\n")) {
+  fail(`${PACKAGE_LICENCES_FILE} does not match Package.resolved. Run ios/Scripts/collect-package-licences.py.`);
 }
 
 if (failures.length) {
