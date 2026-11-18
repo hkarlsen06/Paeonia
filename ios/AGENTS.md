@@ -14,15 +14,9 @@ Paths and commands in the linked guides are relative to the repository root. Rea
 
 Before adding or changing game sounds, read [the audio standard](../docs/game-audio.md). Normalize bundled effects with `python3 ios/Scripts/normalize-game-sounds.py --write`, and use the shared `GameSound` levels for playback.
 
-## Distortion waves
+## Libraries.dev effects
 
-`DistortionWavesKit` comes from Libraries.dev (`https://github.com/Jakubantalik/Libraries.dev`, MIT), linked into the app target only. It follows branch `main`, and `Package.resolved` pins the commit, so update it on purpose and look at the wave again after. Docs: `https://libraries.dev/waves.html`. Its Metal shader needs Xcode's separately downloaded Metal toolchain for the Xcode the wrappers select. This Mac has it for Xcode 27.3 beta 2 and CI downloads it. If a build reports it missing, ask the developer before downloading it.
-
-- Play a wave with `@Environment(\.screenWave)`, giving the frame it starts from in global coordinates and a `DistortionWaveStyle`. `PaeoniaScreenWaveHost` (`Shared/DesignSystem/Components/PaeoniaScreenWave.swift`) sits once on the app's root and once in `DeveloperScenarioHost`, like the petal shower. It covers the whole window, bars included, and bends a picture of the window. Never mount a `DistortionWave` inside a screen, because it stops at the navigation and tab bars, and never in a window or cover of its own.
-- The host takes the picture because SwiftUI cannot pass UIKit-backed views or materials (the PencilKit canvas, the bars, MapLibre, camera previews, glass) through the kit's shaders, and the kit mounts each side three times plus a hidden warm-up. So never give `DistortionWave` a live screen as a side.
-- The host skips the wave under Reduce Motion and VoiceOver, takes no touches until it ends, ends it when the window changes size, fades the picture out at the end, and sets `cornerRadius` to the window's measured corners (`PaeoniaAppWindow.cornerRadius`). Callers only pick the style.
-- A wave shows the screen as it was at the start for about two seconds. Don't play one where the screen moves on at once, such as the onboarding drawing steps, or from a sheet, which draws above the app's root and so above the wave.
-- Xcode's build system compiles the `.metal` shader. `swift build` alone leaves it out, so check a wave through the Xcode wrappers and `scripts/scenario-record`, never only with `scripts/swift-typecheck`.
+Before you add, retune, update or verify an effect from Libraries.dev, such as the distortion wave on Send (`DistortionWavesKit`), read the `paeonia-libraries-dev` skill (`.agents/skills/paeonia-libraries-dev/`). It has the shader rules, the screen wave host, the Metal toolchain and model-licence rules, and the recording recipe.
 
 ## Partner names
 

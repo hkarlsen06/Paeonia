@@ -21,7 +21,7 @@ extension EnvironmentValues {
 /// The wave bends a picture of the window taken when it starts: SwiftUI cannot pass UIKit
 /// views such as the PencilKit canvas or the bars through the kit's shaders, and the kit
 /// mounts each side several times, so a live screen cannot be one. Nothing under the wave
-/// takes touches until it ends. The rules for waves are in `ios/AGENTS.md`.
+/// takes touches until it ends. The rules for waves are in the `paeonia-libraries-dev` skill.
 struct PaeoniaScreenWaveHost: ViewModifier {
     private struct Run: Identifiable {
         let id = UUID()
