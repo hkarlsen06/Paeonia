@@ -81,8 +81,6 @@ struct PairedHomeView: View {
     @State private var layoutSwitchTask: Task<Void, Never>?
     /// Moves the cards both layouts share from one layout's place to the other's.
     @Namespace private var layoutSwitch
-    /// Moves a pop-up card between the place above the tiles and the list under them.
-    @Namespace var popUpSlots
 
     private static let alertTypesSeenOnHome: Set<String> = [
         "widget_updated", "streak_reminder", "story_posted", "date_reminder", "partner_joined", "letter_arrived",

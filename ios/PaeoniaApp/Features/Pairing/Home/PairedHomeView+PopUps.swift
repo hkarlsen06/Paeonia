@@ -60,27 +60,30 @@ extension PairedHomeView {
     @ViewBuilder
     func leadPopUp(_ lead: HomePopUpCard?, beforeQuestion: Bool) -> some View {
         if let lead, lead.leadsDailyQuestion == beforeQuestion {
-            popUpCard(lead)
+            // A new lead is a new view, so the old one leaves and the new one arrives with
+            // the transition instead of one view swapping its content.
+            popUpSlot(lead)
+                .id(lead)
         }
     }
 
     /// The pop-up cards after the first, under the tiles.
     func laterPopUps(_ popUps: [HomePopUpCard]) -> some View {
-        ForEach(popUps.dropFirst(), id: \.self) { card in
-            popUpCard(card)
-        }
+        ForEach(popUps.dropFirst(), id: \.self, content: popUpSlot)
     }
 
-    /// The two places are in different stacks, so without the shared geometry a card that
-    /// takes the lead when the one above it goes would fade in there instead of moving up.
-    private func popUpCard(_ card: HomePopUpCard) -> some View {
-        popUpContent(card)
-            .matchedGeometryEffect(id: card, in: popUpSlots)
+    /// The card in one view of its own. A card is a conditional view, and on one of those
+    /// the transition would reach the views inside it, whose own fade then wins.
+    private func popUpSlot(_ card: HomePopUpCard) -> some View {
+        VStack(spacing: 0) {
+            popUpCard(card)
+        }
+        .transition(.homePopUpSlot)
     }
 
     @ViewBuilder
     // swiftlint:disable:next cyclomatic_complexity
-    private func popUpContent(_ card: HomePopUpCard) -> some View {
+    private func popUpCard(_ card: HomePopUpCard) -> some View {
         switch card {
         case .accessNotice: accessNoticeCard
         case .streakSave: streakSaveCard
@@ -92,5 +95,31 @@ extension PairedHomeView {
         case .visit: visitCard
         case .waitingVisitMemory: waitingVisitMemoryCard
         }
+    }
+}
+
+extension AnyTransition {
+    /// A pop-up card that takes the lead leaves the footer under the tiles and shows up
+    /// above them, in a different stack. Flying it there pulls it across the tiles. It
+    /// fades out early in the page's glide, and fades in late, once the cards gliding past
+    /// its new place are by.
+    fileprivate static let homePopUpSlot = AnyTransition.modifier(
+        active: PartialFade(progress: 0, start: 0.7), identity: PartialFade(progress: 1, start: 0.7)
+    )
+}
+
+/// Fully clear until the animation passes `start`, then fully shown at its end. Going the
+/// other way, it is clear once the animation is back to `start`.
+private struct PartialFade: ViewModifier, Animatable {
+    var progress: Double
+    let start: Double
+
+    var animatableData: Double {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    func body(content: Content) -> some View {
+        content.opacity(max(0, (progress - start) / (1 - start)))
     }
 }
