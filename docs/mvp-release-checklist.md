@@ -43,20 +43,8 @@ Run these before a release candidate and record any skipped one with the reason:
 
 ## Authentication And Onboarding
 
-- [ ] Sign in with Apple works with normal Apple ID (native ID token exchanged through Clerk). Needs a device.
 - [ ] Sign in with Apple works with Hide My Email. Needs a device. Nothing in the app reads the email address.
 - [ ] Google Sign-In works (Clerk's OAuth sheet). Needs a device. The Google client lives in Google Cloud project `paeonia-hkarlsen06`, and its consent screen is published.
-
-## Paywall, StoreKit, And Entitlements
-
-- [ ] The production server notification URL in App Store Connect is `https://actions.paeonia.no/apple/server-notifications`. In App Store Connect. Apple's production test-notification request returned 401 on 2026-10-24, probably because the app has no production release yet.
-- [ ] Billing Grace Period is turned on in App Store Connect, and a subscription in grace keeps access for both partners until the grace period ends. In App Store Connect. The backend half is tested (`storekitWebhook.test.ts`) and deployed on 2026-10-24.
-
-## Pairing And Relationship Lifecycle
-
-
-## Daily Challenge
-
 
 ## Streaks
 
@@ -117,7 +105,6 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 ## Accessibility And Device QA
 
 - [ ] Small iPhone layout pass.
-- [x] iPad layout pass, in portrait, landscape and split view. Done on 2026-11-17 on the iPad Air 11-inch simulator, with one scenario per screen in both orientations and the tabs in narrow, half-width and short windows.
 - [ ] Video call on a real iPhone Duo, unfolded and closed, held upright and on its side. Needs a device. The call must stand upright on both phones and use the camera beside the screen in use. The open question in [the calling plan](calling-plan.md#open-questions) says what the simulator showed.
 - [ ] Latest supported iOS version pass.
 - [ ] Minimum supported iOS version pass.
@@ -138,7 +125,6 @@ Run these on real devices where possible.
 - [ ] Fresh install -> Google sign-in -> onboarding -> paywall.
 - [ ] Payer subscribes -> creates invite.
 - [ ] One user answers a question the partner answered on an earlier day -> reveal works.
-- [ ] Partner adds photo to memory. Adding a note worked on the developer's devices on 2026-11-17.
 - [ ] User enables location; map waits for partner.
 - [ ] Partner enables location; distance/location appears.
 - [ ] User disables location; map hides or updates as expected.
@@ -161,11 +147,8 @@ Run these on real devices where possible.
 The text metadata lives in `ios/Scripts/appstore-metadata-source.json`, and `ios/Scripts/generate-appstore-metadata.mjs` writes native ASC JSON to `ios/app-store/metadata/`. The upload workflow is in `ios/app-store/README.md`.
 
 - [ ] Subtitle, promotional text, description and keywords describe the current app. Rewritten on 2026-10-24 from competitor and App Store search research, with a new en-GB locale for a second Norwegian keyword field. In App Store Connect: plan them with `bun run app-store metadata`, then upload with `--apply`.
-- [ ] Category selected.
-- [ ] Age rating questionnaire completed honestly. The terms say 16+.
 - [ ] Copyright filled.
 - [ ] Support URL set.
-- [ ] Privacy Policy URL set.
 - [ ] Marketing URL set if desired.
 - [ ] App Review contact information filled.
 - [ ] App Review notes are pasted into App Store Connect. `ios/Scripts/mint-review-codes.mjs` prints them from `ios/Scripts/app-review-notes.txt` with fresh review codes.
