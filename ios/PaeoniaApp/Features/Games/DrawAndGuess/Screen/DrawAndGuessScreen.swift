@@ -10,6 +10,8 @@ struct DrawAndGuessScreen: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// VoiceOver is on, or the person chose to always show descriptions.
+    @AccessibilityPresentation(.media) private var showsMediaDescriptions
 
     var body: some View {
         ZStack {
@@ -32,6 +34,10 @@ struct DrawAndGuessScreen: View {
         .task { await viewModel.start() }
         .onAppear { viewModel.prefersReducedMotion = reduceMotion }
         .onChange(of: reduceMotion) { _, newValue in viewModel.prefersReducedMotion = newValue }
+        .onChange(of: showsMediaDescriptions, initial: true) { _, follows in
+            viewModel.followsDrawingByDescription = follows
+            viewModel.markSeenIfNeeded()
+        }
         .onDisappear { viewModel.stop() }
         .onChange(of: scenePhase) { _, phase in
             // Control Center, a system alert or the app switcher only make the app inactive. Keep the game live.

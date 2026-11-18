@@ -133,6 +133,9 @@ final class DrawAndGuessViewModel {
     /// downloads, replays or server calls until it starts again.
     @ObservationIgnored var isStopped = false
     @ObservationIgnored var isActive = true
+    /// The guesser takes in the drawing through its description, with VoiceOver on or
+    /// descriptions always shown. The screen keeps it current.
+    @ObservationIgnored var followsDrawingByDescription = false
     @ObservationIgnored var reloadGate = GameReloadGate()
     var continuation: GameContinuation?
     /// Taps when the partner hands this person the turn or guesses on their drawing.

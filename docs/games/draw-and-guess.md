@@ -105,7 +105,7 @@ Points are 1 for easy, 2 for medium and 3 for hard. A custom word scores 2.
 
 **Against each other.** Each partner has their own score. The drawer gets the word's points when the guess is right. The guesser gets the word's points plus two bonuses.
 
-- **Speed bonus.** 2 points when the guess comes within 15 seconds of first seeing the drawing, 1 point within 30 seconds, and 0 after that. The time is what the guesser's own screen showed. Watching live, the clock starts at the drawer's first stroke, so a drawer who opens the canvas and does something else first does not use it up.
+- **Speed bonus.** 2 points when the guess comes within 15 seconds of first seeing the drawing, 1 point within 30 seconds, and 0 after that. The time is what the guesser's own screen showed. Watching live, the clock starts at the drawer's first stroke, so a drawer who opens the canvas and does something else first does not use it up. For a guesser with VoiceOver on, or with descriptions always shown, the clock starts when the finished drawing arrives with its description.
 - **First-try bonus.** 1 point when the correct guess is the round's first attempt.
 - **Hints.** A hint doesn't change the word's points. Once the guesser uses any hint, the speed bonus and the first-try bonus are both 0 for that round.
 

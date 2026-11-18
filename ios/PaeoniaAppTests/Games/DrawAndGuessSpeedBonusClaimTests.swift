@@ -158,6 +158,23 @@ struct DrawAndGuessSpeedBonusClaimTests {
         #expect(payload.solveMs == 31_000)
     }
 
+    @Test func aLiveStrokeStartsNoClockForSomeoneWhoFollowsTheDrawingByItsDescription() async throws {
+        let environment = makeEnvironment(partnerDrawingLive)
+        let (room, connection) = makeOfflineLiveRoom()
+        let viewModel = makeViewModel(environment, live: room)
+        viewModel.followsDrawingByDescription = true
+        viewModel.configure(participants: GameFixture.participants)
+        await viewModel.reload()
+        connection.onMessage?(WidgetLiveMessage(type: .welcome, id: "me", peers: 1))
+        connection.onMessage?(WidgetLiveMessage(type: .hello, from: "partner", role: "drawing"))
+        sendPartnerCanvasSnapshot(on: connection)
+        viewModel.recompute()
+
+        #expect(viewModel.phase == .watchingLive)
+        #expect(viewModel.localFirstSeenAt[GameFixture.roundID] == nil)
+        #expect(viewModel.speedBonus == .open)
+    }
+
     @Test func aGuessBeforeThePlayerSawAnythingClaimsTheBonusWithoutASolveTime() async throws {
         let drawingState = GameFixture.state(
             settings: GameFixture.settings(),
