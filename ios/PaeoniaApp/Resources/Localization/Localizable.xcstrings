@@ -1059,7 +1059,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kunne ikke stenge ute brukeren. Sjekk tilkoblingen og prøv igjen."
+            "value" : "Kunne ikke stenge ute brukeren. Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -1131,7 +1131,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kunne ikke markere dette som behandlet. Sjekk tilkoblingen og prøv igjen."
+            "value" : "Kunne ikke markere dette som behandlet. Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -1185,7 +1185,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kunne ikke oppheve utestengelsen. Sjekk tilkoblingen og prøv igjen."
+            "value" : "Kunne ikke oppheve utestengelsen. Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -2085,7 +2085,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Velg hvor raskt den låses når du forlater appen."
+            "value" : "Velg hvor fort appen låses når du går ut av den."
           }
         }
       }
@@ -2768,7 +2768,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk tilkoblingen og prøv igjen."
+            "value" : "Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -2840,7 +2840,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk tilkoblingen og prøv igjen."
+            "value" : "Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -2924,13 +2924,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sign-in check failed"
+            "value" : "Couldn't check your sign-in"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk av innlogging feilet"
+            "value" : "Klarte ikke å sjekke innloggingen"
           }
         }
       }
@@ -2948,7 +2948,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk tilkoblingen og prøv igjen."
+            "value" : "Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -2966,7 +2966,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Innlogging feilet"
+            "value" : "Kunne ikke logge inn"
           }
         }
       }
@@ -3002,7 +3002,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Utlogging feilet"
+            "value" : "Kunne ikke logge ut"
           }
         }
       }
@@ -4394,7 +4394,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ditt merke"
+            "value" : "Merket ditt"
           }
         }
       }
@@ -7310,7 +7310,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bruk 1 til 24 tegn på hver ende."
+            "value" : "Bruk 1 til 24 tegn for hver ende."
           }
         }
       }
@@ -7346,7 +7346,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bruk 2 til 60 tegn på hva det handler om."
+            "value" : "Bruk 2 til 60 tegn for hva det handler om."
           }
         }
       }
@@ -8288,7 +8288,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nær"
+            "value" : "Ganske nær"
           }
         }
       }
@@ -8972,13 +8972,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your answer is shared when both have answered."
+            "value" : "Your answer is shared when you've both answered."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Svaret deles når begge har svart."
+            "value" : "Svaret ditt deles når dere begge har svart."
           }
         }
       }
@@ -9104,7 +9104,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk internett og prøv igjen."
+            "value" : "Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -9224,7 +9224,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You'll see %@'s answer when they reply."
+            "value" : "You'll see %@'s answer once they've answered."
           }
         },
         "nb" : {
@@ -9608,7 +9608,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dere valgte hver dere selv"
+            "value" : "Begge valgte seg selv"
           }
         }
       }
@@ -9716,7 +9716,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dette spørsmålet trenger et stemmesvar."
+            "value" : "Dette spørsmålet trenger et lydsvar."
           }
         }
       }
@@ -10094,7 +10094,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se %@s svar"
+            "value" : "Se svarene til %@"
           }
         }
       }
@@ -10346,7 +10346,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ditt svar"
+            "value" : "Svaret ditt"
           }
         }
       }
@@ -10394,13 +10394,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We couldn't load this voice note."
+            "value" : "We couldn't load this voice answer."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi kunne ikke laste inn denne talemeldingen."
+            "value" : "Vi fikk ikke lastet inn dette lydsvaret."
           }
         }
       }
@@ -10610,13 +10610,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We couldn't save your voice note"
+            "value" : "We couldn't save your voice answer"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi kunne ikke lagre talemeldingen din"
+            "value" : "Vi kunne ikke lagre lydsvaret ditt"
           }
         }
       }
@@ -10634,7 +10634,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ditt svar"
+            "value" : "Svaret ditt"
           }
         }
       }
@@ -11588,7 +11588,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk nettilkoblingen og prøv igjen."
+            "value" : "Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -12164,7 +12164,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Opptaket kunne ikke starte. Prøv å spille inn igjen."
+            "value" : "Opptaket startet ikke. Prøv å spille inn igjen."
           }
         }
       }
@@ -12254,7 +12254,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du fullførte en rute. Du spiller igjen."
+            "value" : "Du fullførte en rute. Du får en tur til."
           }
         }
       }
@@ -12272,7 +12272,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du fullførte to ruter. Du spiller igjen."
+            "value" : "Du fullførte to ruter. Du får en tur til."
           }
         }
       }
@@ -12416,7 +12416,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tegn streker på tur. Den som lukker flest ruter, vinner."
+            "value" : "Tegn streker på tur. Den som fullfører flest ruter, vinner."
           }
         }
       }
@@ -12968,13 +12968,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No description added. Freehand content is not recognized."
+            "value" : "No description yet. Freehand drawing can't be described automatically."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ingen beskrivelse lagt til. Frihåndsinnhold blir ikke gjenkjent."
+            "value" : "Ingen beskrivelse ennå. Frihåndstegning kan ikke beskrives automatisk."
           }
         }
       }
@@ -13544,7 +13544,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tegn hver deres del uten å kikke. Brett så ut skapningen."
+            "value" : "Tegn hver deres del uten å kikke. Så bretter dere ut skapningen."
           }
         }
       }
@@ -13814,7 +13814,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Delen din kunne ikke sendes. Den er tilbake på lerretet."
+            "value" : "Delen din kunne ikke sendes. Den er tilbake på tegneflaten."
           }
         }
       }
@@ -14366,13 +14366,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You'll connect to the lines below the fold."
+            "value" : "You'll continue from the lines below the fold."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du kobler deg på strekene under brettekanten."
+            "value" : "Du fortsetter fra strekene under brettekanten."
           }
         }
       }
@@ -14786,7 +14786,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Partneren din ser svaret ditt etter å ha svart selv."
+            "value" : "Partneren din ser svaret ditt når dere begge har svart."
           }
         }
       }
@@ -15656,7 +15656,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Skriv et ord eller en kort frase"
+            "value" : "Skriv et ord eller et kort uttrykk"
           }
         }
       }
@@ -17864,7 +17864,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Beskriv det du tegnet. Teksten er skjult for partneren din til hele figuren er avslørt."
+            "value" : "Beskriv det du tegnet. Teksten er skjult for partneren din til hele skapningen er vist."
           }
         }
       }
@@ -18434,7 +18434,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du kan sende en ny kl. %@"
+            "value" : "Du kan sende et nytt kl. %@"
           }
         }
       }
@@ -18614,7 +18614,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Den er tilbake på tegnebrettet. Trykk Ferdig for å prøve igjen."
+            "value" : "Den er tilbake på tegneflaten. Trykk Ferdig for å prøve igjen."
           }
         }
       }
@@ -18722,7 +18722,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk nettforbindelsen og prøv igjen."
+            "value" : "Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -18758,7 +18758,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk nettforbindelsen og prøv igjen."
+            "value" : "Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -18866,7 +18866,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk nettforbindelsen og prøv igjen."
+            "value" : "Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -18902,7 +18902,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk nettforbindelsen og prøv igjen."
+            "value" : "Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -18974,7 +18974,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tegningen din er lagret. Velg et nytt ord, så ligger den på tegnebrettet."
+            "value" : "Tegningen din er lagret. Velg et nytt ord, så ligger den på tegneflaten."
           }
         }
       }
@@ -19514,7 +19514,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lukk en rute, ta en tur til"
+            "value" : "Fullfør en rute, få en tur til"
           }
         }
       }
@@ -19568,7 +19568,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Spillet er over når alle strekene er tegnet. Har dere delt bilder i Paeonia, viser hver rute dere lukker en bit av ett av dem."
+            "value" : "Spillet er over når alle strekene er tegnet. Har dere delt bilder i Paeonia, viser hver rute dere fullfører, en bit av ett av dem."
           }
         }
       }
@@ -19946,7 +19946,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ruta du spiller i bestemmer hvilket lite brett %@ spiller i neste gang. En rute øverst til høyre sender dem til brettet øverst til høyre."
+            "value" : "Ruta du spiller i bestemmer hvilket lite brett %@ spiller i neste gang. Spiller du i ruta øverst til høyre, må neste trekk gjøres på brettet øverst til høyre."
           }
         }
       }
@@ -21050,7 +21050,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Beskriv det som er synlig uten å navngi stedet. Partneren din kan lese dette mens hen gjetter. Stedet og datoen holdes skjult til gjettet er låst."
+            "value" : "Beskriv det som er synlig, uten å si hvor det er. Partneren din kan lese dette mens hen gjetter. Stedet og datoen er skjult til gjetningen er låst."
           }
         }
       }
@@ -21176,7 +21176,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du er frakoblet. Koble til internett og søk igjen."
+            "value" : "Du er ikke på nett. Koble til internett og søk igjen."
           }
         }
       }
@@ -21398,7 +21398,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nær"
+            "value" : "Ganske nær"
           }
         }
       }
@@ -22040,7 +22040,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abonnementet ditt løper"
+            "value" : "Abonnementet ditt er aktivt"
           }
         }
       }
@@ -22292,7 +22292,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Din tegning"
+            "value" : "Tegningen din"
           }
         }
       }
@@ -22436,7 +22436,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Posisjonstilgang er av"
+            "value" : "Tilgang til posisjon er slått av"
           }
         }
       }
@@ -23102,7 +23102,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Posisjon er av"
+            "value" : "Posisjonen er slått av"
           }
         }
       }
@@ -23480,7 +23480,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Begge ser denne nedtellingen."
+            "value" : "Dere ser begge denne nedtellingen."
           }
         }
       }
@@ -23714,7 +23714,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Begge kan endre dette senere."
+            "value" : "Dere kan begge endre dette senere."
           }
         }
       }
@@ -24682,7 +24682,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Den delte tegne-widgeten"
+            "value" : "Tegne-widgeten deres"
           }
         }
       }
@@ -24952,7 +24952,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bildet kunne ikke lastes inn fordi du er frakoblet. Prøv igjen når du har nett."
+            "value" : "Bildet kunne ikke lastes inn fordi du ikke er på nett. Prøv igjen når du har nett."
           }
         }
       }
@@ -25168,7 +25168,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bildet kunne ikke lagres fordi du er frakoblet. Prøv Lagre i Bilder igjen når du har nett."
+            "value" : "Bildet kunne ikke lagres fordi du ikke er på nett. Prøv Lagre i Bilder igjen når du har nett."
           }
         }
       }
@@ -25618,7 +25618,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Din farge"
+            "value" : "Fargen din"
           }
         }
       }
@@ -25726,7 +25726,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kast en 6 for å få ut en brikke"
+            "value" : "Kast en sekser for å få ut en brikke"
           }
         }
       }
@@ -25777,13 +25777,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld forsøk igjen på å kaste en 6"
+                  "value" : "%lld forsøk igjen på å få en sekser"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld forsøk igjen på å kaste en 6"
+                  "value" : "%lld forsøk igjen på å få en sekser"
                 }
               }
             }
@@ -26902,7 +26902,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du er frakoblet, så vi kan ikke sjekke når dere møtes neste gang. Prøv igjen når du er på nett, eller velg et annet tidspunkt."
+            "value" : "Du er ikke på nett, så vi kan ikke sjekke når dere møtes neste gang. Prøv igjen når du er på nett, eller velg et annet tidspunkt."
           }
         }
       }
@@ -27058,7 +27058,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This letter can't wait for your next meeting right now. Your changes are still here, so pick another time and save again."
+            "value" : "Right now, this letter can't wait until you next meet. Your changes are still here, so pick another time and save again."
           }
         },
         "nb" : {
@@ -27082,7 +27082,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du er frakoblet, så endringene ble ikke lagret. De er fortsatt her, så lagre dem når du er på nett igjen."
+            "value" : "Du er ikke på nett, så endringene ble ikke lagret. De er fortsatt her, så lagre dem når du er på nett igjen."
           }
         }
       }
@@ -27094,13 +27094,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This letter's photo was changed on another phone, so your change now has the photo the letter has. Check it, then save again."
+            "value" : "This letter's photo was changed on another phone, so your change now uses the letter's current photo. Check it, then save again."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bildet i dette brevet ble endret på en annen telefon, så endringen din har nå bildet brevet har. Sjekk det, og lagre igjen."
+            "value" : "Bildet i dette brevet ble endret på en annen telefon, så endringen din bruker nå bildet brevet har. Sjekk det, og lagre igjen."
           }
         }
       }
@@ -27226,7 +27226,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du er frakoblet. Prøv igjen når du er på nett igjen."
+            "value" : "Du er ikke på nett. Prøv igjen når du er på nett igjen."
           }
         }
       }
@@ -27298,7 +27298,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du er frakoblet. Eldre brev lastes inn når du er på nett igjen."
+            "value" : "Du er ikke på nett. Eldre brev lastes inn når du er på nett igjen."
           }
         }
       }
@@ -27310,7 +27310,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This letter can't wait for your next meeting right now. It's saved, so pick another time and send it again."
+            "value" : "Right now, this letter can't wait until you next meet. It's saved, so pick another time and send it again."
           }
         },
         "nb" : {
@@ -27352,7 +27352,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du er frakoblet. Åpne brevet når du er på nett igjen."
+            "value" : "Du er ikke på nett. Åpne brevet når du er på nett igjen."
           }
         }
       }
@@ -27424,7 +27424,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du er frakoblet. Brevet er lagret, så du kan sende det når du er på nett igjen."
+            "value" : "Du er ikke på nett. Brevet er lagret, så du kan sende det når du er på nett igjen."
           }
         }
       }
@@ -28018,7 +28018,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "God morgen, kjære."
+            "value" : "God morgen, kjæresten min."
           }
         }
       }
@@ -28270,7 +28270,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tøm beskrivelse"
+            "value" : "Fjern beskrivelsen"
           }
         }
       }
@@ -28288,7 +28288,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tøm tekstversjon"
+            "value" : "Fjern tekstversjonen"
           }
         }
       }
@@ -28576,7 +28576,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Transkripsjon"
+            "value" : "Tekstversjon"
           }
         }
       }
@@ -28612,7 +28612,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ingen transkripsjon lagt til"
+            "value" : "Ingen tekstversjon lagt til"
           }
         }
       }
@@ -29026,7 +29026,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Notatet deres"
+            "value" : "Notatet til partneren din"
           }
         }
       }
@@ -30412,7 +30412,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fant ingenting for \"%@\"."
+            "value" : "Fant ingenting for «%@»."
           }
         }
       }
@@ -30430,7 +30430,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du er frakoblet. Koble til internett for å søke etter steder."
+            "value" : "Du er ikke på nett. Koble til internett for å søke etter steder."
           }
         }
       }
@@ -31078,7 +31078,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Si et ord samtidig. Møtes på midten."
+            "value" : "Si et ord samtidig. Møt hverandre på midten."
           }
         }
       }
@@ -31114,7 +31114,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ har låst inn. Din tur."
+            "value" : "%@ har låst ordet sitt. Din tur."
           }
         }
       }
@@ -31240,7 +31240,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ har låst inn"
+            "value" : "%@ har låst ordet sitt"
           }
         }
       }
@@ -31906,7 +31906,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi sier fra når %@ har låst inn."
+            "value" : "Vi sier fra når %@ har låst ordet sitt."
           }
         }
       }
@@ -31942,7 +31942,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ordet til %@, skjult til dere begge har låst inn"
+            "value" : "Ordet til %@, skjult til dere begge har låst ordene"
           }
         }
       }
@@ -31978,7 +31978,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ordet ditt, %@, er låst inn"
+            "value" : "Ordet ditt, %@, er låst"
           }
         }
       }
@@ -32140,7 +32140,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lås inn"
+            "value" : "Lås ordet"
           }
         }
       }
@@ -32748,7 +32748,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi teller dagene dere har vært sammen. Begge kan endre datoen senere."
+            "value" : "Vi teller dagene dere har vært sammen. Dere kan begge endre datoen senere."
           }
         }
       }
@@ -33936,7 +33936,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk tilkoblingen og prøv igjen."
+            "value" : "Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -33954,7 +33954,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi klarte ikke å lage en ny kode. Sjekk tilkoblingen og prøv igjen."
+            "value" : "Vi klarte ikke å lage en ny kode. Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -34254,7 +34254,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We'll take you in as soon as they join."
+            "value" : "You'll go straight in as soon as they join."
           }
         },
         "nb" : {
@@ -34296,7 +34296,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi kunne ikke sjekke koden. Sjekk tilkoblingen og prøv igjen."
+            "value" : "Vi kunne ikke sjekke koden. Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -34350,7 +34350,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi klarte ikke å koble deg til partneren din. Sjekk tilkoblingen og prøv igjen."
+            "value" : "Vi klarte ikke å koble deg til partneren din. Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -34602,7 +34602,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi kunne ikke sende svaret ditt. Sjekk tilkoblingen og prøv igjen."
+            "value" : "Vi kunne ikke sende svaret ditt. Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -35142,7 +35142,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Forbli koblet"
+            "value" : "Ikke koble fra"
           }
         }
       }
@@ -35502,7 +35502,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi klarte ikke å åpne Paeonia helt. Sjekk tilkoblingen, og trykk deretter på Gjenopprett kjøp. Du blir ikke belastet på nytt."
+            "value" : "Vi klarte ikke å åpne Paeonia helt. Sjekk nettet, og trykk deretter på Gjenopprett kjøp. Du blir ikke belastet på nytt."
           }
         }
       }
@@ -36960,7 +36960,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Der er chilien til %@"
+            "value" : "Her er chilien til %@"
           }
         }
       }
@@ -36978,7 +36978,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du luktet en chili"
+            "value" : "Her luktet du chili"
           }
         }
       }
@@ -36996,7 +36996,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du luktet ingen chili"
+            "value" : "Her luktet du ingen chili"
           }
         }
       }
@@ -37140,7 +37140,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bytt på å løfte en sjokoladebit og ta en bit. Den som biter i en chili taper, også om det er deres egen."
+            "value" : "Bytt på å løfte en sjokoladebit og ta en bit. Den som biter i en chili, taper, også om man gjemte den selv."
           }
         }
       }
@@ -37176,7 +37176,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dere gjemmer én chili hver. Skriv hva partneren din skylder deg hvis de taper. Partneren din ser ingen av delene før esken åpnes."
+            "value" : "Dere gjemmer én chili hver. Skriv hva partneren din skylder deg hvis du vinner. Partneren din ser ingen av delene før esken åpnes."
           }
         }
       }
@@ -37500,7 +37500,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Din chili"
+            "value" : "Chilien din"
           }
         }
       }
@@ -37536,7 +37536,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Viser hvordan du kan nå dem."
+            "value" : "Viser hvordan du kan nå partneren din."
           }
         }
       }
@@ -38508,7 +38508,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La dem være for en mye mindre nedlasting."
+            "value" : "Uten dem blir nedlastingen mye mindre."
           }
         }
       }
@@ -38598,7 +38598,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du er frakoblet. Koble til internett og prøv igjen."
+            "value" : "Du er ikke på nett. Koble til internett og prøv igjen."
           }
         }
       }
@@ -39066,7 +39066,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi kunne ikke bekrefte at forespørselen ble sendt. Sjekk tilkoblingen og prøv igjen."
+            "value" : "Vi kunne ikke bekrefte at forespørselen ble sendt. Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -39948,7 +39948,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "historier dere delte"
+            "value" : "stories dere delte"
           }
         }
       }
@@ -39966,7 +39966,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "historie dere delte"
+            "value" : "story dere delte"
           }
         }
       }
@@ -40326,7 +40326,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vi kunne ikke bekrefte at rapporten ble sendt. Sjekk tilkoblingen og prøv igjen."
+            "value" : "Vi kunne ikke bekrefte at rapporten ble sendt. Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -40878,13 +40878,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Answers and chats need a connection. Memories and stories on this phone are searched without one."
+            "value" : "Answers and chats need a connection. You can search memories and stories on this phone without one."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Svar og samtaler trenger nett. Minner og stories på telefonen blir søkt i uten nett."
+            "value" : "Svar og samtaler trenger nett. Minner og stories på telefonen kan du søke i uten nett."
           }
         }
       }
@@ -41256,7 +41256,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Log out"
+            "value" : "Sign out"
           }
         },
         "nb" : {
@@ -41274,7 +41274,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Everything you've shared stays saved, and you can log back in any time. Anything on this phone that hasn't finished sending will be removed."
+            "value" : "Everything you've shared stays saved, and you can sign back in any time. Anything on this phone that hasn't finished sending will be removed."
           }
         },
         "nb" : {
@@ -41292,7 +41292,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Log out of Paeonia?"
+            "value" : "Sign out of Paeonia?"
           }
         },
         "nb" : {
@@ -41586,7 +41586,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Posisjonstilgang er av"
+            "value" : "Tilgang til posisjon er slått av"
           }
         }
       }
@@ -41694,7 +41694,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gå et sted med bedre signal og prøv igjen."
+            "value" : "Gå til et sted med bedre dekning og prøv igjen."
           }
         }
       }
@@ -41928,7 +41928,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk tilkoblingen og prøv igjen. Du kan endre bryterne så snart innstillingene er hentet."
+            "value" : "Sjekk nettet og prøv igjen. Du kan endre bryterne så snart innstillingene er hentet."
           }
         }
       }
@@ -42414,7 +42414,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du ser det vanlige navnet deres igjen."
+            "value" : "Du ser det vanlige navnet til partneren din igjen."
           }
         }
       }
@@ -42540,7 +42540,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk tilkoblingen og prøv igjen. Kallenavnet ditt står der fortsatt."
+            "value" : "Sjekk nettet og prøv igjen. Kallenavnet ditt står der fortsatt."
           }
         }
       }
@@ -42971,7 +42971,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sluttet"
+            "value" : "Avsluttet"
           }
         }
       }
@@ -42989,7 +42989,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kunne ikke laste inn abonnementet. Sjekk tilkoblingen og dra ned for å prøve igjen."
+            "value" : "Kunne ikke laste inn abonnementet. Sjekk nettet og dra ned for å prøve igjen."
           }
         }
       }
@@ -43331,7 +43331,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk tilkoblingen og prøv igjen."
+            "value" : "Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -43361,7 +43361,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This Apple ID's subscription is linked to a different Paeonia account. Log in with that account to use it."
+            "value" : "This Apple ID's subscription is linked to a different Paeonia account. Sign in with that account to use it."
           }
         },
         "nb" : {
@@ -43647,7 +43647,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "For your safety, log out and sign in again first. Then try this again."
+            "value" : "For your safety, sign out and sign in again first. Then try this again."
           }
         },
         "nb" : {
@@ -44529,13 +44529,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your answer could not be saved to send. Open Paeonia to try again. Your draft is still there."
+            "value" : "We couldn't save your answer. Open Paeonia to try again. Your draft is still there."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Svaret kunne ikke lagres for sending. Åpne Paeonia for å prøve igjen. Utkastet ditt er fortsatt der."
+            "value" : "Vi fikk ikke lagret svaret. Åpne Paeonia for å prøve igjen. Utkastet ditt er fortsatt der."
           }
         }
       }
@@ -45147,7 +45147,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du er frakoblet. Koble til internett og prøv igjen."
+            "value" : "Du er ikke på nett. Koble til internett og prøv igjen."
           }
         }
       }
@@ -46017,7 +46017,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du er frakoblet, så storyen ble ikke slettet. Koble til internett og prøv igjen."
+            "value" : "Du er ikke på nett, så storyen ble ikke slettet. Koble til internett og prøv igjen."
           }
         }
       }
@@ -46053,7 +46053,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du er frakoblet, så notatet ble ikke lagret. Koble til internett og prøv igjen."
+            "value" : "Du er ikke på nett, så notatet ble ikke lagret. Koble til internett og prøv igjen."
           }
         }
       }
@@ -46107,7 +46107,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du er frakoblet, så storyen ble ikke delt. Koble til internett og prøv igjen."
+            "value" : "Du er ikke på nett, så storyen ble ikke delt. Koble til internett og prøv igjen."
           }
         }
       }
@@ -46269,7 +46269,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Din story"
+            "value" : "Storyen din"
           }
         }
       }
@@ -46461,7 +46461,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "It will be gone for both of you, also from Memories. You can't undo this."
+            "value" : "It disappears for both of you, including from Memories. You can't undo this."
           }
         },
         "nb" : {
@@ -46557,7 +46557,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sett historier på pause"
+            "value" : "Sett stories på pause"
           }
         }
       }
@@ -46719,7 +46719,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fortsett historier"
+            "value" : "Fortsett stories"
           }
         }
       }
@@ -47418,13 +47418,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld historie ferdig"
+                  "value" : "%lld ferdig historie"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld historier ferdige"
+                  "value" : "%lld ferdige historier"
                 }
               }
             }
@@ -47571,7 +47571,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gi historien tittel"
+            "value" : "Gi historien en tittel"
           }
         }
       }
@@ -48291,7 +48291,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@, beskyttet av en frys"
+            "value" : "%@, beskyttet av en frysedag"
           }
         }
       }
@@ -49335,7 +49335,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Flammen kjølnet. Et engangskjøp henter rekken tilbake. Begge kan gjøre det før tiden går ut."
+            "value" : "Flammen har kjølnet. Et engangskjøp henter rekken tilbake. En av dere kan gjøre det før tiden går ut."
           }
         }
       }
@@ -50907,7 +50907,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Videoen kunne ikke lastes inn fordi du er frakoblet. Prøv igjen når du har nett."
+            "value" : "Videoen kunne ikke lastes inn fordi du ikke er på nett. Prøv igjen når du har nett."
           }
         }
       }
@@ -51501,7 +51501,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "En lapp fra kjæresten din i en widget på hjemskjermen der det står «savner deg»"
+            "value" : "En lapp fra partneren din i en widget på Hjem-skjermen der det står «savner deg»"
           }
         }
       }
@@ -51537,7 +51537,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Klar til partneren din blir med"
+            "value" : "Klar når partneren din blir med"
           }
         }
       }
@@ -51969,7 +51969,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tegn noe. Det dukker opp på hjemskjermen til kjæresten din."
+            "value" : "Tegn noe. Det dukker opp på Hjem-skjermen til partneren din."
           }
         }
       }
@@ -52023,7 +52023,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sjekk forbindelsen og prøv igjen."
+            "value" : "Sjekk nettet og prøv igjen."
           }
         }
       }
@@ -52224,7 +52224,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lys rosa"
+            "value" : "Lyserosa"
           }
         }
       }
@@ -52242,7 +52242,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Egendefinert farge"
+            "value" : "Egen farge"
           }
         }
       }
@@ -52614,13 +52614,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Could not send"
+            "value" : "Couldn't send your drawing"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kunne ikke sende"
+            "value" : "Tegningen ble ikke sendt"
           }
         }
       }
@@ -52650,7 +52650,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sending …"
+            "value" : "Sending…"
           }
         },
         "nb" : {

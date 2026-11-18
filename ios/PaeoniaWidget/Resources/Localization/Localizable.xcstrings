@@ -11,13 +11,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No description added to this drawing."
+            "value" : "This drawing has no description."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ingen beskrivelse lagt til denne tegningen."
+            "value" : "Tegningen har ingen beskrivelse."
           }
         }
       }
@@ -1255,13 +1255,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "See how long it is until your next date."
+            "value" : "See how long it is until the next date you're counting down to."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se hvor lenge det er til neste dato dere har lagt inn."
+            "value" : "Se hvor lenge det er til neste dato dere teller ned til."
           }
         }
       }
