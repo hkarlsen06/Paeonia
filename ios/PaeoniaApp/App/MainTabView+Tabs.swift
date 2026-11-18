@@ -233,7 +233,7 @@ extension MainTabView {
                         authorName: identity.currentDisplayName,
                         viewModel: dependencies.widgetDrawingViewModel,
                         historyViewModel: dependencies.widgetHistoryViewModel,
-                        historyThumbnailLoader: dependencies.widgetHistoryThumbnailLoader
+                        historyThumbnailLoader: dependencies.widgetHistoryThumbnailLoader, showsSendWave: true
                     )
                     .analyticsScreen("widget_drawing")
                 }

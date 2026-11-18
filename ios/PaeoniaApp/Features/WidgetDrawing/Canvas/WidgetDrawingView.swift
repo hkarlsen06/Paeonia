@@ -17,15 +17,22 @@ struct WidgetDrawingView: View {
     /// The "Not sent yet" pill above the canvas.
     private let showsSendStatus: Bool
     private let emptyCanvasHint: LocalizedStringResource?
+    /// Onboarding reuses this screen and moves on once the send finishes, which
+    /// would cut the wave off, so only the Us tab's drawing screen plays it.
+    private let showsSendWave: Bool
     @State var isHistoryPresented = false
     @State private var isCompositionPresented = false
     @State private var isDescriptionPresented = false
     /// The width of the controls column beside the canvas, or nil while they sit below it.
     @State private var sideColumnWidth: CGFloat?
+    @State private var sendWave: WidgetDrawingSendWave?
+    @State private var sendWaveArea: CGRect = .zero
+    @State private var sendButtonFrame: CGRect = .zero
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(ReactionStore.self) var reactionStore: ReactionStore?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AccessibilityPresentation(.media) private var showsMedia
 
     init(
@@ -39,7 +46,8 @@ struct WidgetDrawingView: View {
         showsHistory: Bool = true,
         showsShareButton: Bool = true,
         showsSendStatus: Bool = true,
-        emptyCanvasHint: LocalizedStringResource? = nil
+        emptyCanvasHint: LocalizedStringResource? = nil,
+        showsSendWave: Bool = false
     ) {
         _viewModel = State(
             initialValue: viewModel ?? WidgetDrawingViewModel(
@@ -56,6 +64,7 @@ struct WidgetDrawingView: View {
         self.showsShareButton = showsShareButton
         self.showsSendStatus = showsSendStatus
         self.emptyCanvasHint = emptyCanvasHint
+        self.showsSendWave = showsSendWave
         partnerName = WidgetSyncIdentityStore.shared.load().partnerDisplayName?.trimmedNonEmpty
             ?? String(localized: .pairingCelebrationPartnerName)
     }
@@ -71,6 +80,8 @@ struct WidgetDrawingView: View {
                 canvasContent
             }
         }
+        // Nobody draws under the picture the wave plays over.
+        .allowsHitTesting(sendWave == nil)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
         .padding(.top, PaeoniaSpacing.space8)
@@ -83,6 +94,7 @@ struct WidgetDrawingView: View {
             GameMetrics.isWide(proxy.size) ? GameMetrics.sideColumnWidth(in: proxy.size) : nil
         } action: { sideColumnWidth = $0 }
         .background(.paeoniaBackgroundSecondary)
+        .overlay { WidgetDrawingSendWaveLayer(wave: $sendWave, area: $sendWaveArea) }
         .paeoniaFittingNavigationTitle(Text(title))
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
@@ -343,12 +355,16 @@ private extension WidgetDrawingView {
             .disabled(!viewModel.canClear)
 
             Button {
+                if showsSendWave, !reduceMotion {
+                    sendWave = WidgetDrawingSendWave(area: sendWaveArea, sendButton: sendButtonFrame)
+                }
                 Task { await viewModel.save() }
             } label: {
                 sendButtonLabel
             }
             .buttonStyle(PaeoniaPrimaryButtonStyle())
             .disabled(!viewModel.canSave)
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { sendButtonFrame = $0 }
             .accessibilityIdentifier("widgetDrawing.send")
             // The label crossfades between states instead of swapping in one frame.
             .animation(PaeoniaMotion.stateChange, value: viewModel.delivery)

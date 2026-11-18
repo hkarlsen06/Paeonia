@@ -251,21 +251,13 @@ extension GuessMySpotMap {
     /// Lays the map as it looked over the new style and fades it out, so a style
     /// switch dissolves instead of showing gray while the new images load.
     private func coverStyleSwitch() {
-        guard !reduceMotion, let cover = snapshot() else { return }
+        guard !reduceMotion, let cover = PaeoniaAppWindow.snapshot(of: frame) else { return }
         styleCover = cover
         Task {
             // A moment for the new style's first images to draw.
             try? await Task.sleep(for: .milliseconds(100))
             guard styleCover === cover else { return }
             withAnimation(.easeInOut(duration: 0.3)) { styleCover = nil }
-        }
-    }
-
-    /// The map as it is on screen now, cut from its window.
-    private func snapshot() -> UIImage? {
-        guard frame.width > 0, frame.height > 0, let window = Self.keyWindow else { return nil }
-        return UIGraphicsImageRenderer(bounds: frame).image { _ in
-            window.drawHierarchy(in: window.bounds, afterScreenUpdates: false)
         }
     }
 
@@ -278,13 +270,6 @@ extension GuessMySpotMap {
     /// under it, `bottomInset` tall, such as under a bottom bar and the home indicator.
     static func drawnFrame(_ frame: CGRect, bottomInset: CGFloat) -> CGRect {
         CGRect(x: frame.minX, y: frame.minY, width: frame.width, height: frame.height + max(0, bottomInset))
-    }
-
-    private static var keyWindow: UIWindow? {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap(\.windows)
-            .first(where: \.isKeyWindow)
     }
 }
 

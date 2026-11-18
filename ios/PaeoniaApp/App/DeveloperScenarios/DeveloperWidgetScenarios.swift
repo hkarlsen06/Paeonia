@@ -64,7 +64,8 @@
                 partnerDisplayName: "Robin"
               )
             ),
-            historyThumbnailLoader: NoOpWidgetRevisionThumbnailLoader()
+            historyThumbnailLoader: NoOpWidgetRevisionThumbnailLoader(),
+            showsSendWave: true
           )
         }
       }

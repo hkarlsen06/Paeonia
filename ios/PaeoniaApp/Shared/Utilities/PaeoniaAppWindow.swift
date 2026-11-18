@@ -5,10 +5,22 @@ import UIKit
 enum PaeoniaAppWindow {
     /// The app's window is the one at the normal level. The call overlay and the app lock's cover
     /// sit above it, and either may be the key window.
-    static var rootViewController: UIViewController? {
+    static var window: UIWindow? {
         UIApplication.shared.connectedScenes
-            .compactMap { ($0 as? UIWindowScene)?.windows.first { $0.windowLevel == .normal }?.rootViewController }
+            .compactMap { ($0 as? UIWindowScene)?.windows.first { $0.windowLevel == .normal } }
             .first
+    }
+
+    static var rootViewController: UIViewController? {
+        window?.rootViewController
+    }
+
+    /// The app's screens as they are on screen now within `frame`, in window coordinates.
+    static func snapshot(of frame: CGRect) -> UIImage? {
+        guard frame.width > 0, frame.height > 0, let window else { return nil }
+        return UIGraphicsImageRenderer(bounds: frame).image { _ in
+            window.drawHierarchy(in: window.bounds, afterScreenUpdates: false)
+        }
     }
 
     /// The sheets, covers and alerts over the app's screens, the lowest first.
