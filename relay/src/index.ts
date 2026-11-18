@@ -9,6 +9,7 @@ import {
   socketToReplace,
   type Attachment,
 } from "./room.ts";
+import { MAP_PREFIX, proxyMap } from "./map.ts";
 import { roomName, verifyTicket } from "./ticket.ts";
 
 /**
@@ -19,6 +20,8 @@ import { roomName, verifyTicket } from "./ticket.ts";
  * Sockets of the same user (the Us tab and the canvas on one phone) never
  * hear from each other. A socket past its 10-minute session hears nothing more: the room
  * closes it before forwarding to it, and an alarm closes it when the room is quiet.
+ *
+ * The Worker also answers `/map/...`, the proxy for the Us tab's map (`map.ts`).
  */
 interface Env {
   ROOMS: DurableObjectNamespace<CanvasRoom>;
@@ -26,8 +29,15 @@ interface Env {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+    if (url.pathname.startsWith(`${MAP_PREFIX}/`)) {
+      return proxyMap(request, {
+        fetch: (upstream, init) => fetch(upstream, init),
+        cache: caches.default,
+        waitUntil: (promise) => ctx.waitUntil(promise),
+      });
+    }
     if (url.pathname !== "/canvas") return new Response("Not found", { status: 404 });
     if (request.headers.get("Upgrade") !== "websocket") return new Response("Expected WebSocket", { status: 426 });
     const bearer = request.headers.get("Authorization")?.match(/^Bearer (.+)$/)?.[1] ?? "";

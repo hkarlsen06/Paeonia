@@ -47,6 +47,7 @@ The backend is a self-hosted Convex deployment on the `one-s` server, with Clerk
 - `https://actions.paeonia.no` is the Convex HTTP actions origin. It serves signed media URLs (`GET /media`) and Apple App Store server notifications (`POST /apple/server-notifications`).
 - `https://convex.paeonia.no` is the Convex dashboard. It is reachable on the tailnet only.
 - `wss://relay.paeonia.no/canvas` is the live drawing relay (`relay/`), a Cloudflare Worker with one Durable Object per couple.
+- `https://relay.paeonia.no/map` is the map proxy, a route on the same Worker. The Us tab's map loads from OpenFreeMap through it.
 
 Deploy and server access details are in [backend/AGENTS.md](backend/AGENTS.md).
 
