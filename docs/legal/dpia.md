@@ -95,13 +95,13 @@ Messages, photos and Flirt answers could reach other people through a break-in o
 - The relay stores nothing, accepts only a 60-second signed ticket from the server, and runs in the EU jurisdiction (`relay/src/index.ts`, `relay/src/room.ts`, `backend/convex/lib/liveTicket.ts`).
 - Guessing. Invite code tries are rate limited per person (`backend/convex/lib/rateLimits.ts`), and the server stores a code only as a hash made with a server secret (`hashPairingInviteCode` in `backend/convex/pairing.ts`).
 - The phone. Signing out, leaving and account deletion clear the local store, caches, widgets and the Spotlight index (`ios/PaeoniaApp/Storage/Privacy/LocalPrivacyPurgeService.swift`). The chats given to Spotlight and Siri leave private topics out (`ios/PaeoniaApp/Features/Siri/Messages/SiriChats.swift`). An optional app lock asks for Face ID (`ios/PaeoniaApp/Features/AppLock/`).
+- The server. A firewall lets only Cloudflare reach the web server and keeps every other port off the internet, and SSH listens on the private network only. The watchdog emails the controller on an SSH login from outside the private network, a change to SSH keys, sudo rules, login accounts or secret files, a new public port, and a database export nobody announced. The offsite backups are encrypted with a key of Paeonia's before upload, and the key is kept on the server and on the controller's Mac (`/srv/backup/README.md` on the server, `backend/AGENTS.md` under "Hosted deployment").
 - Retention. Content goes about 30 days after a relationship ends, and location, hearts, nicknames and call reports go at once (`endRelationshipForPair` in `backend/convex/lib/relationshipEnd.ts`). Account deletion removes the profile, devices and location in one step and the identity at Clerk after it (`backend/convex/accountDeletion.ts`).
 
-**What remains.** The content is readable on the server, one person has full access, and the database is on one rented server. Nothing on the server detects an intrusion. The watchdog reports outages only ([breach routine](breach-routine.md)). Three points are open:
+**What remains.** The content is readable on the server, one person has full access, and the database is on one rented server. Two points are open:
 
-1. The nightly backup is copied to a Cloudflare R2 bucket in the EU as it is. R2 encrypts it with Cloudflare's keys, not with a key of Paeonia's, and the archive with the server's own keys is stored beside it (`/srv/backup/paeonia-backup.sh` on the server). Encrypt both before upload, with a key kept off the server.
-2. `scripts/local-backend` copies the hosted data to the developer's Mac. Remove that import at launch.
-3. Confirm with the host whether the server's disk is encrypted.
+1. `scripts/local-backend` copies the hosted data to the developer's Mac. Remove that import at launch.
+2. Confirm with the host whether the server's disk is encrypted.
 
 ### A reported partner finds out
 
@@ -129,7 +129,7 @@ Calls connect directly between the two phones where the network allows it, so ea
 
 ## Conclusion
 
-With the measures above, no risk stays high. Two stay medium. Control between partners is one, which no app can rule out. A breach is the other, where the harm would be severe and the likelihood is low. Prior consultation with Datatilsynet under Art. 36 is not needed, provided the three open points under "A breach of intimate content" are closed before launch.
+With the measures above, no risk stays high. Two stay medium. Control between partners is one, which no app can rule out. A breach is the other, where the harm would be severe and the likelihood is low. Prior consultation with Datatilsynet under Art. 36 is not needed, provided the two open points under "A breach of intimate content" are closed before launch.
 
 Review this assessment once a year, and before any change that stores location history, lets people outside the couple see content, lowers the age limit, or adds a processor.
 

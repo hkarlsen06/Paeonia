@@ -8,7 +8,7 @@ A breach is any event where personal data in Paeonia is lost, changed, or seen b
 
 Hjalmar Karlsen, the controller, assesses every suspected breach himself. The 72 hours start when he becomes aware of it. He hears of one in three ways:
 
-- The watchdog on the server emails him when `api.paeonia.no` fails, the backend is unhealthy or a backup is too old (`/srv/backup/watchdog.sh`, described in `backend/AGENTS.md` under "Hosted deployment"). It reports outages, not intrusions.
+- The watchdog on the server emails him when `api.paeonia.no` fails, the backend is unhealthy or a backup is too old, and on signs of an intrusion: an SSH login from outside the private network, changed keys, accounts or secret files, a new public port, or an export nobody announced (`/srv/backup/watchdog.sh`, described in `backend/AGENTS.md` under "Hosted deployment").
 - A user writes to contact@paeonia.no or support@paeonia.no, or files a report in the app, which sends him a push.
 - A processor notifies him under its agreement.
 
