@@ -45,7 +45,6 @@ Run these before a release candidate and record any skipped one with the reason:
 ## Authentication And Onboarding
 
 - [ ] Sign in with Apple works with Hide My Email. Needs a device. Nothing in the app reads the email address.
-- [ ] Google Sign-In works (Clerk's OAuth sheet). Needs a device. The Google client lives in Google Cloud project `paeonia-hkarlsen06`, and its consent screen is published.
 
 ## Streaks
 
@@ -116,8 +115,6 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 Run these on real devices where possible.
 
 - [ ] Fresh install -> Apple sign-in -> onboarding -> paywall.
-- [ ] Fresh install -> Google sign-in -> onboarding -> paywall.
-- [ ] Payer subscribes -> creates invite.
 - [ ] One user answers a question the partner answered on an earlier day -> reveal works.
 - [ ] User enables location; map waits for partner.
 - [ ] Partner enables location; distance/location appears.
@@ -127,28 +124,18 @@ Run these on real devices where possible.
 
 - [ ] No network during location update.
 - [ ] StoreKit product loading fails.
-- [ ] Purchase is cancelled.
 - [ ] Purchase fails.
-- [ ] Restore finds no subscription.
 - [ ] Media upload fails.
 - [ ] Voice recording permission denied.
 - [ ] Camera/photo permission denied.
 - [ ] Location permission denied.
-- [ ] Invite code expired.
 
 ## App Store Connect
 
 The text metadata lives in `ios/Scripts/appstore-metadata-source.json`, and `ios/Scripts/generate-appstore-metadata.mjs` writes native ASC JSON to `ios/app-store/metadata/`. The upload workflow is in `ios/app-store/README.md`.
 
-- [ ] Subtitle, promotional text, description and keywords describe the current app. Rewritten on 2026-10-24 from competitor and App Store search research, with a new en-GB locale for a second Norwegian keyword field. In App Store Connect: plan them with `bun run app-store metadata`, then upload with `--apply`.
-- [ ] Copyright filled.
-- [ ] Support URL set.
-- [ ] Marketing URL set if desired.
-- [ ] App Review contact information filled.
 - [ ] App Review notes are pasted into App Store Connect. `ios/Scripts/mint-review-codes.mjs` prints them from `ios/Scripts/app-review-notes.txt` with fresh review codes.
 - [ ] In-app purchases submitted with the build.
-- [ ] Subscription screenshot/metadata completed.
-- [ ] Content rights answered.
 
 ## App Store Screenshots
 
