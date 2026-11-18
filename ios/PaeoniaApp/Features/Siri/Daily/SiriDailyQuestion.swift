@@ -21,13 +21,9 @@ struct SiriDailyQuestion: AppEntity {
         @MainActor
         func entities(for identifiers: [UUID]) async throws -> [SiriDailyQuestion] {
             // Parameter resolution never substitutes a different day's question.
-            let access = await SiriAppContext.shared.access()
-            guard let couple = access.coupleForEntityQuery(appIsLocked: AppLockModel.shared.isLocked) else {
-                return []
-            }
+            guard let couple = await SiriContent.coupleForEntityQuery() else { return [] }
             let model = await SiriDailyQuestions.load(for: couple)
-            let refreshedAccess = await SiriAppContext.shared.access()
-            guard refreshedAccess.coupleForEntityQuery(appIsLocked: AppLockModel.shared.isLocked) == couple,
+            guard await SiriContent.coupleForEntityQuery() == couple,
                   let question = model.snapshot.todayQuestion,
                   identifiers.contains(question.id), question.coupleID == couple.coupleID,
                   question.startsAt <= Date(), question.endsAt > Date()

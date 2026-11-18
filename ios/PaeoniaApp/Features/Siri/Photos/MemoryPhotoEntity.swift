@@ -144,13 +144,14 @@ struct MemoryPhotoEntity: IndexedEntity, OwnershipProvidingEntity {
         guard await SiriAppContext.shared.access().couple != nil else {
             throw SiriFailure(.siriAccessSignedOut)
         }
-        let lock = AppLockModel.shared
-        guard !lock.isEnabled || !lock.isLocked else { throw SiriFailure(.siriAppLockStillLocked) }
+        guard !AppLockModel.shared.hidesContentFromQueries else { throw SiriFailure(.siriAppLockStillLocked) }
         let data: Data? = switch id {
         case let .saved(mediaAssetID): await MemoryMediaImageProviderFactory.shared?.imageData(for: mediaAssetID)
         case let .incoming(id): MemoryPhotoInbox.data(for: id)
         }
         guard let data else { throw SiriFailure(.siriPhotosUnavailable) }
+        // A download takes time, and the lock may have come on meanwhile.
+        guard !AppLockModel.shared.hidesContentFromQueries else { throw SiriFailure(.siriAppLockStillLocked) }
         return data
     }
 }

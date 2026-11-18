@@ -5,14 +5,31 @@ import Foundation
 /// here reads the network, and without access every list is empty.
 enum SiriContent {
     static func dates() async -> [CoupleDateEntity] {
-        guard let couple = await SiriAppContext.shared.access().couple else { return [] }
-        return await dates(for: couple)
+        await forEntityQuery(otherwise: []) { await dates(for: $0) }
     }
 
     /// Visible memories, newest first.
     static func memories() async -> [MemoryRecord] {
-        guard let couple = await SiriAppContext.shared.access().couple else { return [] }
-        return await memories(for: couple)
+        await forEntityQuery(otherwise: []) { await memories(for: $0) }
+    }
+
+    /// What `read` loads for the couple an entity query may read for, or `nothing`. Loading takes
+    /// time, and App Lock or lost access may arrive meanwhile, so the couple is asked again before
+    /// anything is handed out.
+    static func forEntityQuery<Content>(
+        otherwise nothing: Content,
+        read: (SiriCouple) async -> Content
+    ) async -> Content {
+        guard let couple = await coupleForEntityQuery() else { return nothing }
+        let content = await read(couple)
+        return await coupleForEntityQuery() == couple ? content : nothing
+    }
+
+    /// The couple an entity query may read for. Nil without access and while App Lock hides the app.
+    @MainActor
+    static func coupleForEntityQuery() async -> SiriCouple? {
+        await SiriAppContext.shared.access()
+            .coupleForEntityQuery(appIsLocked: AppLockModel.shared.hidesContentFromQueries)
     }
 
     static func photos() async -> [MemoryPhotoEntity] {

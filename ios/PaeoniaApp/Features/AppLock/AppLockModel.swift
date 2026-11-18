@@ -39,6 +39,16 @@ final class AppLockModel {
 
     var isCovering: Bool { isLocked || isShielding }
 
+    /// Whether Siri, Shortcuts and Spotlight must get none of the couple's content right now.
+    /// Their queries run while the app is in the background, and `isLocked` only changes when
+    /// the app comes to the front, so this also counts the time away.
+    var hidesContentFromQueries: Bool {
+        guard isEnabled else { return false }
+        if isLocked { return true }
+        guard let backgroundedAt else { return false }
+        return AppLockPolicy.locksAfterBackground(timeout: timeout, elapsed: now() - backgroundedAt)
+    }
+
     /// Called whenever `isCovering` may have changed, in the same turn as the
     /// change, so the cover is up before the system takes the app's snapshot.
     @ObservationIgnored var onCoverChange: ((Bool) -> Void)?

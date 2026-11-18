@@ -55,6 +55,24 @@ struct AppLockModelTests {
         #expect(!Fixture(enabled: false).model.isLocked)
     }
 
+    @Test func queriesGetNothingOnceTheTimeAwayWouldLock() async {
+        let fixture = Fixture(enabled: true, timeout: .afterOneMinute)
+        #expect(fixture.model.hidesContentFromQueries)
+        fixture.authenticator.result = .success
+        await fixture.model.unlock()
+        #expect(!fixture.model.hidesContentFromQueries)
+
+        // In the background the lock has not decided yet, and Siri and Spotlight ask now.
+        fixture.model.sceneDidEnterBackground()
+        fixture.clock.instant += .seconds(59)
+        #expect(!fixture.model.hidesContentFromQueries)
+        fixture.clock.instant += .seconds(1)
+        #expect(!fixture.model.isLocked)
+        #expect(fixture.model.hidesContentFromQueries)
+
+        #expect(!Fixture(enabled: false).model.hidesContentFromQueries)
+    }
+
     @Test func inactiveAloneKeepsAnUnlockedAppUnlocked() async {
         let fixture = Fixture(enabled: true, timeout: .immediately)
         fixture.authenticator.result = .success

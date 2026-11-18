@@ -68,7 +68,12 @@ struct AppLockSettingsView: View {
         Binding(
             get: { model.isEnabled },
             set: { newValue in
-                Task { await model.setEnabled(newValue) }
+                Task {
+                    // Spotlight holds nothing while the lock is on, and gets it back when it is off.
+                    if await model.setEnabled(newValue) {
+                        await SiriEntityIndexer.shared.refresh(force: true)
+                    }
+                }
             }
         )
     }

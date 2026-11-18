@@ -2,19 +2,21 @@ import AppIntents
 import CoreSpotlight
 import Foundation
 import GeoToolbox
+import Intents
 
-/// The one call the privacy purge makes into Spotlight. The protocol keeps the OS out of
-/// the purge's tests.
+/// The one call the privacy purge makes into Spotlight and Siri. The protocol keeps the OS out
+/// of the purge's tests.
 nonisolated protocol SiriEntityIndexClearing: Sendable {
-    /// Removes every Paeonia entity from Spotlight. Safe to repeat.
+    /// Removes every Paeonia entity from Spotlight and every message donated to Siri. Safe to repeat.
     func removeAllEntities() async throws
 }
 
 /// Keeps Spotlight's index of the couple's dates, memories and memory photos equal to what
 /// the person sees in the app. After a write to memories, dates, queued writes or access, it
 /// rebuilds the entities from the caches, indexes the new and changed ones and deletes the
-/// removed ones. It indexes nothing without access. The privacy purge clears the index
-/// through `removeAllEntities` on sign-out, account deletion, leaving and lost access.
+/// removed ones. It indexes nothing without access, and nothing while App Lock is on. The privacy
+/// purge clears the index through `removeAllEntities` on sign-out, account deletion, leaving and
+/// lost access.
 @MainActor
 final class SiriEntityIndexer: SiriEntityIndexClearing {
     nonisolated static let shared = SiriEntityIndexer()
@@ -40,6 +42,8 @@ final class SiriEntityIndexer: SiriEntityIndexClearing {
     private var isRefreshing = false
     /// A pass asked for while one ran, and whether it must rewrite everything.
     private var pendingForce: Bool?
+    /// The index was emptied because App Lock is on, so later passes leave it alone.
+    private var isEmptiedForAppLock = false
 
     private nonisolated init() {}
 
@@ -79,6 +83,15 @@ final class SiriEntityIndexer: SiriEntityIndexClearing {
     }
 
     private func pass(force: Bool) async {
+        // Spotlight shows indexed text to whoever holds the unlocked phone, without opening the
+        // app. App Lock is there to stop that person, so the index stays empty while it is on.
+        if AppLockModel.shared.isEnabled {
+            if !isEmptiedForAppLock, (try? await removeAll()) != nil {
+                isEmptiedForAppLock = true
+            }
+            return
+        }
+        isEmptiedForAppLock = false
         let started = generation
         guard let couple = await SiriAppContext.shared.access().couple else { return }
         let dates = await SiriContent.dates(for: couple)
@@ -117,6 +130,9 @@ final class SiriEntityIndexer: SiriEntityIndexClearing {
 
     nonisolated func removeAllEntities() async throws {
         try await removeAll()
+        // Each chat and drawing alert gave Siri a message from the partner, with their name and
+        // its text (`NotificationService`), and Siri suggests people from those.
+        try await INInteraction.deleteAll()
     }
 
     private func removeAll() async throws {

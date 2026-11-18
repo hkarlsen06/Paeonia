@@ -19,8 +19,7 @@ enum SiriChats {
     }
 
     static func snapshot() async -> Snapshot {
-        guard let couple = await SiriAppContext.shared.access().couple else { return Snapshot() }
-        return await snapshot(for: couple)
+        await SiriContent.forEntityQuery(otherwise: Snapshot()) { await snapshot(for: $0) }
     }
 
     static func snapshot(for couple: SiriCouple) async -> Snapshot {
