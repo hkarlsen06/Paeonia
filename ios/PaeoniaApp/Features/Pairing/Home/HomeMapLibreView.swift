@@ -6,6 +6,8 @@ import UIKit
 /// `CoupleMapCard` instead, which also covers map-loading failures on iPhone.
 /// A MapLibre map of OpenStreetMap data from OpenFreeMap, recolored
 /// to Paeonia's plum. Colors and road visibility live in `HomeMapLibreView+PlumStyle.swift`.
+/// The style, tiles, glyphs and sprites load through Paeonia's map proxy (`relay/src/map.ts`),
+/// so OpenFreeMap gets requests from Cloudflare and never from the phone.
 /// Its camera fits both partners inside `framedBox`. The coordinator reports their projected
 /// positions as the camera moves, so SwiftUI's avatars follow the map.
 /// The data credit sits behind the info button next to the distance (`HomeMapCredits`).
@@ -36,7 +38,7 @@ struct HomeMapLibreView: UIViewRepresentable {
         let framedBox: CGRect
     }
 
-    static let styleURL = URL(string: "https://tiles.openfreemap.org/styles/dark")!
+    static let styleURL = URL(string: "https://relay.paeonia.no/map/styles/dark")!
     /// About 10 km across a phone screen: the city, not its streets.
     private static let nearZoom: Double = 11
     /// How far apart the two avatars' centers sit when the couple is apart, in points. Close
