@@ -49,7 +49,6 @@ Run these before a release candidate and record any skipped one with the reason:
 
 ## Streaks
 
-- [ ] Creating or editing a memory keeps the streak alive. Creating one records `memory_created` (`lib/streaks.test.ts`). No memory edit records `memory_updated` yet.
 - [ ] Broken streak state is understandable. Needs a device.
 
 ## Lock Screen Widgets

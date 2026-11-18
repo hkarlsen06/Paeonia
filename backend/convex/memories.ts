@@ -211,6 +211,24 @@ async function insertMemoryMedia(
   });
 }
 
+/**
+ * Counts an edit of a memory toward the streak for the editor's day. One event per memory, editor
+ * and couple day, so more edits that day add nothing.
+ */
+async function recordMemoryEdit(ctx: WriterCtx, userId: string, memory: Doc<"memories">): Promise<void> {
+  const now = nowIso();
+  const coupleDayId = await getOrCreateCoupleDayAt(ctx, memory.couple_id, now);
+  await applyCoupleActivity(ctx, {
+    couple_id: memory.couple_id,
+    user_id: userId,
+    couple_day_id: coupleDayId,
+    activity_kind: "memory_updated",
+    occurred_at: now,
+    dedupe_key: `memory_updated:${memory.id}:${userId}:${coupleDayId}`,
+    metadata: { memory_id: memory.id },
+  });
+}
+
 /** The memory, if the caller may write to it. Fails with 42501 otherwise. */
 async function requireWritableMemory(ctx: ReaderCtx, userId: string, memoryId: string): Promise<Doc<"memories">> {
   const memory = await getByUuid(ctx, "memories", memoryId);
@@ -463,6 +481,7 @@ export const update_memory = mutation({
           memory_date: memoryDate,
           last_edited_by_user_id: userId,
         });
+        await recordMemoryEdit(ctx, userId, updated);
         return { memory_id: updated.id, revision: updated.revision, updated_at: updated.updated_at };
       },
     );
@@ -500,6 +519,7 @@ export const set_memory_place = mutation({
         // Patching a field to undefined removes it.
         await ctx.db.patch(memory._id, withUpdatedAt({ place: place ?? undefined, last_edited_by_user_id: userId }));
         const updated = (await ctx.db.get(memory._id))!;
+        await recordMemoryEdit(ctx, userId, updated);
         return { memory_id: updated.id, revision: updated.revision, updated_at: updated.updated_at };
       },
     );
@@ -595,6 +615,7 @@ export const upsert_memory_note = mutation({
           result = await insertMemoryNote(ctx, { memory_id: memory.id, user_id: userId, body });
         }
         await ctx.db.patch(memory._id, withUpdatedAt({}));
+        await recordMemoryEdit(ctx, userId, memory);
         return { note_id: result.id, revision: result.revision, updated_at: result.updated_at };
       },
     );
@@ -636,6 +657,7 @@ export const delete_memory_note = mutation({
         await tombstoneReportTargets(ctx, "memory_note", note.id);
         await ctx.db.delete(note._id);
         await ctx.db.patch(memory._id, withUpdatedAt({}));
+        await recordMemoryEdit(ctx, userId, memory);
         return null;
       },
     );
@@ -663,7 +685,11 @@ export const attach_memory_media = mutation({
         scope: "memories",
         request: ["attach_memory_media", memoryId, mediaIds],
       }),
-      async () => ({ memory_media_ids: await attachMemoryMediaAssets(ctx, userId, memoryId, mediaIds) }),
+      async () => {
+        const memoryMediaIds = await attachMemoryMediaAssets(ctx, userId, memoryId, mediaIds);
+        await recordMemoryEdit(ctx, userId, await requireWritableMemory(ctx, userId, memoryId));
+        return { memory_media_ids: memoryMediaIds };
+      },
     );
     return stored.memory_media_ids;
   },
@@ -701,6 +727,7 @@ export const remove_memory_media = mutation({
         const now = nowIso();
         await ctx.db.patch(link._id, withUpdatedAt({ deleted_at: now }));
         await ctx.db.patch(memory._id, withUpdatedAt({}));
+        await recordMemoryEdit(ctx, userId, memory);
         const asset = await getByUuid(ctx, "media_assets", link.media_asset_id);
         if (asset && asset.owner_user_id === userId && asset.storage_delete_status !== "deleted") {
           await ctx.db.patch(

@@ -907,6 +907,48 @@ describe("what counts", () => {
     expect(await streakState(t, couple.coupleId)).toMatchObject({ current_count: 1, last_qualified_date: "2026-10-10" });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
+
+  test("editing a memory counts on a day with nothing else, and a replayed edit counts once", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { timeZones: ["UTC", "UTC"] });
+    const memoryId = newUuid();
+    const create = (as: typeof couple.first.as, id: string) =>
+      as.mutation(api.memories.create_memory, {
+        ...op(),
+        p_memory_id: id,
+        p_title: "Beach weekend",
+        p_memory_date: "2026-10-01",
+        p_note_body: "Warm sand",
+        p_media_asset_ids: [],
+      });
+    await create(couple.first.as, memoryId);
+    await create(couple.second.as, newUuid());
+    expect(await streakState(t, couple.coupleId)).toMatchObject({ current_count: 1, last_qualified_date: "2026-10-10" });
+
+    vi.setSystemTime(new Date("2026-10-11T12:00:00.000Z"));
+    const edit = {
+      ...op(),
+      p_memory_id: memoryId,
+      p_expected_revision: 1,
+      p_title: "Beach weekend in Lisbon",
+      p_memory_date: "2026-10-01",
+    };
+    await couple.first.as.mutation(api.memories.update_memory, edit);
+    await couple.first.as.mutation(api.memories.update_memory, edit);
+    await couple.second.as.mutation(api.memories.set_memory_place, {
+      ...op(),
+      p_memory_id: memoryId,
+      p_place: { name: "Lisbon", latitude: 38.72, longitude: -9.14 },
+    });
+
+    const edits = (await activityOf(t)).filter(([kind]) => kind === "memory_updated");
+    expect(edits).toEqual([
+      ["memory_updated", couple.first.userId],
+      ["memory_updated", couple.second.userId],
+    ]);
+    expect(await streakState(t, couple.coupleId)).toMatchObject({ current_count: 2, last_qualified_date: "2026-10-11" });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
 });
 
 describe("evening streak reminder time", () => {
