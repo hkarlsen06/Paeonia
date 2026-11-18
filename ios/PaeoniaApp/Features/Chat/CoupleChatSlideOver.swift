@@ -16,7 +16,8 @@ extension View {
     /// While `peeks` is true the chat's edge peeks in from the right a moment and goes back,
     /// the way the swipe pulls it, as `SwipeLessons` allows. It peeks too each time
     /// `partnerOpened` grows while `partnerPeeks` is true, however well the person knows the
-    /// swipe, because the partner is in the chat now.
+    /// swipe, because the partner is in the chat now. A tap on the edge while it shows slides
+    /// the chat in, and a swipe that starts on it pulls the chat from there.
     func coupleChatSlideOver(
         isPresented: Binding<Bool>, isEnabled: Bool, peeks: Bool, partnerOpened: Int, partnerPeeks: Bool
     ) -> some View {
@@ -62,6 +63,8 @@ private struct CoupleChatSlideOver: ViewModifier {
     /// Read once and kept, so the next swipe shows the chat from its first frame.
     @State private var chat: ThreadChatViewModel?
     @State private var width: CGFloat = 0
+    /// How far in the chat was when the swipe began, which is the peek's width during a peek.
+    @State private var swipeStart: CGFloat = 0
     /// The peek's strip is on screen instead of the chat, from the peek until it has gone
     /// back or a swipe has taken it over. The peek never reads the chat, so it marks nothing read.
     @State private var showsPeek = false
@@ -139,11 +142,12 @@ private struct CoupleChatSlideOver: ViewModifier {
             // whole of a swipe, which shows the chat and so ends the screen's `isEnabled`.
             EdgeSwipe(
                 edge: .right,
-                isEnabled: draggingEdge == .right || position == .peeking
+                isEnabled: draggingEdge == .right || showsPeek
                     || (isEnabled && chatContext.isAvailable && !isMounted),
+                reach: showsPeek ? Self.peekWidth : EdgeSwipe.edgeWidth,
                 onBegan: begin,
-                onChanged: { position = .dragging($0, from: .right) },
-                onEnded: end(projectedDistance:)
+                onChanged: { position = .dragging(swipeStart + $0, from: .right) },
+                onEnded: { end(projectedDistance: swipeStart + $0) }
             )
             // Like the system's back swipe, which a chat at the root of its stack doesn't have.
             EdgeSwipe(
@@ -164,9 +168,9 @@ private struct CoupleChatSlideOver: ViewModifier {
                 .allowsHitTesting(false)
             if showsPeek {
                 CoupleChatPeekStrip(participants: chatContext.participants, width: Self.peekWidth)
+                    .onTapGesture { isPresented = true }
                     .shadow(color: .black.opacity(0.3), radius: 16)
                     .modifier(PanelSlide(offset: offset, axis: .horizontal))
-                    .allowsHitTesting(false)
                     .accessibilityHidden(true)
             } else {
                 Group {
@@ -187,7 +191,7 @@ private struct CoupleChatSlideOver: ViewModifier {
     /// A moment after a screen that welcomes it settles, or the partner opens the chat, the
     /// chat's edge peeks in and goes back. A peek that `teaches` the swipe is one of the few
     /// `SwipeLessons` allows. The screen changing, or a sheet over it, ends the peek early. A
-    /// swipe that starts during the peek takes the chat from where it is.
+    /// tap or a swipe during the peek takes the chat from where it is.
     private func peek(teaches: Bool) async {
         guard isEnabled, chatContext.isAvailable, !reduceMotion, !isMounted,
               !teaches || (peeks && SwipeLessons[.justUs].peekIsDue(at: .now, calendar: .current))
@@ -214,9 +218,10 @@ private struct CoupleChatSlideOver: ViewModifier {
 
     private func begin() {
         PaeoniaKeyboard.dismiss()
+        swipeStart = position == .peeking ? Self.peekWidth : 0
         showsPeek = false
         isMounted = true
-        position = .dragging(0, from: .right)
+        position = .dragging(swipeStart, from: .right)
         guard chat == nil, let coupleID = chatContext.coupleID else { return }
         Task {
             let model = await chatContext.makeViewModel(subject: .couple, header: nil)
@@ -326,8 +331,14 @@ private struct EdgeSwipe: UIViewRepresentable {
         case left
     }
 
+    /// A touch this close to the edge can start the swipe. The finger lands about this far in
+    /// when it comes in from the side of the phone.
+    static let edgeWidth: CGFloat = 24
+
     let edge: Edge
     let isEnabled: Bool
+    /// How far from the edge a touch can start the swipe.
+    var reach = edgeWidth
     let onBegan: () -> Void
     /// How far from the edge the finger has come.
     let onChanged: (CGFloat) -> Void
@@ -349,6 +360,7 @@ private struct EdgeSwipe: UIViewRepresentable {
         context.coordinator.onChanged = onChanged
         context.coordinator.onEnded = onEnded
         context.coordinator.isEnabled = isEnabled
+        context.coordinator.reach = reach
         // The window is there once this view is in it.
         DispatchQueue.main.async {
             context.coordinator.install(from: uiView)
@@ -361,11 +373,8 @@ private struct EdgeSwipe: UIViewRepresentable {
 
     @MainActor
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
-        /// A touch this close to the edge can start the swipe. The finger lands about this far
-        /// in when it comes in from the side of the phone.
-        private static let edgeWidth: CGFloat = 24
-
         let edge: Edge
+        var reach = EdgeSwipe.edgeWidth
         var onBegan: () -> Void = {}
         var onChanged: (CGFloat) -> Void = { _ in }
         var onEnded: (CGFloat) -> Void = { _ in }
@@ -426,7 +435,7 @@ private struct EdgeSwipe: UIViewRepresentable {
             case .right:
                 // A drawing, a map, a game's 3D scene or board, and a slider keep a drag that
                 // starts on them, even at the edge.
-                guard point.x >= window.bounds.maxX - Self.edgeWidth, !GameDragRegionView.holds(point)
+                guard point.x >= window.bounds.maxX - reach, !GameDragRegionView.holds(point)
                 else { return false }
                 return !touch.startsInView { view in
                     (view is PKCanvasView && view.isUserInteractionEnabled) || view is MKMapView
@@ -436,7 +445,7 @@ private struct EdgeSwipe: UIViewRepresentable {
                 // A screen pushed inside the chat, such as a report, keeps the system's back swipe.
                 let stack = sequence(first: view as UIResponder, next: \.next)
                     .first { $0 is UINavigationController } as? UINavigationController
-                return point.x <= window.bounds.minX + Self.edgeWidth && (stack?.viewControllers.count ?? 0) <= 1
+                return point.x <= window.bounds.minX + reach && (stack?.viewControllers.count ?? 0) <= 1
             }
         }
 
