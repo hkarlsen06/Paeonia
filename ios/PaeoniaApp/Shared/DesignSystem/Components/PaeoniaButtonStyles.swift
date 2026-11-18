@@ -112,6 +112,14 @@ struct PaeoniaSecondaryButtonStyle: ButtonStyle {
 
 struct PaeoniaQuietButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
+    private let isLoading: Bool
+
+    /// Same loading behavior as `PaeoniaPrimaryButtonStyle`.
+    init(isLoading: Bool = false) {
+        self.isLoading = isLoading
+    }
+
+    private var showsEnabled: Bool { isEnabled || isLoading }
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -122,17 +130,19 @@ struct PaeoniaQuietButtonStyle: ButtonStyle {
             .padding(.vertical, PaeoniaSpacing.space8)
             .frame(minWidth: PaeoniaSpacing.compactButtonHeight, minHeight: PaeoniaSpacing.compactButtonHeight)
             .foregroundStyle(.paeoniaTextSecondary)
+            .modifier(PaeoniaButtonLoadingModifier(isLoading: isLoading, spinnerColor: .paeoniaTextSecondary))
             // Tertiary text is too close to secondary to read as off. A disabled
             // control needs no contrast, so it dims instead.
-            .opacity(isEnabled ? 1 : 0.4)
+            .opacity(showsEnabled ? 1 : 0.4)
             .background(backgroundColor(isPressed: configuration.isPressed))
             .clipShape(Capsule(style: .continuous))
             .contentShape(Capsule(style: .continuous))
             .animation(PaeoniaMotion.buttonPress, value: configuration.isPressed)
+            .allowsHitTesting(!isLoading)
     }
 
     private func backgroundColor(isPressed: Bool) -> Color {
-        if !isEnabled {
+        if !showsEnabled {
             return .clear
         }
 
