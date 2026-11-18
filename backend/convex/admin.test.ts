@@ -252,4 +252,54 @@ describe("reports and correction requests", () => {
     expect(await admin.as.query(api.admin.list_open_reports, {})).toEqual([]);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
+
+  test("only an admin marks a case as handled, which closes it and is logged", async () => {
+    const t = newTest();
+    const admin = await createAdmin(t);
+    const { couple, reportId, requestId } = await fileBoth(t);
+
+    for (const user of [couple.first, couple.second]) {
+      await expectFail(user.as.mutation(api.admin.close_report, { p_report_id: reportId }), "42501", "admin access required");
+      await expectFail(
+        user.as.mutation(api.admin.close_correction_request, { p_request_id: requestId }),
+        "42501",
+        "admin access required",
+      );
+    }
+    await expectFail(t.mutation(api.admin.close_report, { p_report_id: reportId }), "42501");
+    await expectFail(t.mutation(api.admin.close_correction_request, { p_request_id: requestId }), "42501");
+
+    expect(await admin.as.mutation(api.admin.close_report, { p_report_id: reportId })).toEqual({ changed: true });
+    expect(await admin.as.mutation(api.admin.close_correction_request, { p_request_id: requestId })).toEqual({ changed: true });
+    // A second tap changes nothing and logs nothing.
+    expect(await admin.as.mutation(api.admin.close_report, { p_report_id: reportId })).toEqual({ changed: false });
+    expect(await admin.as.mutation(api.admin.close_correction_request, { p_request_id: requestId })).toEqual({ changed: false });
+
+    expect(await admin.as.query(api.admin.list_open_reports, {})).toEqual([]);
+    expect(await admin.as.query(api.admin.list_open_correction_requests, {})).toEqual([]);
+    const timestamp = await transactionClock(t);
+    const stored = await t.run(async (ctx) => ({
+      report: (await ctx.db.query("content_reports").first())!,
+      snapshot: (await ctx.db.query("report_snapshots").first())!,
+      request: (await ctx.db.query("privacy_requests").first())!,
+    }));
+    // The closing times are what the three-year cleanup counts from, and the snapshot gets its 180 days.
+    expect(stored.report).toMatchObject({ status: "rejected", resolved_at: timestamp(NOW) });
+    expect(stored.snapshot.delete_after).toBeDefined();
+    expect(stored.request).toMatchObject({ status: "completed", completed_at: timestamp(NOW), updated_at: timestamp(NOW) });
+
+    // Each entry names the person who sent the case, so the reported person never exports it.
+    const log = await admin.as.query(api.admin.get_audit_log, {});
+    expect(log.map((entry) => [entry.action, entry.target_user_id, entry.case_id, entry.admin_user_id]).sort()).toEqual(
+      [
+        ["report_closed", couple.second.userId, reportId, admin.userId],
+        ["correction_request_closed", couple.first.userId, requestId, admin.userId],
+      ].sort(),
+    );
+    // A deletion request is closed by its own job, never from the admin list.
+    const deletionId = newUuid();
+    await couple.second.as.mutation(api.identity.create_privacy_request, { p_id: deletionId, p_kind: "deletion" });
+    await expectFail(admin.as.mutation(api.admin.close_correction_request, { p_request_id: deletionId }), "P0002");
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
 });

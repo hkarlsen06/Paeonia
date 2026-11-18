@@ -171,6 +171,7 @@ const NOTIFICATION_CATEGORY: Record<
   subscription_ending: "account",
   subscription_running: "account",
   admin_case_opened: "account",
+  breach_notice: "account",
   question_time_reminder: "reminder",
   date_reminder: "reminder",
   streak_reminder: "reminder",

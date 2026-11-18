@@ -1,6 +1,6 @@
 import type { Doc } from "../_generated/dataModel";
-import { findCurrentCouple, findRelationshipPairId, hasActiveRelationshipBlock } from "./access";
-import { type ReaderCtx, type WriterCtx, withUpdatedAt } from "./db";
+import { findCurrentCouple, findRelationshipPairId, hasRelationshipBlock } from "./access";
+import { getByUuid, type ReaderCtx, type WriterCtx, withUpdatedAt } from "./db";
 import { nameForViewer } from "./partnerNames";
 import { createRelationshipSyncEvent } from "./syncEvents";
 
@@ -38,15 +38,18 @@ export async function findRestorableCouple(ctx: ReaderCtx, pairId: string, now: 
     return null;
   }
   if (await pairHasSafetyConcern(ctx, pairId)) return null;
-  for (const member of await membersOf(ctx, couple.id)) {
-    if (!(await isActiveAccount(ctx, member.user_id))) return null;
+  // Both people of the pair, because a deleted account no longer has a member row to check.
+  const pair = await getByUuid(ctx, "relationship_pairs", pairId);
+  if (!pair) return null;
+  for (const userId of [pair.user_low_id, pair.user_high_id]) {
+    if (!(await isActiveAccount(ctx, userId))) return null;
   }
   return couple;
 }
 
 /** True when the pair has a block, a report or a safety warning, at any time. */
 async function pairHasSafetyConcern(ctx: ReaderCtx, pairId: string): Promise<boolean> {
-  if (await hasActiveRelationshipBlock(ctx, pairId)) return true;
+  if (await hasRelationshipBlock(ctx, pairId)) return true;
   const report = await ctx.db
     .query("content_reports")
     .withIndex("by_pair_id", (q) => q.eq("pair_id", pairId))

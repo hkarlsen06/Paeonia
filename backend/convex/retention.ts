@@ -2,7 +2,9 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { internalMutation, type MutationCtx } from "./_generated/server";
+import { getByUuid } from "./lib/db";
 import { optionalTimestampArg } from "./lib/ids";
+import { deleteCoupleRecords, deletePairingInvite, pairIsHeld } from "./lib/relationshipRecords";
 import { addDaysToDate, addDaysToInstant, localDateOf, nowIso, startOfLocalDay } from "./lib/time";
 import { TOGETHER_DAYS_KEPT } from "./lib/together";
 
@@ -81,23 +83,40 @@ export const delete_user_client_operations = internalMutation({
 
 // ---- Records with a set time ----
 //
-// The privacy policy names how long these stay. A report, what was done about it, the safety
-// warning it left on the pair and a privacy request stay three years after the case closed.
-// A purchase record stays five years after the end of the year of the purchase, which is what
-// bokføringsloven § 13 asks for. A block has no time limit: it stays until the person who made it
-// deletes their account (`accountDeletion.ts`).
+// Every record here has an end. The privacy policy names the first three.
+//
+// - A report, what was done about it, the safety warning it left on the pair and a privacy
+//   request stay three years after the case closed. A finished account deletion is such a
+//   request, and its job and the `users` row the account left go with it. The admin log stays
+//   three years too.
+// - A purchase record stays five years after the end of the year of the purchase, which is what
+//   bokføringsloven § 13 asks for.
+// - A block stays until the person who made it takes it back (`unblock_pair`) or deletes their
+//   account (`accountDeletion.ts`).
+// - An entitlement grant stays a year after it expired or was revoked. A grant is access given
+//   without a payment, so it is no purchase record and the accounting law does not cover it.
+// - An invite that was used, replaced or ran out stays 30 days after its expiry time.
+// - A purged couple's rows and its pair go once no block, safety warning or report stands on
+//   the pair (`lib/relationshipRecords.ts`).
 
 const CASE_RETENTION_YEARS = 3;
 const PURCHASE_RETENTION_YEARS = 5;
+const GRANT_RETENTION_YEARS = 1;
 const RECORD_PAGE_SIZE = 100;
+/** A pair costs up to a few dozen database calls when its couples go, so its pages are smaller. */
+const PAIR_PAGE_SIZE = 25;
 /** The wait between pages, so a long backlog stays under the server's write limit. */
 const RECORD_PAGE_WAIT_MS = 1000;
 
+function yearsBefore(now: string, years: number): string {
+  const cutoff = new Date(now);
+  cutoff.setUTCFullYear(cutoff.getUTCFullYear() - years);
+  return cutoff.toISOString();
+}
+
 /** Cases closed before this instant are past their three years. */
 export function closedCaseCutoff(now: string): string {
-  const cutoff = new Date(now);
-  cutoff.setUTCFullYear(cutoff.getUTCFullYear() - CASE_RETENTION_YEARS);
-  return cutoff.toISOString();
+  return yearsBefore(now, CASE_RETENTION_YEARS);
 }
 
 /**
@@ -157,8 +176,10 @@ async function pruneClosedReports(ctx: MutationCtx, now: string, page: PageArgs)
 }
 
 /**
- * A finished deletion request stays with its `account_deletion_jobs` row, which is what keeps a
- * deleted account from being set up again.
+ * A finished account deletion goes with its job and the `users` row the account left. That row
+ * and the job kept a token from before the deletion from setting the account up again. A Clerk
+ * token lasts 15 minutes and the Clerk user is deleted, so three years later nothing can sign in
+ * as that user. A deletion whose job is still open stays, because its account is not gone yet.
  */
 function pruneClosedPrivacyRequests(status: "completed" | "rejected" | "cancelled") {
   return async (ctx: MutationCtx, now: string, page: PageArgs): Promise<Page> => {
@@ -172,7 +193,12 @@ function pruneClosedPrivacyRequests(status: "completed" | "rejected" | "cancelle
         .query("account_deletion_jobs")
         .withIndex("by_request_id", (q) => q.eq("request_id", request.id))
         .first();
-      if (job) continue;
+      if (job) {
+        if (job.status !== "completed") continue;
+        const user = await getByUuid(ctx, "users", job.user_id);
+        if (user) await ctx.db.delete(user._id);
+        await ctx.db.delete(job._id);
+      }
       const events = await ctx.db
         .query("privacy_request_events")
         .withIndex("by_request_id_created_at", (q) => q.eq("request_id", request.id))
@@ -224,7 +250,81 @@ async function pruneOldStorePayloads(ctx: MutationCtx, now: string, page: PageAr
   return result;
 }
 
-/** In order: a purchase and a notice go before the signed data they point to. */
+async function pruneOldAdminLog(ctx: MutationCtx, now: string, page: PageArgs): Promise<Page> {
+  const result = await ctx.db
+    .query("admin_audit_log")
+    .withIndex("by_created_at", (q) => q.lt("created_at", closedCaseCutoff(now)))
+    .paginate(page);
+  for (const row of result.page) await ctx.db.delete(row._id);
+  return result;
+}
+
+/** A live grant stays. One that ran out or was taken back goes a year after that. */
+function pruneEndedGrants(status: "expired" | "revoked") {
+  return async (ctx: MutationCtx, now: string, page: PageArgs): Promise<Page> => {
+    const cutoff = yearsBefore(now, GRANT_RETENTION_YEARS);
+    const result =
+      status === "expired"
+        ? await ctx.db
+            .query("entitlement_grants")
+            .withIndex("by_status_expires_at", (q) => q.eq("status", status).gt("expires_at", "").lt("expires_at", cutoff))
+            .paginate(page)
+        : await ctx.db
+            .query("entitlement_grants")
+            .withIndex("by_status_revoked_at", (q) => q.eq("status", status).gt("revoked_at", "").lt("revoked_at", cutoff))
+            .paginate(page);
+    for (const row of result.page) await ctx.db.delete(row._id);
+    return result;
+  };
+}
+
+/**
+ * An invite that is no longer pending goes 30 days after its expiry time, which is at most 61
+ * days after it was used or replaced. By then the phone's stored operation for it is gone too
+ * (`prune_expired_rows`), and a phone that still asks about it reads `not_found`.
+ */
+function pruneFinishedInvites(status: "accepted" | "revoked" | "expired") {
+  return async (ctx: MutationCtx, now: string, page: PageArgs): Promise<Page> => {
+    const cutoff = addDaysToInstant(now, -RETENTION_DAYS);
+    const result = await ctx.db
+      .query("pairing_invites")
+      .withIndex("by_status_expires_at", (q) => q.eq("status", status).lt("expires_at", cutoff))
+      .paginate(page);
+    for (const invite of result.page) await deletePairingInvite(ctx, invite);
+    return result;
+  };
+}
+
+/**
+ * Walks every pair. A pair that no block, safety warning or report holds loses its purged
+ * couples with their member rows, sync events and invites, and then goes itself once it has no
+ * couple left. A purged couple is at least 30 days past its end, its content is deleted, and it
+ * can no longer come back. A phone that was away the whole time learns that the couple is gone
+ * from its access snapshot, not from the sync events.
+ */
+async function pruneFinishedRelationships(ctx: MutationCtx, _now: string, page: PageArgs): Promise<Page> {
+  const result = await ctx.db.query("relationship_pairs").paginate({ ...page, numItems: PAIR_PAGE_SIZE });
+  for (const pair of result.page) {
+    if (await pairIsHeld(ctx, pair.id)) continue;
+    const couples = await ctx.db
+      .query("couples")
+      .withIndex("by_pair_id_status", (q) => q.eq("pair_id", pair.id))
+      .collect();
+    let couplesLeft = couples.length;
+    for (const couple of couples) {
+      if (couple.purged_at === undefined) continue;
+      await deleteCoupleRecords(ctx, couple);
+      couplesLeft -= 1;
+    }
+    if (couplesLeft === 0) await ctx.db.delete(pair._id);
+  }
+  return result;
+}
+
+/**
+ * In order: a purchase and a notice go before the signed data they point to, and the reports go
+ * before the pairs they hold.
+ */
 const RECORD_STEPS = [
   pruneClosedReports,
   pruneClosedPrivacyRequests("completed"),
@@ -234,6 +334,13 @@ const RECORD_STEPS = [
   pruneOldPurchases("streak_restorations"),
   pruneOldStoreNotices,
   pruneOldStorePayloads,
+  pruneOldAdminLog,
+  pruneEndedGrants("expired"),
+  pruneEndedGrants("revoked"),
+  pruneFinishedInvites("accepted"),
+  pruneFinishedInvites("revoked"),
+  pruneFinishedInvites("expired"),
+  pruneFinishedRelationships,
 ];
 
 /**

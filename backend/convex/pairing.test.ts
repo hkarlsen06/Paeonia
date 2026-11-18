@@ -480,7 +480,7 @@ describe("accept_pairing_invite", () => {
     ).toBe("pairing invite is not available");
     await t.run(async (ctx) => {
       const block = (await ctx.db.query("relationship_blocks").first())!;
-      await ctx.db.patch(block._id, { revoked_at: NOW, revoked_by_user_id: owner.userId, revoke_reason: "user_unblocked" });
+      await ctx.db.delete(block._id);
     });
     const joined = await guest.as.mutation(api.pairing.accept_pairing_invite, { p_invite_code: "ABC123", ...operation() });
     expect(joined).toEqual({ couple_id: expect.any(String), refusal: null });

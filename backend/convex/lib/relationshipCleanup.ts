@@ -9,7 +9,7 @@ import {
   deleteCoupleTogetherDays,
   deleteLatestLocationsForCouple,
 } from "./relationshipEnd";
-import { withTouch, withUpdatedAt, type WriterCtx } from "./db";
+import { getByUuid, withTouch, withUpdatedAt, type WriterCtx } from "./db";
 import { deleteCoupleFavorites } from "./favoriteRows";
 import { deleteCoupleReactions } from "./reactions";
 import { tombstoneReportTargets } from "./reports";
@@ -128,18 +128,19 @@ async function coupleInstances(ctx: WriterCtx, coupleId: string) {
   return { days, instances };
 }
 
-/** The members' answers to the couple's instances. An answer is always by a member of its couple. */
-async function coupleAnswers(ctx: WriterCtx, coupleId: string, instances: Doc<"daily_question_instances">[]) {
+/**
+ * The two partners' answers to the couple's instances. An answer is always by one of the couple's
+ * two people. They are read from the pair, because a partner who deleted their account has no
+ * member row left and their answers must still be hidden.
+ */
+async function coupleAnswers(ctx: WriterCtx, couple: Doc<"couples">, instances: Doc<"daily_question_instances">[]) {
   const instanceIds = new Set(instances.map((instance) => instance.id));
-  const members = await ctx.db
-    .query("couple_members")
-    .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId))
-    .collect();
+  const pair = await getByUuid(ctx, "relationship_pairs", couple.pair_id);
   const answers: Doc<"daily_question_answers">[] = [];
-  for (const member of members) {
+  for (const userId of pair ? [pair.user_low_id, pair.user_high_id] : []) {
     const own = await ctx.db
       .query("daily_question_answers")
-      .withIndex("by_user_id_created_at", (q) => q.eq("user_id", member.user_id))
+      .withIndex("by_user_id_created_at", (q) => q.eq("user_id", userId))
       .collect();
     answers.push(...own.filter((answer) => instanceIds.has(answer.instance_id)));
   }
@@ -181,7 +182,7 @@ export async function cleanupCoupleContent(
   }
 
   const { instances } = await coupleInstances(ctx, couple.id);
-  for (const answer of await coupleAnswers(ctx, couple.id, instances)) {
+  for (const answer of await coupleAnswers(ctx, couple, instances)) {
     if (!needsHiding(answer)) continue;
     if (budget.left <= 0) return unfinished();
     await ctx.db.patch(answer._id, withUpdatedAt(softDeleteFields(answer, now)));

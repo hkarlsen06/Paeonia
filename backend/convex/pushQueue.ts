@@ -175,6 +175,8 @@ async function freshTitle(
   device: Doc<"user_devices">,
 ): Promise<string | null> {
   if (row.apns_push_type !== "alert" || row.title === undefined) return null;
+  // An operator wrote this title, and it holds no name that could have changed.
+  if (row.kind === "breach_notice") return row.title;
   return await notificationAlertTitle(ctx, device.user_id, row.kind, row.payload, device.locale);
 }
 

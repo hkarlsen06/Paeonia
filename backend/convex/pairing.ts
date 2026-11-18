@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
-import { findCurrentCouple, findRelationshipPairId, getOrCreateRelationshipPair, hasActiveRelationshipBlock } from "./lib/access";
+import { findCurrentCouple, findRelationshipPairId, getOrCreateRelationshipPair, hasRelationshipBlock } from "./lib/access";
 import { requireUserId } from "./lib/auth";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { runClientOperation } from "./lib/clientOperations";
@@ -281,7 +281,7 @@ export const preview_pairing_invite = mutation({
     }
 
     const pairId = await findRelationshipPairId(ctx, userId, invite.created_by_user_id);
-    if ((pairId && (await hasActiveRelationshipBlock(ctx, pairId))) || (await reservedForSomeoneElse(ctx, invite, userId))) {
+    if ((pairId && (await hasRelationshipBlock(ctx, pairId))) || (await reservedForSomeoneElse(ctx, invite, userId))) {
       await recordAttempt(ctx, userId, prefix, false);
       return [];
     }
@@ -467,7 +467,7 @@ export const accept_pairing_invite = mutation({
       }
       const knownPairId = await findRelationshipPairId(ctx, invite.created_by_user_id, userId);
       // The same answer as for a code that is gone, so a blocked person is not told about the block.
-      if (knownPairId && (await hasActiveRelationshipBlock(ctx, knownPairId))) {
+      if (knownPairId && (await hasRelationshipBlock(ctx, knownPairId))) {
         return await refuse("pairing invite is not available");
       }
 

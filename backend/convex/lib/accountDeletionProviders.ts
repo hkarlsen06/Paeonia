@@ -104,6 +104,37 @@ export async function deleteClerkUser(clerkUserId: string): Promise<void> {
   }
 }
 
+const CLERK_USER_PAGE_SIZE = 500;
+
+type ClerkUser = { primary_email_address_id?: unknown; email_addresses?: { id?: unknown; email_address?: unknown }[] };
+
+/**
+ * The email address of every Clerk user, their primary one when they have several, and how many
+ * users have none. Clerk holds the addresses: the `users` table only has one when the session
+ * token carried it. Throws when Clerk cannot be asked, so a short list is never taken for the
+ * whole one.
+ */
+export async function fetchClerkEmailAddresses(): Promise<{ emails: string[]; withoutEmail: number }> {
+  const emails = new Set<string>();
+  let withoutEmail = 0;
+  for (let offset = 0; ; offset += CLERK_USER_PAGE_SIZE) {
+    const response = await fetch(`${CLERK_API}/users?limit=${CLERK_USER_PAGE_SIZE}&offset=${offset}&order_by=%2Bcreated_at`, {
+      headers: clerkHeaders(),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!response.ok) throw new ProviderError(`auth_http_${response.status}`);
+    const users = (await response.json()) as ClerkUser[];
+    for (const user of users) {
+      const addresses = user.email_addresses ?? [];
+      const primary = addresses.find((address) => address.id === user.primary_email_address_id) ?? addresses[0];
+      if (typeof primary?.email_address === "string" && primary.email_address) emails.add(primary.email_address);
+      else withoutEmail += 1;
+    }
+    if (users.length < CLERK_USER_PAGE_SIZE) break;
+  }
+  return { emails: [...emails].sort(), withoutEmail };
+}
+
 // ---- Sign in with Apple ----
 
 function base64Url(bytes: Uint8Array): string {

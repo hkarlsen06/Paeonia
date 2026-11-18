@@ -1,4 +1,5 @@
 import type { WriterCtx } from "./db";
+import { pairPartnerOf } from "./access";
 import { getByUuid } from "./db";
 import { fail } from "./errors";
 import { endRelationshipForPair } from "./relationshipEnd";
@@ -22,7 +23,7 @@ export async function addPairSafetyWarningFlag(ctx: WriterCtx, pairId: string, s
 }
 
 /**
- * Inserts the active block for (pair, blockedBy, blocked) or keeps the existing
+ * Inserts the block for (pair, blockedBy, blocked) or keeps the existing
  * one, filling in `source_report_id` when it was empty. Includes the
  * `assert_relationship_block_pair_members` trigger check. Returns the block id.
  */
@@ -41,18 +42,17 @@ export async function upsertRelationshipBlock(
   if (!(members.includes(blockedByUserId) && members.includes(blockedUserId) && blockedByUserId !== blockedUserId)) {
     return fail("23514", "relationship block users must match the pair");
   }
-  const rows = await ctx.db
+  const existing = await ctx.db
     .query("relationship_blocks")
     .withIndex("by_pair_id_blocked_by_user_id_blocked_user_id", (q) =>
       q.eq("pair_id", pairId).eq("blocked_by_user_id", blockedByUserId).eq("blocked_user_id", blockedUserId),
     )
-    .collect();
-  const active = rows.find((row) => row.revoked_at === undefined);
-  if (active) {
-    if (active.source_report_id === undefined && sourceReportId !== undefined) {
-      await ctx.db.patch(active._id, { source_report_id: sourceReportId });
+    .first();
+  if (existing) {
+    if (existing.source_report_id === undefined && sourceReportId !== undefined) {
+      await ctx.db.patch(existing._id, { source_report_id: sourceReportId });
     }
-    return active.id;
+    return existing.id;
   }
   const id = newUuid();
   await ctx.db.insert("relationship_blocks", {
@@ -90,13 +90,11 @@ export async function blockRelationship(
     .collect();
   let best: { pairId: string; active: boolean; createdAt: string } | null = null;
   for (const membership of memberships) {
-    const blockedMember = await ctx.db
-      .query("couple_members")
-      .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", membership.couple_id).eq("user_id", blockedUserId))
-      .unique();
-    if (!blockedMember) continue;
     const couple = await getByUuid(ctx, "couples", membership.couple_id);
     if (!couple) continue;
+    // The pair still names a partner whose own member row went with their account.
+    const pair = await getByUuid(ctx, "relationship_pairs", couple.pair_id);
+    if (pairPartnerOf(pair, currentUserId) !== blockedUserId) continue;
     const active = couple.status === "active";
     if (!active && !(couple.status === "ended" && couple.delete_after !== undefined && couple.delete_after > now)) {
       continue;

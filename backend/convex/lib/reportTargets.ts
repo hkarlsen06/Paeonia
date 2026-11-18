@@ -3,7 +3,7 @@ import type { Doc } from "../_generated/dataModel";
 import { backgroundWorkpool } from "./backgroundWorkpool";
 import type { ReaderCtx, WriterCtx } from "./db";
 import { getByUuid } from "./db";
-import { canAccessCoupleContent } from "./access";
+import { canAccessCoupleContent, pairPartnerOf } from "./access";
 import { fail } from "./errors";
 import { newUuid } from "./ids";
 import { addMs, nowIso } from "./time";
@@ -37,7 +37,8 @@ export async function canReportRelationshipContent(
 /**
  * Port of `internal.find_reportable_relationship_between`. The newest couple
  * both users belong to, active first, then ended couples still inside the
- * retention window.
+ * retention window. The reported person is read from the pair, so someone who
+ * deleted their account can still be reported until the couple is cleaned up.
  */
 export async function findReportableRelationshipBetween(
   ctx: ReaderCtx,
@@ -52,13 +53,10 @@ export async function findReportableRelationshipBetween(
   let best: Doc<"couples"> | null = null;
   for (const reporter of memberships) {
     if (!REPORTABLE_MEMBER_STATUSES.includes(reporter.status)) continue;
-    const reported = await ctx.db
-      .query("couple_members")
-      .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", reporter.couple_id).eq("user_id", reportedUserId))
-      .unique();
-    if (!reported || !REPORTABLE_MEMBER_STATUSES.includes(reported.status)) continue;
     const couple = await getByUuid(ctx, "couples", reporter.couple_id);
     if (!couple || !isReportableCouple(couple, now)) continue;
+    const pair = await getByUuid(ctx, "relationship_pairs", couple.pair_id);
+    if (pairPartnerOf(pair, reporterUserId) !== reportedUserId) continue;
     const better =
       !best ||
       (couple.status === "active" && best.status !== "active") ||

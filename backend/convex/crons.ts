@@ -106,8 +106,9 @@ crons.interval("expire-stale-entitlements", { minutes: 5 }, internal.storekit.ex
 // New in Convex: client_operations and both push outboxes had no cleanup. Keeps 30 days. See retention.ts.
 crons.interval("prune-expired-rows", { hours: 1 }, internal.retention.prune_expired_rows, {});
 
-// New in Convex: deletes reports and privacy requests three years after they closed, and purchase
-// records five years after the year of the purchase. Daily, paged. See retention.ts.
+// New in Convex: deletes reports, privacy requests and the admin log after three years, purchase
+// records five years after the year of the purchase, ended grants after one year, finished
+// invites, and the rows of purged couples. Daily, paged. See retention.ts.
 crons.cron("prune-kept-records", "40 3 * * *", internal.retention.prune_kept_records, {});
 
 // New in Convex: PostHog keeps usage statistics for years and cannot delete them by age, so this

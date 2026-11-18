@@ -87,15 +87,20 @@ export default defineSchema({
 
   // ---- internal schema ----
 
-  // What admins and operator commands did, newest first in the admin screen.
+  // What admins and operator commands did, newest first in the admin screen. Kept three years
+  // (`retention.ts`).
   // FK: admin_user_id, target_user_id -> users (kept after a user is deleted).
   admin_audit_log: defineTable({
     id: uuid,
-    action: literals("user_banned", "user_unbanned"),
+    action: literals("user_banned", "user_unbanned", "report_closed", "correction_request_closed"),
     // Missing for an operator command run with `npx convex run`.
     admin_user_id: optUuid,
     operator_identifier: optString,
+    // The banned or unbanned person. For a closed case, the person who sent the report or the
+    // request, never the person it is about, because the target can export this row.
     target_user_id: uuid,
+    // The report or privacy request a closing entry is about.
+    case_id: optUuid,
     reason: optString,
     created_at: ts,
   })
@@ -165,6 +170,7 @@ export default defineSchema({
 
   // FK: product_id -> subscription_products restrict; source_review_session_id -> review_access_sessions set null
   // Written only by entitlementGrants.ts, the cron that expires grants, and account deletion.
+  // Deleted a year after it expired or was revoked (`retention.ts`).
   entitlement_grants: defineTable({
     id: uuid,
     user_id: uuid,
@@ -188,6 +194,7 @@ export default defineSchema({
     .index("by_product_id", ["product_id"])
     .index("by_source_review_session_id", ["source_review_session_id"])
     .index("by_status_expires_at", ["status", "expires_at"])
+    .index("by_status_revoked_at", ["status", "revoked_at"])
     .index("by_user_id_status_expires_at", ["user_id", "status", "expires_at"]),
 
   // FK: report_id -> content_reports cascade
@@ -1518,7 +1525,7 @@ export default defineSchema({
     .index("by_created_by_user_id", ["created_by_user_id"]),
 
   // FK: pair_id -> relationship_pairs restrict; source_report_id -> content_reports set null.
-  // One active block per (pair_id, blocked_by_user_id, blocked_user_id).
+  // One block per (pair_id, blocked_by_user_id, blocked_user_id). An unblock deletes the row.
   relationship_blocks: defineTable({
     id: uuid,
     pair_id: uuid,
@@ -1526,12 +1533,9 @@ export default defineSchema({
     blocked_user_id: uuid,
     source_report_id: optUuid,
     created_at: ts,
-    revoked_at: optTs,
-    revoked_by_user_id: optUuid,
-    revoke_reason: v.optional(literals("user_unblocked", "moderation_unblocked", "admin_correction")),
   })
     .index("by_uuid", ["id"])
-    .index("by_pair_id_revoked_at", ["pair_id", "revoked_at"])
+    .index("by_pair_id", ["pair_id"])
     .index("by_pair_id_blocked_by_user_id_blocked_user_id", [
       "pair_id",
       "blocked_by_user_id",

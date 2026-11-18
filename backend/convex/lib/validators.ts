@@ -91,6 +91,7 @@ export const notificationKind = literals(
   "subscription_ending",
   "subscription_running",
   "admin_case_opened",
+  "breach_notice",
   "memory_created",
   "story_posted",
   "thread_message_sent",

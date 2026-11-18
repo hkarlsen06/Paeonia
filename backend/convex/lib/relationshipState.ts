@@ -1,4 +1,5 @@
 import type { Doc } from "../_generated/dataModel";
+import { pairPartnerOf } from "./access";
 import { getByUuid, type ReaderCtx } from "./db";
 import { accountNameOf } from "./partnerNames";
 
@@ -26,15 +27,12 @@ export async function getCurrentRelationshipState(ctx: ReaderCtx, userId: string
   const best = candidates[0];
   if (!best) return null;
 
-  const others = await ctx.db
-    .query("couple_members")
-    .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", best.couple.id))
-    .collect();
-  const partner = others.find((member) => member.user_id !== userId);
-  const profile = partner
+  // From the pair, because the partner's own member row goes when they delete their account.
+  const partnerUserId = pairPartnerOf(await getByUuid(ctx, "relationship_pairs", best.couple.pair_id), userId);
+  const profile = partnerUserId
     ? await ctx.db
         .query("profiles")
-        .withIndex("by_user_id", (q) => q.eq("user_id", partner.user_id))
+        .withIndex("by_user_id", (q) => q.eq("user_id", partnerUserId))
         .unique()
     : null;
   const visible = profile?.moderation_status === "visible";
@@ -46,7 +44,7 @@ export async function getCurrentRelationshipState(ctx: ReaderCtx, userId: string
     member_status: best.member.status,
     // This person joined with the partner's invite code.
     accepted_invite: best.member.role === "partner",
-    partner_user_id: partner?.user_id ?? null,
+    partner_user_id: partnerUserId,
     // The partner's own name and the viewer's nickname for them travel separately. The app joins them
     // in `PartnerName`, so the settings screen can show both. Push copy uses `nameForViewer`.
     partner_account_name: visible ? accountNameOf(profile) : null,

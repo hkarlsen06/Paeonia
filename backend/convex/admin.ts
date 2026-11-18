@@ -1,13 +1,24 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
-import { internalMutation, internalQuery, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
+import {
+  internalAction,
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+  type MutationCtx,
+  type QueryCtx,
+} from "./_generated/server";
 import { findCurrentCouple, resolveUserEntitlement } from "./lib/access";
+import { fetchClerkEmailAddresses } from "./lib/accountDeletionProviders";
 import { isAdminUser } from "./lib/admins";
 import { getCurrentUserId } from "./lib/auth";
 import { banUser, unbanUser } from "./lib/bans";
 import { getByUuid, withTouch } from "./lib/db";
 import { fail } from "./lib/errors";
 import { newUuid, uuidArg } from "./lib/ids";
+import { insertNotificationOutbox, listActiveUserDevices, notificationLocaleLanguage } from "./lib/notifications";
 import { nowIso } from "./lib/time";
 
 // The admin area. `lib/admins.ts` says who is an admin. Every function here checks it on
@@ -57,6 +68,7 @@ async function writeAudit(
     adminUserId?: string;
     operatorIdentifier?: string;
     targetUserId: string;
+    caseId?: string;
     reason?: string;
   },
 ) {
@@ -66,6 +78,7 @@ async function writeAudit(
     admin_user_id: entry.adminUserId,
     operator_identifier: entry.operatorIdentifier,
     target_user_id: entry.targetUserId,
+    case_id: entry.caseId,
     reason: entry.reason,
     created_at: nowIso(),
   });
@@ -230,6 +243,7 @@ export const get_audit_log = query({
         operator_identifier: entry.operator_identifier ?? null,
         target_user_id: entry.target_user_id,
         target_display_name: await displayName(ctx, entry.target_user_id),
+        case_id: entry.case_id ?? null,
         reason: entry.reason ?? null,
         created_at: entry.created_at,
       })),
@@ -300,6 +314,89 @@ export const list_open_correction_requests = query({
         requested_at: request.requested_at,
       })),
     );
+  },
+});
+
+/**
+ * Marks an open report as handled when it needs no action on content or was dealt with another
+ * way. It applies the `dismiss` moderation action (`moderation.ts`), so the report leaves the open
+ * list, its three years start now and its snapshot gets its 180 days. Returns `{ changed: false }`
+ * for a report that was resolved before.
+ */
+export const close_report = mutation({
+  args: { p_report_id: v.string() },
+  handler: async (ctx, args) => {
+    const adminUserId = await requireAdmin(ctx);
+    const report = await getByUuid(ctx, "content_reports", uuidArg(args.p_report_id));
+    if (!report) return fail("P0002", "report not found");
+    if (report.resolved_at !== undefined) return { changed: false };
+    await ctx.runMutation(internal.moderation.apply_report_moderation_action, {
+      p_report_id: report.id,
+      p_action_kind: "dismiss",
+      p_operator_identifier: `admin:${adminUserId}`,
+    });
+    await writeAudit(ctx, {
+      action: "report_closed",
+      adminUserId,
+      targetUserId: report.reporter_user_id,
+      caseId: report.id,
+    });
+    return { changed: true };
+  },
+});
+
+/**
+ * Closes an open correction request as completed or rejected, for the admin screen and the
+ * operator command alike. `message` is what the person reads under the request in the app. The
+ * person exports the request's events, so who closed it is named in the audit log only. Returns
+ * false for a request that is not an open correction request.
+ */
+async function resolveCorrectionRequest(
+  ctx: MutationCtx,
+  request: Doc<"privacy_requests"> | null,
+  outcome: "completed" | "rejected",
+  message: string | undefined,
+  closedBy: { adminUserId: string } | { operatorIdentifier: string },
+): Promise<boolean> {
+  const isOpen = request !== null && (OPEN_CORRECTION_STATUSES as readonly string[]).includes(request.status);
+  if (!request || request.request_kind !== "correction" || !isOpen) return false;
+  const now = nowIso();
+  await ctx.db.patch(
+    request._id,
+    withTouch(request, {
+      status: outcome,
+      completed_at: outcome === "completed" ? now : undefined,
+      visible_status_message: message,
+    }),
+  );
+  await ctx.db.insert("privacy_request_events", {
+    id: newUuid(),
+    request_id: request.id,
+    event_kind: "correction_resolved",
+    metadata: { outcome },
+    created_at: now,
+  });
+  await writeAudit(ctx, {
+    action: "correction_request_closed",
+    ...closedBy,
+    targetUserId: request.user_id,
+    caseId: request.id,
+  });
+  return true;
+}
+
+/**
+ * Marks an open correction request as handled, after the admin corrected what was asked or
+ * answered the person. It leaves the open list, and its three years start now. Returns
+ * `{ changed: false }` for a request that was closed before.
+ */
+export const close_correction_request = mutation({
+  args: { p_request_id: v.string() },
+  handler: async (ctx, args) => {
+    const adminUserId = await requireAdmin(ctx);
+    const request = await getByUuid(ctx, "privacy_requests", uuidArg(args.p_request_id));
+    if (request?.request_kind !== "correction") return fail("P0002", "correction request not found");
+    return { changed: await resolveCorrectionRequest(ctx, request, "completed", undefined, { adminUserId }) };
   },
 });
 
@@ -423,24 +520,93 @@ export const operator_resolve_correction_request = internalMutation({
     if (operator === "") fail("23514", "operator identifier is required");
     if (message !== undefined && Array.from(message).length > 500) fail("23514", "status message is too long");
     const request = await getByUuid(ctx, "privacy_requests", uuidArg(args.p_request_id));
-    const isOpen = request !== null && (OPEN_CORRECTION_STATUSES as readonly string[]).includes(request.status);
-    if (!request || request.request_kind !== "correction" || !isOpen) return false;
-    const now = nowIso();
-    await ctx.db.patch(
-      request._id,
-      withTouch(request, {
-        status: args.p_outcome,
-        completed_at: args.p_outcome === "completed" ? now : undefined,
-        visible_status_message: message,
-      }),
-    );
-    await ctx.db.insert("privacy_request_events", {
-      id: newUuid(),
-      request_id: request.id,
-      event_kind: "correction_resolved",
-      metadata: { outcome: args.p_outcome, operator },
-      created_at: now,
-    });
-    return true;
+    return await resolveCorrectionRequest(ctx, request, args.p_outcome, message, { operatorIdentifier: operator });
+  },
+});
+
+// ---- Breach notice (`npx convex run`) ----
+//
+// GDPR Art. 34 asks that people are told without undue delay when a breach puts them at high
+// risk. `operator_send_breach_notice` reaches every phone that takes pushes, and
+// `operator_list_account_emails` gives the addresses for an email from the support mailbox,
+// which also reaches people who turned notifications off or no longer have the app.
+
+const BREACH_NOTICE_PAGE_SIZE = 50;
+/** The wait between pages, so a large send stays under the server's write limit. */
+const BREACH_NOTICE_PAGE_WAIT_MS = 1000;
+
+function noticeText(value: string, name: string, max: number): string {
+  const text = value.trim();
+  return text.length >= 1 && Array.from(text).length <= max
+    ? text
+    : fail("23514", `${name} must be 1 to ${max} characters`);
+}
+
+/**
+ * Queues one push with the given title and body to every phone of every account, 50 accounts per
+ * mutation, a second apart. It goes out whatever a person's notification settings say, since
+ * nobody can opt out of a breach notice. A phone set to Norwegian gets `p_title_nb` and
+ * `p_body_nb` when both are given. `p_notice_id` is a short name the operator picks: a phone gets
+ * each notice once, so the same command is safe to run again after an error.
+ */
+export const operator_send_breach_notice = internalMutation({
+  args: {
+    p_notice_id: v.string(),
+    p_title: v.string(),
+    p_body: v.string(),
+    p_title_nb: v.optional(v.string()),
+    p_body_nb: v.optional(v.string()),
+    cursor: v.optional(v.union(v.null(), v.string())),
+  },
+  handler: async (ctx, args): Promise<{ queued: number; is_done: boolean }> => {
+    const noticeId = noticeText(args.p_notice_id, "p_notice_id", 80);
+    const english = { title: noticeText(args.p_title, "p_title", 200), body: noticeText(args.p_body, "p_body", 1000) };
+    if ((args.p_title_nb === undefined) !== (args.p_body_nb === undefined)) {
+      return fail("23514", "give both p_title_nb and p_body_nb, or neither");
+    }
+    const norwegian =
+      args.p_title_nb !== undefined && args.p_body_nb !== undefined
+        ? { title: noticeText(args.p_title_nb, "p_title_nb", 200), body: noticeText(args.p_body_nb, "p_body_nb", 1000) }
+        : english;
+
+    const page = await ctx.db.query("users").paginate({ numItems: BREACH_NOTICE_PAGE_SIZE, cursor: args.cursor ?? null });
+    let queued = 0;
+    for (const user of page.page) {
+      for (const device of await listActiveUserDevices(ctx, user.id)) {
+        const text = notificationLocaleLanguage(device.locale) === "nb" ? norwegian : english;
+        const inserted = await insertNotificationOutbox(ctx, {
+          recipient_user_id: user.id,
+          target_device_id: device.id,
+          push_token_hash: device.push_token_hash,
+          apns_environment: device.apns_environment,
+          kind: "breach_notice",
+          payload: { type: "breach_notice" },
+          dedupe_key: `breach_notice:${noticeId}:${device.id}`,
+          title: text.title,
+          body: text.body,
+        });
+        if (inserted) queued += 1;
+      }
+    }
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(BREACH_NOTICE_PAGE_WAIT_MS, internal.admin.operator_send_breach_notice, {
+        ...args,
+        cursor: page.continueCursor,
+      });
+    }
+    return { queued, is_done: page.isDone };
+  },
+});
+
+/**
+ * The email address of every account, for a notice sent by hand from the support mailbox. Clerk
+ * holds the addresses, so this asks Clerk and stores nothing. `without_email` counts accounts
+ * that have no address there.
+ */
+export const operator_list_account_emails = internalAction({
+  args: {},
+  handler: async (): Promise<{ emails: string[]; without_email: number }> => {
+    const { emails, withoutEmail } = await fetchClerkEmailAddresses();
+    return { emails, without_email: withoutEmail };
   },
 });

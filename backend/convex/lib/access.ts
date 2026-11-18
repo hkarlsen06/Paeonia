@@ -223,13 +223,24 @@ export async function resolveCurrentCoupleEntitlement(
   };
 }
 
-/** Port of `internal.has_active_relationship_block`. */
-export async function hasActiveRelationshipBlock(ctx: ReaderCtx, pairId: string): Promise<boolean> {
+/** Port of `internal.has_active_relationship_block`. A block that was taken back has no row. */
+export async function hasRelationshipBlock(ctx: ReaderCtx, pairId: string): Promise<boolean> {
   const block = await ctx.db
     .query("relationship_blocks")
-    .withIndex("by_pair_id_revoked_at", (q) => q.eq("pair_id", pairId).eq("revoked_at", undefined))
+    .withIndex("by_pair_id", (q) => q.eq("pair_id", pairId))
     .first();
   return block !== null;
+}
+
+/**
+ * The other account of a pair, or null when `userId` is not one of the two. A pair names both
+ * people for as long as it exists. A `couple_members` row goes when its person deletes their
+ * account, so code that asks who the two were reads the pair.
+ */
+export function pairPartnerOf(pair: Doc<"relationship_pairs"> | null, userId: string): string | null {
+  if (pair?.user_low_id === userId) return pair.user_high_id;
+  if (pair?.user_high_id === userId) return pair.user_low_id;
+  return null;
 }
 
 function orderedPair(first: string, second: string): { low: string; high: string } {

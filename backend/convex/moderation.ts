@@ -348,17 +348,12 @@ export const apply_report_moderation_action = internalMutation({
       await upsertRelationshipBlock(ctx, report.pair_id, report.reporter_user_id, report.reported_user_id, report.id);
       await endRelationshipForPair(ctx, report.pair_id, report.reporter_user_id, "moderation_block");
     } else if (actionKind === "unblock_pair") {
+      // The `moderation_actions` row below records the unblock. The block itself is gone.
       const blocks = await ctx.db
         .query("relationship_blocks")
-        .withIndex("by_pair_id_revoked_at", (q) => q.eq("pair_id", report.pair_id).eq("revoked_at", undefined))
+        .withIndex("by_pair_id", (q) => q.eq("pair_id", report.pair_id))
         .collect();
-      for (const block of blocks) {
-        await ctx.db.patch(block._id, {
-          revoked_at: nowIso(),
-          revoked_by_user_id: block.blocked_by_user_id,
-          revoke_reason: "admin_correction",
-        });
-      }
+      for (const block of blocks) await ctx.db.delete(block._id);
     }
 
     const now = nowIso();

@@ -229,8 +229,8 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   admin_audit_log: own("target_user_id", "by_target_user_id_created_at", {
     group: "account",
     about: {
-      en: "Times your account was blocked or unblocked by our team.",
-      nb: "Ganger kontoen din ble sperret eller åpnet igjen av teamet vårt.",
+      en: "Times our team blocked or unblocked your account, or marked a report or request you sent as handled. Kept for three years.",
+      nb: "Ganger teamet vårt sperret eller åpnet kontoen din igjen, eller markerte en rapport eller forespørsel du sendte som behandlet. Beholdes i tre år.",
     },
     hide: ["admin_user_id", "operator_identifier"],
   }),
@@ -302,8 +302,8 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   entitlement_grants: own("user_id", "by_user_id_status_expires_at", {
     group: "subscription",
     about: {
-      en: "Access to Paeonia that you got without paying, for example a gift or a test.",
-      nb: "Tilgang til Paeonia som du fikk uten å betale, for eksempel en gave eller en test.",
+      en: "Access to Paeonia that you got without paying, for example a gift or a test. Deleted one year after it ended.",
+      nb: "Tilgang til Paeonia som du fikk uten å betale, for eksempel en gave eller en test. Slettes ett år etter at den tok slutt.",
     },
   }),
   streak_restorations: own("purchaser_user_id", "by_purchaser_user_id_restored_at", {
@@ -349,11 +349,11 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   pairing_invites: own("created_by_user_id", "by_created_by_user_id_status_expires_at", {
     group: "relationship",
     about: {
-      en: "Invites you made to connect with a partner.",
-      nb: "Invitasjoner du har laget for å koble deg til en partner.",
+      en: "Invites you made to connect with a partner. One that was used or ran out is deleted about 60 days after you made it.",
+      nb: "Invitasjoner du har laget for å koble deg til en partner. En som er brukt eller utløpt, slettes omtrent 60 dager etter at du laget den.",
     },
   }),
-  relationship_blocks: child("relationship_pairs", "id", "pair_id", "by_pair_id_revoked_at", {
+  relationship_blocks: child("relationship_pairs", "id", "pair_id", "by_pair_id", {
     group: "relationship",
     about: {
       en: "Blocks you set on a partner.",
@@ -845,7 +845,7 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
 
   // ---- not exported ----
   account_deletion_jobs: excluded(
-    "Exists only after account deletion has started, and then the person can no longer sign in to ask.",
+    "Exists only after account deletion has started, and then the person can no longer sign in to ask. Deleted with its request three years after the deletion finished.",
   ),
   calls: excluded(
     "A call that rings or runs right now, deleted when it ends. The call's row in the couple chat is exported with the chat.",

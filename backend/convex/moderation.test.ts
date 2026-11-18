@@ -210,10 +210,11 @@ describe("apply_report_moderation_action", () => {
     // The reported partner reads an ordinary leave.
     expect(reasonFor(couple.first.userId)).toBe("user_left");
 
+    // An unblock deletes the block. The moderation action is the record of it.
     await act(t, reportId, "unblock_pair");
-    const revoked = (await t.run((ctx) => ctx.db.query("relationship_blocks").collect()))[0];
-    expect(revoked).toMatchObject({ revoked_by_user_id: couple.second.userId, revoke_reason: "admin_correction" });
-    expect(revoked.revoked_at).toBeDefined();
+    expect(await t.run((ctx) => ctx.db.query("relationship_blocks").collect())).toEqual([]);
+    const actions = await t.run((ctx) => ctx.db.query("moderation_actions").collect());
+    expect(actions.map((action) => action.action_kind)).toContain("unblock_pair");
   });
 
   test("infer_report_target_for_moderation resolves the target ids", async () => {

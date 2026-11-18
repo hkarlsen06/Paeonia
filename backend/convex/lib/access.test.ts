@@ -7,7 +7,7 @@ import {
   getCurrentEntitledCoupleId,
   getEntitledCoupleIdForUser,
   getOrCreateRelationshipPair,
-  hasActiveRelationshipBlock,
+  hasRelationshipBlock,
   isActiveCoupleMember,
   isActiveEntitledCoupleMember,
   isCouplePairMember,
@@ -315,10 +315,10 @@ describe("relationship pairs and blocks", () => {
     expect(await t.run((ctx) => findRelationshipPairId(ctx, a.userId, undefined))).toBeNull();
   });
 
-  test("only unrevoked blocks count", async () => {
+  test("a block counts until its row is deleted", async () => {
     const t = newTest();
     const couple = await createCouple(t);
-    expect(await t.run((ctx) => hasActiveRelationshipBlock(ctx, couple.pairId))).toBe(false);
+    expect(await t.run((ctx) => hasRelationshipBlock(ctx, couple.pairId))).toBe(false);
     const blockId = await t.run(async (ctx) =>
       ctx.db.insert("relationship_blocks", {
         id: newUuid(),
@@ -328,14 +328,8 @@ describe("relationship pairs and blocks", () => {
         created_at: new Date().toISOString(),
       }),
     );
-    expect(await t.run((ctx) => hasActiveRelationshipBlock(ctx, couple.pairId))).toBe(true);
-    await t.run((ctx) =>
-      ctx.db.patch(blockId, {
-        revoked_at: new Date().toISOString(),
-        revoked_by_user_id: couple.first.userId,
-        revoke_reason: "user_unblocked",
-      }),
-    );
-    expect(await t.run((ctx) => hasActiveRelationshipBlock(ctx, couple.pairId))).toBe(false);
+    expect(await t.run((ctx) => hasRelationshipBlock(ctx, couple.pairId))).toBe(true);
+    await t.run((ctx) => ctx.db.delete(blockId));
+    expect(await t.run((ctx) => hasRelationshipBlock(ctx, couple.pairId))).toBe(false);
   });
 });

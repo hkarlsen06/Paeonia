@@ -25,6 +25,7 @@ import { pushStatus } from "./lib/pushStatus";
 import { findProfile, updateProfile } from "./lib/profiles";
 import { reactionsByUser } from "./lib/reactions";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
+import { deleteUserRelationshipRecords } from "./lib/relationshipRecords";
 import { listUserFavoriteRows } from "./lib/favoriteRows";
 import { tombstoneReportTargets } from "./lib/reports";
 import { nowIso } from "./lib/time";
@@ -462,6 +463,7 @@ export const auth_delete_finished = internalMutation({
  * What `ON DELETE CASCADE` from `auth.users` removed once the identity was
  * hard-deleted. The `users` row stays as a tombstone, so an unexpired token
  * cannot provision a fresh account for the same Clerk user. Its email is cleared.
+ * `retention.ts` deletes the tombstone with the deletion request three years later.
  */
 async function removeDeletedUserRows(ctx: MutationCtx, userId: string): Promise<void> {
   const profile = await findProfile(ctx, userId);
@@ -501,6 +503,7 @@ async function removeDeletedUserRows(ctx: MutationCtx, userId: string): Promise<
       await ctx.db.patch(request._id, withUpdatedAt({ requester_note: undefined }));
     }
   }
+  await deleteUserRelationshipRecords(ctx, userId);
   await ctx.scheduler.runAfter(0, internal.retention.delete_user_client_operations, { p_user_id: userId });
   // Ending the relationship already removed the couple's presence rooms. This clears any left.
   await removePresenceRooms(ctx, [userId], "");

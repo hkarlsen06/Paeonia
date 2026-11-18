@@ -1,11 +1,12 @@
 import type { Doc } from "../_generated/dataModel";
-import { getOrCreateRelationshipPair, hasActiveRelationshipBlock } from "./access";
+import { getOrCreateRelationshipPair, hasRelationshipBlock } from "./access";
 import { assertNoPendingAccountDeletion } from "./accountDeletion";
 import { sha256Hex } from "./crypto";
 import { getByUuid, type ReaderCtx, type WriterCtx } from "./db";
 import { fail, uniqueViolation } from "./errors";
 import { newUuid } from "./ids";
 import { cleanupCoupleContent, purgeCoupleContent } from "./relationshipCleanup";
+import { deleteCoupleRecords } from "./relationshipRecords";
 import { updateProfile } from "./profiles";
 import { createRelationshipSyncEvent } from "./syncEvents";
 import { deleteStorekitTransaction } from "./storekit";
@@ -142,7 +143,7 @@ export async function redeemReviewAccess(
   }
 
   const pairId = await getOrCreateRelationshipPair(ctx, partnerId, reviewerUserId);
-  if (await hasActiveRelationshipBlock(ctx, pairId)) {
+  if (await hasRelationshipBlock(ctx, pairId)) {
     return fail("42501", "review pair is blocked");
   }
 
@@ -358,11 +359,6 @@ async function deleteCoupleAndDependents(ctx: WriterCtx, couple: Doc<"couples">)
       .query("streak_restorations")
       .withIndex("by_couple_id_restored_at", (q) => q.eq("couple_id", couple.id))
       .collect(),
-    await ctx.db
-      .query("relationship_sync_events")
-      .withIndex("by_couple_id_created_at_id", (q) => q.eq("couple_id", couple.id))
-      .collect(),
-    await ctx.db.query("couple_members").withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", couple.id)).collect(),
     await ctx.db.query("latest_partner_locations").withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", couple.id)).collect(),
   ];
   for (const rows of children) {
@@ -370,12 +366,5 @@ async function deleteCoupleAndDependents(ctx: WriterCtx, couple: Doc<"couples">)
       await ctx.db.delete(row._id);
     }
   }
-  const invites = await ctx.db.query("pairing_invites").withIndex("by_couple_id", (q) => q.eq("couple_id", couple.id)).collect();
-  for (const invite of invites) {
-    for (const secret of await ctx.db.query("pairing_invite_secrets").withIndex("by_invite_id", (q) => q.eq("invite_id", invite.id)).collect()) {
-      await ctx.db.delete(secret._id);
-    }
-    await ctx.db.delete(invite._id);
-  }
-  await ctx.db.delete(couple._id);
+  await deleteCoupleRecords(ctx, couple);
 }

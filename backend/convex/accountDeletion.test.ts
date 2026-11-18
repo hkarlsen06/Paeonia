@@ -2,7 +2,15 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { WorkId } from "@convex-dev/workpool";
 import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
-import { addDevice, createCouple, newTest, transactionClock, type TestConvex, type TestCouple } from "./test.setup";
+import {
+  addDevice,
+  createCouple,
+  newTest,
+  relationshipStateOf,
+  transactionClock,
+  type TestConvex,
+  type TestCouple,
+} from "./test.setup";
 
 const NOW = "2026-10-10T12:00:00.000Z";
 
@@ -612,6 +620,66 @@ describe("delete_account action", () => {
     await couple.first.as.action(api.identity.delete_account, { appleAuthorizationCode: "auth-code" });
     const left = await t.run((ctx) => ctx.db.query("relationship_blocks").collect());
     expect(left.map((row) => row.blocked_by_user_id)).toEqual([couple.second.userId]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("deletes the person's own relationship rows at once, and the partner keeps the notice and can still report them", async () => {
+    const t = newTest();
+    await configureApple();
+    stubNetwork();
+    const couple = await appleCoupleWithData(t);
+    await t.run(async (ctx) => {
+      for (const [user, status] of [[couple.first, "accepted"], [couple.second, "expired"]] as const) {
+        const id = newUuid();
+        await ctx.db.insert("pairing_invites", {
+          id,
+          created_by_user_id: user.userId,
+          status,
+          expires_at: NOW,
+          created_at: NOW,
+          updated_at: NOW,
+        });
+        await ctx.db.insert("pairing_invite_secrets", { invite_id: id, code_hash: id, created_at: NOW });
+      }
+    });
+    await couple.first.as.action(api.identity.delete_account, { appleAuthorizationCode: "auth-code" });
+
+    const left = await t.run(async (ctx) => ({
+      members: (await ctx.db.query("couple_members").collect()).map((row) => row.user_id),
+      events: [...new Set((await ctx.db.query("relationship_sync_events").collect()).map((row) => row.user_id))],
+      invites: (await ctx.db.query("pairing_invites").collect()).map((row) => row.created_by_user_id),
+      codes: (await ctx.db.query("pairing_invite_secrets").collect()).length,
+    }));
+    expect(left).toEqual({
+      members: [couple.second.userId],
+      events: [couple.second.userId],
+      invites: [couple.second.userId],
+      codes: 1,
+    });
+
+    // The partner still sees that the relationship ended and with whom, from the pair.
+    expect(await relationshipStateOf(couple.second)).toMatchObject({
+      couple_id: couple.coupleId,
+      relationship_status: "ended",
+      member_status: "ended_notice_pending",
+      partner_user_id: couple.first.userId,
+    });
+    // And can still report the person who left, inside the 30 days.
+    const reportId = await couple.second.as.mutation(api.reports.submit_leave_and_report, {
+      p_reason: "harassment",
+      p_note: null,
+      p_target_kind: "conduct",
+      p_target_id: couple.first.userId,
+      p_target_aux_id: null,
+      p_block_reported_user: true,
+      ...clientOperation(),
+    });
+    const stored = await t.run(async (ctx) => ({
+      report: await ctx.db.query("content_reports").first(),
+      block: await ctx.db.query("relationship_blocks").first(),
+    }));
+    expect(stored.report).toMatchObject({ id: reportId, reported_user_id: couple.first.userId, pair_id: couple.pairId });
+    expect(stored.block).toMatchObject({ blocked_by_user_id: couple.second.userId, blocked_user_id: couple.first.userId });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 

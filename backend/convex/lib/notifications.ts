@@ -48,6 +48,9 @@ const NOTIFICATION_PAYLOAD_FIELDS = {
   // Tells an admin that a report or a correction request waits. It names neither the people nor
   // what was reported (lib/adminAlerts.ts).
   admin_case_opened: ["type", "case_kind"],
+  // A notice an operator sends to every account (`admin:operator_send_breach_notice`). Its title
+  // and body are the operator's own words, stored on the row and never in the payload.
+  breach_notice: ["type"],
   memory_created: ["type", "couple_id", "actor_user_id", "route", "deeplink", "memory_id"],
   story_posted: ["type", "couple_id", "actor_user_id", "route", "deeplink", "story_id", "expires_at"],
   thread_message_sent: [
