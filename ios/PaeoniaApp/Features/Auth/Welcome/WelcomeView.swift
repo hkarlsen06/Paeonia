@@ -1,4 +1,3 @@
-import PencilKit
 import SwiftUI
 import UIKit
 
@@ -18,7 +17,6 @@ struct WelcomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var isInviteSheetPresented = false
-    @State private var isCompositionPresented = false
     /// Whether the clipboard holds something that looks like a link. The `/join` web
     /// page copies the invite link when a partner without the app taps "Install",
     /// because the link itself is lost on the way through the App Store. Checking the
@@ -48,12 +46,6 @@ struct WelcomeView: View {
             }
         }
         .background(PaeoniaGlowBackground())
-        .drawingCompositionSheet(
-            isPresented: $isCompositionPresented,
-            drawing: doodle?.drawing ?? PKDrawing(), side: doodleCanvasSide, isLocked: false
-        ) { drawing in
-            doodle = WelcomeCarriedDoodle(drawing: drawing, canvasSide: doodleCanvasSide)
-        }
         // Checked again on return to the app, since the link may be copied after the
         // welcome screen first appeared.
         .task(id: scenePhase) {
@@ -127,9 +119,6 @@ struct WelcomeView: View {
                 .layoutPriority(1)
                 .launchEntrance(order: 1)
 
-            drawingBuilder
-                .padding(.top, PaeoniaSpacing.space12)
-
             Spacer(minLength: PaeoniaSpacing.space24)
 
             Text(.welcomeSummary)
@@ -147,13 +136,6 @@ struct WelcomeView: View {
         .padding(.top, PaeoniaSpacing.screenTopSpacing)
         .padding(.bottom, PaeoniaSpacing.space24)
     }
-
-    private var drawingBuilder: some View {
-        DrawingCompositionButton { isCompositionPresented = true }
-            .paeoniaReadableWidth(300)
-    }
-
-    private var doodleCanvasSide: CGFloat { doodle?.canvasSide ?? WelcomeWidgetDoodle.maxSide }
 
     // MARK: Choices
 

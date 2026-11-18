@@ -76,39 +76,6 @@ final class WelcomeDoodleJourneyUITests: XCTestCase {
     }
 
     @MainActor
-    func testWelcomeShapeCreationCarriesIntoTheFirstDrawingWithoutTracing() throws {
-        try SimulatorTextSizeSettings(testCase: self).withSize(.standard) {
-            let app = XCUIApplication()
-            app.launchEnvironment["PAEONIA_SCENARIO"] = "local-flow-fresh"
-            app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
-            app.launchWithExtraAccessibilityTools()
-            defer { app.terminate() }
-            let compose = app.buttons["drawing.compose"]
-            XCTAssertTrue(compose.waitForExistence(timeout: 10))
-            scrollTo(compose, in: app)
-            compose.tap()
-            let add = app.buttons["drawing.compose.apply"]
-            scrollTo(add, in: app)
-            add.tap()
-            app.buttons["drawing.compose.done"].tap()
-            let start = app.buttons["welcome.start"]
-            scrollTo(start, in: app)
-            start.tap()
-            let date = app.buttons["welcome.startDate.continue"]
-            XCTAssertTrue(date.waitForExistence(timeout: 5))
-            scrollTo(date, in: app)
-            date.tap()
-            XCTAssertTrue(compose.waitForExistence(timeout: 15))
-            scrollTo(compose, in: app)
-            compose.tap()
-            let mark = app.staticTexts["drawing.geometry.mark.0"]
-            scrollTo(mark, in: app)
-            XCTAssertTrue(mark.exists)
-            attachScreenshot(app, named: "welcome-native-shape-carried")
-        }
-    }
-
-    @MainActor
     private func trace(on tile: XCUIElement) {
         tile.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.25))
             .press(forDuration: 0.05, thenDragTo: tile.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.6)))
