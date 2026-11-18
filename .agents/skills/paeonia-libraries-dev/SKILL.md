@@ -5,7 +5,7 @@ description: Libraries.dev effects in the Paeonia iOS app. Use to add another pr
 
 # Libraries.dev in Paeonia
 
-Libraries.dev (`https://github.com/Jakubantalik/Libraries.dev`, by Jakub Antalik) is one repository of SwiftUI effects drawn with Metal shaders. Paeonia links it as one Swift package, and today uses one product from it, `DistortionWavesKit`, for the wave that rises from Send on the Us tab's drawing screen. Every effect from it is a **shader effect**: SwiftUI views passed through `.layerEffect` or `.colorEffect`. That one fact drives most rules below.
+Libraries.dev (`https://github.com/Jakubantalik/Libraries.dev`, by Jakub Antalik) is one repository of SwiftUI effects drawn with Metal shaders. Paeonia links it as one Swift package and uses two products from it: `DistortionWavesKit`, for the wave that rises from Send on the Us tab's drawing screen, and `ThinkingOrbsKit`, for the ring of dots around the partner on Mind Meld's waiting screen. Most effects from it are **shader effects**: SwiftUI views passed through `.layerEffect` or `.colorEffect`. That fact drives most rules below. `ThinkingOrbsKit` is the exception. It draws with `Canvas` in a `TimelineView`, so the shader rules and the Metal toolchain don't apply to it.
 
 ## The package
 
@@ -48,9 +48,16 @@ Libraries.dev (`https://github.com/Jakubantalik/Libraries.dev`, by Jakub Antalik
   - `DistortionWave` animates when `isRevealed` changes. Mount it at `false`, then flip it in `onAppear`.
   - `UIWindow.effectiveRadius(corner:)` returns 0. A view that fills the window with `.containerConcentric()` corners returns the screen's radius, 62 pt on an iPhone 17 Pro.
 
+## Thinking orbs
+
+- **Look.** The kit draws grey dots, white on `.dark` and black on `.light`. Pass `theme: .dark` and add `.colorMultiply(.paeoniaAccentPrimary)` to tint them, so the color is the same in both appearances. `displaySize` scales the drawing without blurring it. Render all nine states headless on the Mac with the kit's `snapshot.sh`, run on a copy of the port in the scratchpad, to choose one.
+- **VoiceOver.** The kit labels each orb in English ("Thinking…"), so hide it with `.accessibilityHidden(true)` and let the text next to it speak.
+- **Reduce Motion.** The kit draws one still frame, so the caller needs no branch.
+
 ## In the app
 
 - `DistortionWavesKit`: `PaeoniaScreenWave.swift` (the host) and `WidgetDrawingSendWave.swift` (the drawing screen's style).
+- `ThinkingOrbsKit`: `MindMeldWaitingView.swift` (the `.breathing` ring around the partner's portrait while they are in the game).
 
 ## Verifying
 
