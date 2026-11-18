@@ -14,6 +14,7 @@ import type * as admin from "../admin.js";
 import type * as analytics from "../analytics.js";
 import type * as appPresence from "../appPresence.js";
 import type * as avatarDecorations from "../avatarDecorations.js";
+import type * as backup from "../backup.js";
 import type * as badges from "../badges.js";
 import type * as boardGames from "../boardGames.js";
 import type * as calls from "../calls.js";
@@ -202,6 +203,7 @@ declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
   appPresence: typeof appPresence;
   avatarDecorations: typeof avatarDecorations;
+  backup: typeof backup;
   badges: typeof badges;
   boardGames: typeof boardGames;
   calls: typeof calls;
