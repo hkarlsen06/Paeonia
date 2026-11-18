@@ -26,6 +26,7 @@ import { roomName, verifyTicket } from "./ticket.ts";
 interface Env {
   ROOMS: DurableObjectNamespace<CanvasRoom>;
   RELAY_TICKET_SECRET: string;
+  MAP_LIMITER: RateLimit;
 }
 
 export default {
@@ -36,6 +37,9 @@ export default {
         fetch: (upstream, init) => fetch(upstream, init),
         cache: caches.default,
         waitUntil: (promise) => ctx.waitUntil(promise),
+        // Counted per address at Cloudflare's edge. The address is used for the count only.
+        allow: async () =>
+          (await env.MAP_LIMITER.limit({ key: request.headers.get("CF-Connecting-IP") ?? "unknown" })).success,
       });
     }
     if (url.pathname !== "/canvas") return new Response("Not found", { status: 404 });

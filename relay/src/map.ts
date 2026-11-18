@@ -43,10 +43,13 @@ export interface MapProxyRuntime {
   fetch(url: string, init: { redirect: "manual" }): Promise<Response>;
   cache: { match(request: Request): Promise<Response | undefined>; put(request: Request, response: Response): Promise<void> };
   waitUntil(promise: Promise<unknown>): void;
+  /** False when this caller has asked too often. The map shares the Worker's request quota with the canvas and calls. */
+  allow(): Promise<boolean>;
 }
 
 export async function proxyMap(request: Request, runtime: MapProxyRuntime): Promise<Response> {
   if (request.method !== "GET") return new Response("Method not allowed", { status: 405, headers: { Allow: "GET" } });
+  if (!(await runtime.allow())) return new Response("Too many requests", { status: 429, headers: { "Retry-After": "60" } });
   const url = new URL(request.url);
   const target = upstreamTarget(url.pathname);
   if (!target) return new Response("Not found", { status: 404 });

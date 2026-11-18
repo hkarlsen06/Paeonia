@@ -27,7 +27,7 @@ function json(body: unknown): Response {
 }
 
 /** A proxy in front of a fake OpenFreeMap that answers every path with `answer`. */
-function setUp(answer: (url: string) => Response | Promise<Response>) {
+function setUp(answer: (url: string) => Response | Promise<Response>, allowed = true) {
   const upstreamRequests: Request[] = [];
   const cached = new Map<string, Response>();
   const pending: Promise<unknown>[] = [];
@@ -41,6 +41,7 @@ function setUp(answer: (url: string) => Response | Promise<Response>) {
       put: async (request: Request, response: Response) => void cached.set(request.url, response),
     },
     waitUntil: (promise: Promise<unknown>) => void pending.push(promise),
+    allow: async () => allowed,
   };
   return {
     upstreamRequests,
@@ -80,6 +81,7 @@ test("a rewritten style follows the origin the phone asked", async () => {
     fetch: async () => json(style),
     cache: { match: async () => undefined, put: async () => {} },
     waitUntil: () => {},
+    allow: async () => true,
   });
   assert.equal((await local.json()).glyphs, "http://localhost:8787/map/fonts/{fontstack}/{range}.pbf");
 });
@@ -178,6 +180,15 @@ test("refuses every path that is not on the allowlist, without asking OpenFreeMa
   for (const path of refused) {
     assert.equal((await map.get(path)).status, 404, path);
   }
+  assert.deepEqual(map.upstreamRequests, []);
+  assert.equal(map.cached.size, 0);
+});
+
+test("a caller over the rate limit gets 429, without asking OpenFreeMap", async () => {
+  const map = setUp(() => json(style), false);
+  const response = await map.get("/styles/dark");
+  assert.equal(response.status, 429);
+  assert.equal(response.headers.get("Retry-After"), "60");
   assert.deepEqual(map.upstreamRequests, []);
   assert.equal(map.cached.size, 0);
 });

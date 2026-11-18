@@ -10,3 +10,10 @@ class_name = "CanvasRoom"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["CanvasRoom"]
+
+# The map proxy (/map/...) takes no ticket, so each address may ask at most 600 times a
+# minute. A screen of map tiles is about 30 requests, so panning stays well inside it.
+[[ratelimits]]
+name = "MAP_LIMITER"
+namespace_id = "1001"
+simple = { limit = 600, period = 60 }
