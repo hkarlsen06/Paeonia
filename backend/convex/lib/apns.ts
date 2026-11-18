@@ -169,6 +169,8 @@ const NOTIFICATION_CATEGORY: Record<
   data_export_ready: "account",
   subscription_payment_failed: "account",
   subscription_ending: "account",
+  subscription_running: "account",
+  admin_case_opened: "account",
   question_time_reminder: "reminder",
   date_reminder: "reminder",
   streak_reminder: "reminder",
@@ -218,6 +220,7 @@ export function notificationThreadId(payload: Record<string, unknown>): string |
     case "subscription_trial_reminder":
     case "subscription_payment_failed":
     case "subscription_ending":
+    case "subscription_running":
       return "subscription";
     default:
       return null;

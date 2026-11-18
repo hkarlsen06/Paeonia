@@ -52,6 +52,11 @@ crons.cron("queue-subscription-trial-reminders", "15 * * * *", internal.storekit
 // Hourly, deduped per couple and end. See lib/subscriptionNotices.ts.
 crons.cron("queue-subscription-ending-reminders", "45 * * * *", internal.storekit.queue_subscription_ending_reminders, {});
 
+// New in Convex: tells the payer once every half-year that the subscription runs and how to cancel
+// (digitalytelsesloven § 33(4)). Daily at 10:20 UTC, deduped per subscription and half-year. See
+// lib/subscriptionNotices.ts.
+crons.cron("queue-subscription-running-notices", "20 10 * * *", internal.storekit.queue_subscription_running_notices, {});
+
 // pg_cron 'paeonia-account-deletion-drain' has no entry. requestAccountDeletion queues the
 // Clerk delete as a backgroundWorkpool job that retries itself. See accountDeletion.ts.
 
@@ -100,6 +105,10 @@ crons.interval("expire-stale-entitlements", { minutes: 5 }, internal.storekit.ex
 
 // New in Convex: client_operations and both push outboxes had no cleanup. Keeps 30 days. See retention.ts.
 crons.interval("prune-expired-rows", { hours: 1 }, internal.retention.prune_expired_rows, {});
+
+// New in Convex: deletes reports and privacy requests three years after they closed, and purchase
+// records five years after the year of the purchase. Daily, paged. See retention.ts.
+crons.cron("prune-kept-records", "40 3 * * *", internal.retention.prune_kept_records, {});
 
 // New in Convex: PostHog keeps usage statistics for years and cannot delete them by age, so this
 // deletes everyone it has not heard from in 12 months, early on the 1st of each month. See analytics.ts.

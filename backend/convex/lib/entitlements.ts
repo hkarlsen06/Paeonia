@@ -11,6 +11,8 @@ export type EntitlementRow = {
   current_period_end: string | null;
   /** True for a subscription that renews by itself. A grant never renews, and a lifetime grant has no end. */
   will_renew: boolean;
+  /** When an App Store subscription was first bought. Null for a grant. */
+  subscribed_since: string | null;
   updated_at: string;
 };
 
@@ -25,6 +27,11 @@ export type ResolvedEntitlement = {
   billing_period: string | null;
   current_period_end: string | null;
   will_renew: boolean;
+  /**
+   * When the App Store subscription behind this entitlement was first bought. The app counts the
+   * six-month notice from it (`AccessNotice`), as `lib/subscriptionNotices.ts` does for the push.
+   */
+  subscribed_since: string | null;
   updated_at: string | null;
 };
 
@@ -36,6 +43,7 @@ function storekitRow(tx: Doc<"storekit_transactions">): EntitlementRow {
     product_id: tx.product_id,
     current_period_end: tx.expires_at ?? null,
     will_renew: tx.auto_renew_off !== true,
+    subscribed_since: tx.original_purchased_at ?? null,
     updated_at: tx.updated_at,
   };
 }
@@ -66,6 +74,7 @@ function grantRow(grant: Doc<"entitlement_grants">, now: string): EntitlementRow
     product_id: grant.product_id ?? null,
     current_period_end: grant.expires_at ?? null,
     will_renew: false,
+    subscribed_since: null,
     updated_at: grant.updated_at,
   };
 }
@@ -174,6 +183,7 @@ export async function resolveUserEntitlement(
     billing_period: product?.billing_period ?? null,
     current_period_end: best?.current_period_end ?? null,
     will_renew: best?.will_renew ?? false,
+    subscribed_since: best?.subscribed_since ?? null,
     updated_at: best?.updated_at ?? null,
   };
 }

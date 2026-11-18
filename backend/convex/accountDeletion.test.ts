@@ -593,6 +593,28 @@ describe("delete_account action", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
+  test("deletes the blocks the person made and keeps a block made against them", async () => {
+    const t = newTest();
+    await configureApple();
+    stubNetwork();
+    const couple = await appleCoupleWithData(t);
+    await t.run(async (ctx) => {
+      for (const [blocker, blocked] of [[couple.first, couple.second], [couple.second, couple.first]]) {
+        await ctx.db.insert("relationship_blocks", {
+          id: newUuid(),
+          pair_id: couple.pairId,
+          blocked_by_user_id: blocker.userId,
+          blocked_user_id: blocked.userId,
+          created_at: NOW,
+        });
+      }
+    });
+    await couple.first.as.action(api.identity.delete_account, { appleAuthorizationCode: "auth-code" });
+    const left = await t.run((ctx) => ctx.db.query("relationship_blocks").collect());
+    expect(left.map((row) => row.blocked_by_user_id)).toEqual([couple.second.userId]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
   test("falls back to manual Apple revocation but still deletes the account", async () => {
     const t = newTest();
     const calls = stubNetwork();

@@ -147,6 +147,7 @@ describe("access snapshot", () => {
           billing_period: null,
           current_period_end: null,
           will_renew: false,
+          subscribed_since: null,
           updated_at: null,
         },
         couple_entitlement: null,

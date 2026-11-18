@@ -708,6 +708,25 @@ describe("get_media_signed_url and GET /media", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
+  test("a profile photo link keeps working after the relationship ends", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const own = await uploadAsset(t, couple.second, {
+      kind: "profile_photo",
+      purpose: "profile_photo",
+      mediaType: "image",
+      extension: "jpg",
+      mime: "image/jpeg",
+      parentId: couple.second.userId,
+    });
+    const [row] = await couple.second.as.mutation(api.media.get_media_signed_url, { p_media_asset_id: own.assetId });
+
+    await couple.first.as.mutation(api.relationship.leave_relationship, op());
+
+    expect((await t.fetch(pathOf(row.signed_url))).status).toBe(200);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
   test("rejects an expiry outside 60 to 3600 seconds", async () => {
     const t = newTest();
     const couple = await createCouple(t);

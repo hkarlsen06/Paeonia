@@ -212,6 +212,7 @@ async function runVerifyPurchase(ctx: ActionCtx, args: PurchaseArgs): Promise<Su
       p_web_order_line_item_id: transactionInfo.webOrderLineItemId ?? null,
       p_status: status,
       p_purchased_at: millisToIsoOrNull(transactionInfo.purchaseDate),
+      p_original_purchased_at: millisToIsoOrNull(transactionInfo.originalPurchaseDate),
       p_expires_at: millisToIsoOrNull(expiresAt),
       p_revoked_at: millisToIsoOrNull(transactionInfo.revocationDate),
       p_revocation_reason: revocationReason(transactionInfo),

@@ -19,6 +19,7 @@ export interface AppleTransactionInfo {
   bundleId: string;
   productId: string;
   purchaseDate?: number;
+  originalPurchaseDate?: number;
   expiresDate?: number;
   revocationDate?: number;
   revocationReason?: number;

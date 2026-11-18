@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
+import { newUuid } from "./lib/ids";
+import { makeMemory, operation } from "./reports.fixtures";
 import { addDevice, createCouple, createSignedInUser, newTest, relationshipStateOf, transactionClock, type TestConvex } from "./test.setup";
 
 const NOW = "2026-10-14T12:00:00.000Z";
@@ -163,5 +165,91 @@ describe("banning", () => {
 
     const rows = await user.as.mutation(api.identity.request_account_deletion, {});
     expect(rows).toHaveLength(1);
+  });
+});
+
+describe("reports and correction requests", () => {
+  async function fileBoth(t: TestConvex) {
+    const couple = await createCouple(t);
+    const memory = await makeMemory(t, couple);
+    const reportId = await couple.second.as.mutation(api.reports.submit_leave_and_report, {
+      p_reason: "harassment",
+      p_note: "they keep sending this",
+      p_target_kind: "memory",
+      p_target_id: memory.id,
+      p_target_aux_id: null,
+      p_block_reported_user: false,
+      ...operation(),
+    });
+    const requestId = newUuid();
+    await couple.first.as.mutation(api.identity.create_privacy_request, {
+      p_id: requestId,
+      p_kind: "correction",
+      p_requester_note: "My birthday is wrong",
+    });
+    return { couple, reportId, requestId };
+  }
+
+  test("each one pushes every admin and says nothing about the case", async () => {
+    const t = newTest();
+    const admin = await createAdmin(t);
+    const otherAdmin = await createSignedInUser(t, { subject: "user_other_admin", name: "Other admin" });
+    const devices = [await addDevice(t, admin.userId, { locale: "en-US" }), await addDevice(t, otherAdmin.userId, { locale: "nb-NO" })];
+    const { couple } = await fileBoth(t);
+    await addDevice(t, couple.first.userId);
+
+    const pushes = await t.run(async (ctx) =>
+      (await ctx.db.query("notification_outbox").collect()).filter((row) => row.kind === "admin_case_opened"),
+    );
+    expect(pushes.map((row) => [row.target_device_id, row.payload.case_kind]).sort()).toEqual(
+      devices.flatMap((device) => [[device.id, "content_report"], [device.id, "correction_request"]]).sort(),
+    );
+    const sent = JSON.stringify(pushes);
+    for (const secret of ["harassment", "they keep sending this", "My birthday is wrong", couple.first.userId, couple.second.userId, "Partner"]) {
+      expect(sent).not.toContain(secret);
+    }
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("an admin lists the open ones, and everyone else is refused", async () => {
+    const t = newTest();
+    const admin = await createAdmin(t);
+    const { couple, reportId, requestId } = await fileBoth(t);
+
+    expect(await admin.as.query(api.admin.list_open_reports, {})).toEqual([
+      expect.objectContaining({
+        id: reportId,
+        status: "submitted",
+        reason: "harassment",
+        note: "they keep sending this",
+        reporter_user_id: couple.second.userId,
+        reported_user_id: couple.first.userId,
+      }),
+    ]);
+    expect(await admin.as.query(api.admin.list_open_correction_requests, {})).toEqual([
+      expect.objectContaining({
+        id: requestId,
+        status: "submitted",
+        user_id: couple.first.userId,
+        requester_note: "My birthday is wrong",
+      }),
+    ]);
+
+    // Neither the person who reported, the person reported, nor someone signed out may read them.
+    for (const user of [couple.first, couple.second]) {
+      await expectFail(user.as.query(api.admin.list_open_reports, {}), "42501", "admin access required");
+      await expectFail(user.as.query(api.admin.list_open_correction_requests, {}), "42501", "admin access required");
+    }
+    await expectFail(t.query(api.admin.list_open_reports, {}), "42501");
+    await expectFail(t.query(api.admin.list_open_correction_requests, {}), "42501");
+
+    // A moderation action closes the report, and it leaves the list.
+    await t.mutation(internal.moderation.apply_report_moderation_action, {
+      p_report_id: reportId,
+      p_action_kind: "hide",
+      p_operator_identifier: "ops",
+    });
+    expect(await admin.as.query(api.admin.list_open_reports, {})).toEqual([]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });

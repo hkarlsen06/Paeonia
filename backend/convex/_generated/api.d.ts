@@ -45,6 +45,8 @@ import type * as lib_access from "../lib/access.js";
 import type * as lib_accessSnapshot from "../lib/accessSnapshot.js";
 import type * as lib_accountDeletion from "../lib/accountDeletion.js";
 import type * as lib_accountDeletionProviders from "../lib/accountDeletionProviders.js";
+import type * as lib_adminAlerts from "../lib/adminAlerts.js";
+import type * as lib_admins from "../lib/admins.js";
 import type * as lib_apns from "../lib/apns.js";
 import type * as lib_appleNotificationVerifier from "../lib/appleNotificationVerifier.js";
 import type * as lib_appleStoreKit from "../lib/appleStoreKit.js";
@@ -229,6 +231,8 @@ declare const fullApi: ApiFromModules<{
   "lib/accessSnapshot": typeof lib_accessSnapshot;
   "lib/accountDeletion": typeof lib_accountDeletion;
   "lib/accountDeletionProviders": typeof lib_accountDeletionProviders;
+  "lib/adminAlerts": typeof lib_adminAlerts;
+  "lib/admins": typeof lib_admins;
   "lib/apns": typeof lib_apns;
   "lib/appleNotificationVerifier": typeof lib_appleNotificationVerifier;
   "lib/appleStoreKit": typeof lib_appleStoreKit;

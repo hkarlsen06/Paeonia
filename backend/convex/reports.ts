@@ -1,6 +1,7 @@
 import { v, type ObjectType } from "convex/values";
 import { mutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
+import { alertAdminsOfNewCase } from "./lib/adminAlerts";
 import { requireUserId } from "./lib/auth";
 import { runClientOperation } from "./lib/clientOperations";
 import { fail } from "./lib/errors";
@@ -146,6 +147,7 @@ async function submitContentReport(ctx: MutationCtx, args: ReportArgs, leaveRela
       });
       await enqueueReportSnapshotAssets(ctx, reportId, target.snapshot);
       await addPairSafetyWarningFlag(ctx, target.pair_id, reportId);
+      await alertAdminsOfNewCase(ctx, "content_report", reportId);
 
       if (blockReportedUser) {
         await blockRelationship(ctx, userId, target.reported_user_id, reportId);

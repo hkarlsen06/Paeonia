@@ -203,6 +203,7 @@ export type VerifiedTransactionInput = {
   p_web_order_line_item_id?: string | null;
   p_status?: string | null;
   p_purchased_at?: string | null;
+  p_original_purchased_at?: string | null;
   p_expires_at?: string | null;
   p_revoked_at?: string | null;
   p_revocation_reason?: string | null;
@@ -351,6 +352,7 @@ export async function recordVerifiedStorekitTransaction(
     web_order_line_item_id: input.p_web_order_line_item_id ?? undefined,
     status: status as StorekitStatus,
     purchased_at: optionalTimestampArg(input.p_purchased_at),
+    original_purchased_at: optionalTimestampArg(input.p_original_purchased_at),
     expires_at: optionalTimestampArg(input.p_expires_at),
     revoked_at: optionalTimestampArg(input.p_revoked_at),
     revocation_reason: input.p_revocation_reason ?? undefined,
@@ -440,6 +442,7 @@ export type ServerNotificationInput = {
   p_web_order_line_item_id?: string | null;
   p_status?: string | null;
   p_purchased_at?: string | null;
+  p_original_purchased_at?: string | null;
   p_expires_at?: string | null;
   p_revoked_at?: string | null;
   p_revocation_reason?: string | null;
@@ -568,6 +571,7 @@ export async function recordStorekitServerNotification(
     p_web_order_line_item_id: input.p_web_order_line_item_id,
     p_status: input.p_status,
     p_purchased_at: input.p_purchased_at,
+    p_original_purchased_at: input.p_original_purchased_at,
     p_expires_at: input.p_expires_at,
     p_revoked_at: input.p_revoked_at,
     p_revocation_reason: input.p_revocation_reason,

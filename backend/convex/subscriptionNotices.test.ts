@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi 
 import { api, internal } from "./_generated/api";
 import { makeChain, removeChains, signJws, type Chain } from "./appleChain.testHelpers";
 import { newUuid } from "./lib/ids";
+import { runningNoticeHalfYear } from "./lib/subscriptionNotices";
 import { deliverDuePushes } from "./push.testing";
 import { seedProducts } from "./storekit.testHelpers";
 import { addDevice, createCouple, createSignedInUser, newTest, type TestConvex, type TestUser } from "./test.setup";
@@ -45,6 +46,8 @@ type Notice = {
   subtype?: string;
   transactionId?: string;
   originalTransactionId?: string;
+  /** When the subscription was first bought. Apple repeats it on every renewal. */
+  originalPurchaseDate?: number;
   expiresDate: number;
   renewal: Record<string, unknown>;
 };
@@ -57,6 +60,7 @@ async function notify(t: TestConvex, token: string, notice: Notice) {
     bundleId: "no.paeonia.app",
     productId: "no.paeonia.couple",
     purchaseDate: Date.now() - day,
+    ...(notice.originalPurchaseDate === undefined ? {} : { originalPurchaseDate: notice.originalPurchaseDate }),
     expiresDate: notice.expiresDate,
     environment: "Sandbox",
     type: "Auto-Renewable Subscription",
@@ -281,5 +285,97 @@ describe("a subscription the payer stopped", () => {
     });
     expect((await snapshot(partner)).couple_entitlement?.access_ends_at).toBeNull();
     expect(await t.mutation(internal.storekit.queue_subscription_ending_reminders, {})).toBe(0);
+  });
+});
+
+describe("the six-month notice", () => {
+  test("is due for 14 days after every 180 days since the first purchase", () => {
+    const since = "2026-01-10T08:00:00.000Z";
+    const after = (days: number, ms = 0) => new Date(Date.parse(since) + days * day + ms).toISOString();
+
+    expect(runningNoticeHalfYear(since, after(0))).toBeNull();
+    expect(runningNoticeHalfYear(since, after(180, -1))).toBeNull();
+    expect(runningNoticeHalfYear(since, after(180))).toBe(1);
+    expect(runningNoticeHalfYear(since, after(194, -1))).toBe(1);
+    expect(runningNoticeHalfYear(since, after(194))).toBeNull();
+    expect(runningNoticeHalfYear(since, after(360))).toBe(2);
+    expect(runningNoticeHalfYear(since, after(540, 3 * day))).toBe(3);
+  });
+
+  test("tells only the payer, once per half-year, when the subscription renews and where to cancel", async () => {
+    const { t, payer, token, payerDevice } = await payingCouple();
+    const firstBought = Date.now();
+    const yearly = (transactionId: string, expiresDate: number) =>
+      notify(t, token, {
+        type: transactionId === "2000000000001" ? "SUBSCRIBED" : "DID_RENEW",
+        transactionId,
+        originalPurchaseDate: firstBought,
+        expiresDate,
+        renewal: { autoRenewStatus: 1 },
+      });
+    const renewsAt = firstBought + 365 * day;
+    await yearly("2000000000001", renewsAt);
+    // The app counts the notice from the same day.
+    expect((await snapshot(payer)).user_entitlement).toMatchObject({
+      subscribed_since: new Date(firstBought).toISOString(),
+      will_renew: true,
+    });
+
+    const runCron = () => t.mutation(internal.storekit.queue_subscription_running_notices, {});
+    vi.setSystemTime(firstBought + 180 * day - 60_000);
+    expect(await runCron()).toBe(0);
+
+    vi.setSystemTime(firstBought + 180 * day + 60_000);
+    expect(await runCron()).toBe(1);
+    // The daily runs inside the window queue nothing more.
+    vi.setSystemTime(firstBought + 185 * day);
+    expect(await runCron()).toBe(0);
+
+    const renewsOn = new Date(renewsAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+    expect(await outbox(t, "subscription_running")).toEqual([
+      expect.objectContaining({
+        recipient_user_id: payer.userId,
+        target_device_id: payerDevice.id,
+        title: "Your subscription is running",
+        body: `Paeonia renews on ${renewsOn}. You can cancel any time in Settings, under Subscriptions.`,
+        payload: expect.objectContaining({ deeplink: "paeonia://settings/subscription" }),
+      }),
+    ]);
+    expect((await deliverDuePushes(t)).map((push) => push.payload.type)).toEqual(["subscription_running"]);
+
+    // The next half-year is its own notice, also after the subscription renewed into a new transaction.
+    vi.setSystemTime(firstBought + 359 * day);
+    await yearly("2000000000002", renewsAt + 365 * day);
+    expect(await runCron()).toBe(0);
+    vi.setSystemTime(firstBought + 360 * day + 60_000);
+    expect(await runCron()).toBe(1);
+    expect(await runCron()).toBe(0);
+
+    // Renewal turned off before it is sent: the ending notice tells of the end instead.
+    await notify(t, token, {
+      type: "DID_CHANGE_RENEWAL_STATUS",
+      transactionId: "2000000000002",
+      originalPurchaseDate: firstBought,
+      expiresDate: renewsAt + 365 * day,
+      renewal: { autoRenewStatus: 0 },
+    });
+    expect(await deliverDuePushes(t)).toEqual([]);
+    expect((await outbox(t, "subscription_running")).map((row) => row.last_error ?? null)).toEqual([
+      null,
+      "notification is out of date",
+    ]);
+  });
+
+  test("stays quiet for a subscription that will not renew", async () => {
+    const { t, token } = await payingCouple();
+    const firstBought = Date.now();
+    await notify(t, token, {
+      type: "DID_CHANGE_RENEWAL_STATUS",
+      originalPurchaseDate: firstBought,
+      expiresDate: firstBought + 365 * day,
+      renewal: { autoRenewStatus: 0 },
+    });
+    vi.setSystemTime(firstBought + 181 * day);
+    expect(await t.mutation(internal.storekit.queue_subscription_running_notices, {})).toBe(0);
   });
 });

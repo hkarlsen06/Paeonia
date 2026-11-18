@@ -396,6 +396,7 @@ export default defineSchema({
   })
     .index("by_uuid", ["id"])
     .index("by_notification_uuid", ["notification_uuid"])
+    .index("by_created_at", ["created_at"])
     .index("by_raw_payload_id", ["raw_payload_id"]),
 
   storekit_payloads: defineTable({
@@ -412,6 +413,7 @@ export default defineSchema({
     created_at: ts,
   })
     .index("by_uuid", ["id"])
+    .index("by_created_at", ["created_at"])
     .index("by_environment_sha256", ["environment", "sha256"]),
 
   // FK: product_id -> subscription_products restrict; raw_payload_id -> storekit_payloads restrict
@@ -426,6 +428,9 @@ export default defineSchema({
     web_order_line_item_id: optString,
     status: literals("active", "grace", "billing_retry", "expired", "revoked", "refunded"),
     purchased_at: optTs,
+    // When the subscription was first bought (Apple's `originalPurchaseDate`), the same on every
+    // renewal. The six-month notice counts its half-years from here (`lib/subscriptionNotices.ts`).
+    original_purchased_at: optTs,
     expires_at: optTs,
     revoked_at: optTs,
     revocation_reason: optString,
@@ -444,6 +449,7 @@ export default defineSchema({
     .index("by_environment_original_transaction_id", ["environment", "original_transaction_id"])
     .index("by_product_id_user_id", ["product_id", "user_id"])
     .index("by_raw_payload_id", ["raw_payload_id"])
+    .index("by_purchased_at", ["purchased_at"])
     .index("by_status_expires_at", ["status", "expires_at"])
     .index("by_is_free_trial_status_expires_at", ["is_free_trial", "status", "expires_at"])
     .index("by_auto_renew_off_status_expires_at", ["auto_renew_off", "status", "expires_at"])
@@ -471,6 +477,7 @@ export default defineSchema({
     .index("by_environment_transaction_id", ["environment", "transaction_id"])
     .index("by_couple_id_restored_at", ["couple_id", "restored_at"])
     .index("by_product_id", ["product_id"])
+    .index("by_purchased_at", ["purchased_at"])
     .index("by_purchaser_user_id_restored_at", ["purchaser_user_id", "restored_at"])
     .index("by_raw_payload_id", ["raw_payload_id"]),
 
@@ -578,6 +585,7 @@ export default defineSchema({
     .index("by_pair_id", ["pair_id"])
     .index("by_reported_user_id_created_at", ["reported_user_id", "created_at"])
     .index("by_reporter_user_id_created_at", ["reporter_user_id", "created_at"])
+    .index("by_resolved_at", ["resolved_at"])
     .index("by_status_created_at", ["status", "created_at"]),
 
   // FK: couple_id -> couples cascade; moderated_by -> users set null; moderation_report_id -> content_reports set null
@@ -1343,6 +1351,7 @@ export default defineSchema({
     .index("by_uuid", ["id"])
     .index("by_user_id_request_kind_status", ["user_id", "request_kind", "status"])
     .index("by_request_kind_status_requested_at", ["request_kind", "status", "requested_at"])
+    .index("by_status_updated_at", ["status", "updated_at"])
     .index("by_user_id_requested_at", ["user_id", "requested_at"])
     .index("by_user_id_updated_at_id", ["user_id", "updated_at", "id"]),
 
@@ -1528,6 +1537,7 @@ export default defineSchema({
       "blocked_by_user_id",
       "blocked_user_id",
     ])
+    .index("by_blocked_by_user_id", ["blocked_by_user_id"])
     .index("by_source_report_id", ["source_report_id"]),
 
   // (user_low_id, user_high_id) is unique and user_low_id < user_high_id.

@@ -2,7 +2,8 @@ import type { ReaderCtx, WriterCtx } from "./db";
 import { findCurrentCouple, listActiveMembers } from "./access";
 import { accessEndsAt, resolveUserEntitlement } from "./entitlements";
 import { enqueueNotificationForUser } from "./notifications";
-import { addMs } from "./time";
+import { addMs, localDateOf, nowIso } from "./time";
+import { resolveMemberStreakTimeZone } from "./streakDeadlines";
 import { getByUuid } from "./db";
 import type { Doc } from "../_generated/dataModel";
 import { pushStatus } from "./pushStatus";
@@ -151,4 +152,90 @@ async function endingSubscriptionPushAllowed(ctx: ReaderCtx, userIds: string[], 
     if (transactions.some((tx) => tx.auto_renew_off === true && subscriptionNotificationsEnabled(tx.environment))) return true;
   }
   return false;
+}
+
+// ---- The six-month notice ----
+//
+// digitalytelsesloven § 33(4): at least every six months, the person who pays is told that the
+// subscription runs and how to cancel it.
+
+/**
+ * The length of one half-year, counted from the subscription's first purchase. Six calendar months
+ * are never shorter than 181 days, so a push the daily run sends up to a day late still comes
+ * within six months of the one before. The app counts the same way (`AccessNotice`).
+ */
+export const RUNNING_NOTICE_PERIOD_DAYS = 180;
+
+/**
+ * How long after a half-year passes the push still goes out and the app shows its notice. Shorter
+ * than the 30 days an outbox row lives (`retention.ts`), so the dedupe key outlasts it.
+ */
+export const RUNNING_NOTICE_WINDOW_DAYS = 14;
+
+/**
+ * Which half-year notice is due at `now` for a subscription first bought at `subscribedSince`:
+ * 1 from day 180, 2 from day 360, and so on. Null in the first half-year and once the window after
+ * a half-year has passed.
+ */
+export function runningNoticeHalfYear(subscribedSince: string, now: string): number | null {
+  const elapsedMs = Date.parse(now) - Date.parse(subscribedSince);
+  const periodMs = RUNNING_NOTICE_PERIOD_DAYS * DAY_MS;
+  const halfYear = Math.floor(elapsedMs / periodMs);
+  if (!(halfYear >= 1)) return null;
+  return elapsedMs - halfYear * periodMs < RUNNING_NOTICE_WINDOW_DAYS * DAY_MS ? halfYear : null;
+}
+
+/** A subscription that is paid up and renews by itself. One that ends or has a failed payment gets its own notice. */
+function isRunning(tx: Doc<"storekit_transactions">, now: string): boolean {
+  return tx.status === "active" && tx.auto_renew_off !== true && tx.expires_at !== undefined && tx.expires_at > now;
+}
+
+/**
+ * Apple renews up to a day early, so the period that is about to end and the next one are both
+ * active for a while. Only the newest says when the subscription renews next and whether it will.
+ */
+async function isNewestPeriod(ctx: ReaderCtx, tx: Doc<"storekit_transactions">, expiresAt: string): Promise<boolean> {
+  const periods = await ctx.db
+    .query("storekit_transactions")
+    .withIndex("by_environment_original_transaction_id", (q) =>
+      q.eq("environment", tx.environment).eq("original_transaction_id", tx.original_transaction_id),
+    )
+    .collect();
+  return periods.every((period) => period.expires_at === undefined || period.expires_at <= expiresAt);
+}
+
+/**
+ * One push to the payer when their subscription has run another half-year, saying when it renews
+ * and where to cancel. Deduped per subscription and half-year, so the daily runs inside the window
+ * queue it once. The partner gets nothing. Returns the number of outbox rows queued.
+ */
+export async function queueSubscriptionRunningPush(
+  ctx: WriterCtx,
+  tx: Doc<"storekit_transactions">,
+  now: string,
+): Promise<number> {
+  if (!subscriptionNotificationsEnabled(tx.environment) || !isRunning(tx, now)) return 0;
+  if (tx.original_purchased_at === undefined || tx.expires_at === undefined) return 0;
+  const halfYear = runningNoticeHalfYear(tx.original_purchased_at, now);
+  if (halfYear === null || !(await isNewestPeriod(ctx, tx, tx.expires_at))) return 0;
+  return await enqueueNotificationForUser(ctx, {
+    recipient_user_id: tx.user_id,
+    kind: "subscription_running",
+    payload: {
+      type: "subscription_running",
+      route: "subscription",
+      deeplink: "paeonia://settings/subscription",
+      subscription_id: tx.id,
+      // The renewal day on the payer's own calendar, so the push names the date their phone shows.
+      renews_on: localDateOf(tx.expires_at, await resolveMemberStreakTimeZone(ctx, tx.user_id)),
+    },
+    dedupe_key: `subscription_running:${tx.environment}:${tx.original_transaction_id}:${halfYear}`,
+    apns_collapse_id: "subscription-running",
+  });
+}
+
+/** The six-month push goes out only while the subscription it names still runs. */
+export async function subscriptionRunningPushStillWanted(ctx: ReaderCtx, subscriptionId: unknown): Promise<boolean> {
+  const tx = typeof subscriptionId === "string" ? await getByUuid(ctx, "storekit_transactions", subscriptionId) : null;
+  return tx !== null && subscriptionNotificationsEnabled(tx.environment) && isRunning(tx, nowIso());
 }

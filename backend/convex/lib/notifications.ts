@@ -44,6 +44,10 @@ const NOTIFICATION_PAYLOAD_FIELDS = {
   subscription_trial_reminder: ["type", "route", "deeplink", "subscription_id", "trial_ends_at", "days_left"],
   subscription_payment_failed: ["type", "route", "deeplink", "subscription_id"],
   subscription_ending: ["type", "couple_id", "route", "deeplink", "ends_at", "days_left", "own_subscription"],
+  subscription_running: ["type", "route", "deeplink", "subscription_id", "renews_on"],
+  // Tells an admin that a report or a correction request waits. It names neither the people nor
+  // what was reported (lib/adminAlerts.ts).
+  admin_case_opened: ["type", "case_kind"],
   memory_created: ["type", "couple_id", "actor_user_id", "route", "deeplink", "memory_id"],
   story_posted: ["type", "couple_id", "actor_user_id", "route", "deeplink", "story_id", "expires_at"],
   thread_message_sent: [

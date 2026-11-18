@@ -18,7 +18,12 @@ import { getByUuid, withUpdatedAt } from "./lib/db";
 import { fail } from "./lib/errors";
 import { timestampArg } from "./lib/ids";
 import { enqueueNotificationForUser } from "./lib/notifications";
-import { ENDING_NOTICE_DAYS, queueAccessEndingPushes, subscriptionNotificationsEnabled } from "./lib/subscriptionNotices";
+import {
+  ENDING_NOTICE_DAYS,
+  queueAccessEndingPushes,
+  queueSubscriptionRunningPush,
+  subscriptionNotificationsEnabled,
+} from "./lib/subscriptionNotices";
 import { createRelationshipSyncEvent } from "./lib/syncEvents";
 import {
   patchStorekitTransaction,
@@ -46,6 +51,7 @@ export const record_verified_storekit_transaction = internalMutation({
     p_web_order_line_item_id: nullableString,
     p_status: nullableString,
     p_purchased_at: nullableString,
+    p_original_purchased_at: nullableString,
     p_expires_at: nullableString,
     p_revoked_at: nullableString,
     p_revocation_reason: nullableString,
@@ -85,6 +91,7 @@ export const record_storekit_server_notification = internalMutation({
     p_web_order_line_item_id: nullableString,
     p_status: nullableString,
     p_purchased_at: nullableString,
+    p_original_purchased_at: nullableString,
     p_expires_at: nullableString,
     p_revoked_at: nullableString,
     p_revocation_reason: nullableString,
@@ -368,6 +375,36 @@ export const queue_subscription_ending_reminders = internalMutation({
   },
 });
 
+// ---- The six-month notice ----
+
+const RUNNING_NOTICE_PAGE_SIZE = 50;
+
+/**
+ * Daily (`queue-subscription-running-notices`). Reads every active subscription, 50 per mutation,
+ * and queues the six-month push for the ones that passed another half-year
+ * (`queueSubscriptionRunningPush`). A page that is not the last schedules the next. Returns the
+ * number of outbox rows this page queued.
+ */
+export const queue_subscription_running_notices = internalMutation({
+  args: { p_now: nullableString, cursor: nullableString },
+  handler: async (ctx, args) => {
+    const now = args.p_now ? timestampArg(args.p_now) : nowIso();
+    const page = await ctx.db
+      .query("storekit_transactions")
+      .withIndex("by_status_expires_at", (q) => q.eq("status", "active").gt("expires_at", now))
+      .paginate({ numItems: RUNNING_NOTICE_PAGE_SIZE, cursor: args.cursor ?? null });
+    let queued = 0;
+    for (const tx of page.page) queued += await queueSubscriptionRunningPush(ctx, tx, now);
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(0, internal.storekit.queue_subscription_running_notices, {
+        p_now: now,
+        cursor: page.continueCursor,
+      });
+    }
+    return queued;
+  },
+});
+
 // ---- Apple App Store Server Notifications webhook ----
 
 function jsonResponse(status: number, body: Record<string, unknown>): Response {
@@ -476,6 +513,7 @@ export const apple_server_notifications = httpAction(async (ctx, request) => {
         p_web_order_line_item_id: transactionInfo?.webOrderLineItemId ?? null,
         p_status: subscription?.status ?? null,
         p_purchased_at: millisToIsoOrNull(transactionInfo?.purchaseDate),
+        p_original_purchased_at: millisToIsoOrNull(transactionInfo?.originalPurchaseDate),
         p_expires_at: millisToIsoOrNull(subscription?.expiresAt),
         p_revoked_at: revocation.revokedAt,
         p_revocation_reason: revocation.reason,

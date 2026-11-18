@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { internalMutation, internalQuery, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { findCurrentCouple, resolveUserEntitlement } from "./lib/access";
+import { isAdminUser } from "./lib/admins";
 import { getCurrentUserId } from "./lib/auth";
 import { banUser, unbanUser } from "./lib/bans";
 import { getByUuid, withTouch } from "./lib/db";
@@ -9,28 +10,16 @@ import { fail } from "./lib/errors";
 import { newUuid, uuidArg } from "./lib/ids";
 import { nowIso } from "./lib/time";
 
-// The admin area. Admins are the Clerk users listed, comma separated, in the
-// PAEONIA_ADMIN_CLERK_USER_IDS environment variable. It names Clerk users rather
-// than Paeonia rows, so it survives a data wipe, and the app cannot change it.
-// Every function here checks it on each call. The app only reads it to show the
-// Admin row.
+// The admin area. `lib/admins.ts` says who is an admin. Every function here checks it on
+// each call. The app only reads it to show the Admin row.
 
 const SEARCH_LIMIT = 50;
 const AUDIT_LIMIT = 100;
+const OPEN_CASE_LIMIT = 100;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function adminClerkUserIds(): Set<string> {
-  return new Set(
-    (process.env.PAEONIA_ADMIN_CLERK_USER_IDS ?? "")
-      .split(",")
-      .map((id) => id.trim())
-      .filter(Boolean),
-  );
-}
-
-function isAdminUser(user: Doc<"users">): boolean {
-  return adminClerkUserIds().has(user.clerk_user_id);
-}
+/** A report or a correction request waits for an answer while it has one of these statuses. */
+const OPEN_REPORT_STATUSES = ["submitted", "under_review"] as const;
+const OPEN_CORRECTION_STATUSES = ["submitted", "verifying", "processing"] as const;
 
 /** The signed-in admin's user id. Fails with `42501 admin access required` for everyone else. */
 async function requireAdmin(ctx: QueryCtx): Promise<string> {
@@ -248,6 +237,72 @@ export const get_audit_log = query({
   },
 });
 
+/**
+ * The reports nobody has acted on yet, the one that has waited longest first, at most 100. Each
+ * row says who reported whom, why and when, with the note the reporter wrote to Paeonia. It never
+ * holds the reported content. A report leaves this list when a moderation action closes it.
+ */
+export const list_open_reports = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    const reports: Doc<"content_reports">[] = [];
+    for (const status of OPEN_REPORT_STATUSES) {
+      reports.push(
+        ...(await ctx.db
+          .query("content_reports")
+          .withIndex("by_status_created_at", (q) => q.eq("status", status))
+          .take(OPEN_CASE_LIMIT)),
+      );
+    }
+    reports.sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0));
+    return await Promise.all(
+      reports.slice(0, OPEN_CASE_LIMIT).map(async (report) => ({
+        id: report.id,
+        status: report.status,
+        reason: report.reason,
+        note: report.note ?? null,
+        reporter_user_id: report.reporter_user_id,
+        reporter_display_name: await displayName(ctx, report.reporter_user_id),
+        reported_user_id: report.reported_user_id,
+        reported_display_name: await displayName(ctx, report.reported_user_id),
+        created_at: report.created_at,
+      })),
+    );
+  },
+});
+
+/**
+ * The requests to correct something that are still open, the one that has waited longest first,
+ * at most 100, with what the person wrote.
+ */
+export const list_open_correction_requests = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    const requests: Doc<"privacy_requests">[] = [];
+    for (const status of OPEN_CORRECTION_STATUSES) {
+      requests.push(
+        ...(await ctx.db
+          .query("privacy_requests")
+          .withIndex("by_request_kind_status_requested_at", (q) => q.eq("request_kind", "correction").eq("status", status))
+          .take(OPEN_CASE_LIMIT)),
+      );
+    }
+    requests.sort((a, b) => (a.requested_at < b.requested_at ? -1 : a.requested_at > b.requested_at ? 1 : 0));
+    return await Promise.all(
+      requests.slice(0, OPEN_CASE_LIMIT).map(async (request) => ({
+        id: request.id,
+        status: request.status,
+        user_id: request.user_id,
+        user_display_name: await displayName(ctx, request.user_id),
+        requester_note: request.requester_note ?? null,
+        requested_at: request.requested_at,
+      })),
+    );
+  },
+});
+
 // ---- Operator commands (`npx convex run`) ----
 
 /** Bans a user from the command line, with the same rules as the admin screen. */
@@ -319,7 +374,7 @@ export const operator_inbox = internalQuery({
     };
 
     const reports = empty();
-    for (const status of ["submitted", "under_review"] as const) {
+    for (const status of OPEN_REPORT_STATUSES) {
       const waiting = () =>
         ctx.db.query("content_reports").withIndex("by_status_created_at", (q) => q.eq("status", status));
       const rows = await waiting().take(INBOX_LIMIT);
@@ -327,7 +382,7 @@ export const operator_inbox = internalQuery({
     }
 
     const corrections = empty();
-    for (const status of ["submitted", "verifying", "processing"] as const) {
+    for (const status of OPEN_CORRECTION_STATUSES) {
       const waiting = () =>
         ctx.db
           .query("privacy_requests")
@@ -368,7 +423,7 @@ export const operator_resolve_correction_request = internalMutation({
     if (operator === "") fail("23514", "operator identifier is required");
     if (message !== undefined && Array.from(message).length > 500) fail("23514", "status message is too long");
     const request = await getByUuid(ctx, "privacy_requests", uuidArg(args.p_request_id));
-    const isOpen = request !== null && ["submitted", "verifying", "processing"].includes(request.status);
+    const isOpen = request !== null && (OPEN_CORRECTION_STATUSES as readonly string[]).includes(request.status);
     if (!request || request.request_kind !== "correction" || !isOpen) return false;
     const now = nowIso();
     await ctx.db.patch(

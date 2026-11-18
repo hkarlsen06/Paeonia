@@ -9,7 +9,12 @@ import { pairingInviteStillWaiting } from "./pairingInviteReminder";
 import { standingRestoreRequest } from "./relationshipRestore";
 import { waitsWhileTogether } from "./notifications";
 import { hasStartedToday } from "./questionTimeStatus";
-import { accessEndingPushStillWanted, paymentProblemPushWanted, subscriptionPushAllowed } from "./subscriptionNotices";
+import {
+  accessEndingPushStillWanted,
+  paymentProblemPushWanted,
+  subscriptionPushAllowed,
+  subscriptionRunningPushStillWanted,
+} from "./subscriptionNotices";
 import { addMs } from "./time";
 import { hasTopicWaiting, topicPushTooSoon } from "./topics";
 
@@ -126,6 +131,9 @@ export async function notificationStillWanted(
     return { wanted: false, reason: "out_of_date" };
   }
   if (row.kind === "subscription_ending" && !(await accessEndingPushStillWanted(ctx, recipientUserId, payload))) {
+    return { wanted: false, reason: "out_of_date" };
+  }
+  if (row.kind === "subscription_running" && !(await subscriptionRunningPushStillWanted(ctx, payload.subscription_id))) {
     return { wanted: false, reason: "out_of_date" };
   }
   // Renewal turned off since the trial reminder was queued: the ending push tells of the same end.

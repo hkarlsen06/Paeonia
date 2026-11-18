@@ -2,6 +2,7 @@ import type { ReaderCtx } from "./db";
 import type { GameKind } from "./games";
 import type { GameTurn } from "./liveActivities";
 import { nameForViewer } from "./partnerNames";
+import { parseDate } from "./time";
 
 /** Port of `internal.notification_locale_language`: Norwegian locales map to 'nb', everything else to 'en'. */
 export function notificationLocaleLanguage(locale: string | null | undefined): "nb" | "en" {
@@ -435,9 +436,31 @@ export function notificationAlertBody(
           : "Turn your subscription back on in the App Store to keep it for you both.";
       }
       return nb ? "Fram til da fungerer alt som vanlig." : "Until then, everything works as usual.";
+    case "subscription_running": {
+      const date = longDate(payload.renews_on, nb);
+      return nb
+        ? `Paeonia fornyes ${date}. Du kan si opp når som helst i Innstillinger, under Abonnementer.`
+        : `Paeonia renews on ${date}. You can cancel any time in Settings, under Subscriptions.`;
+    }
+    case "admin_case_opened":
+      return nb ? "Åpne Admin i Mer-fanen for å gå gjennom den." : "Open Admin in the More tab to review it.";
     default:
       return null;
   }
+}
+
+const MONTHS = {
+  en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+  nb: ["januar", "februar", "mars", "april", "mai", "juni", "juli", "august", "september", "oktober", "november", "desember"],
+};
+
+/**
+ * A `YYYY-MM-DD` payload date written out, as "18 May 2027" or "18. mai 2027". The month names are
+ * spelled here, so the wording does not depend on which locales the server knows.
+ */
+function longDate(value: unknown, nb: boolean): string {
+  const [year, month, day] = parseDate(String(value));
+  return nb ? `${day}. ${MONTHS.nb[month - 1]} ${year}` : `${day} ${MONTHS.en[month - 1]} ${year}`;
 }
 
 /**
@@ -568,6 +591,14 @@ export async function notificationAlertTitle(
     case "subscription_payment_failed":
       // Paeonia's own voice. Only the person who pays gets it.
       return nb ? "Betalingen din gikk ikke gjennom" : "Your payment didn't go through";
+    case "subscription_running":
+      return nb ? "Abonnementet ditt løper" : "Your subscription is running";
+    case "admin_case_opened":
+      // Paeonia's own voice, to an admin. Never who filed it, about whom, or what it says.
+      if (payload.case_kind === "correction_request") {
+        return nb ? "En ny forespørsel om retting venter" : "A new correction request is waiting";
+      }
+      return nb ? "En ny rapport venter" : "A new report is waiting";
     case "subscription_ending": {
       // Both partners get this title, so it never says who stopped paying.
       const days = payloadCount(payload.days_left);

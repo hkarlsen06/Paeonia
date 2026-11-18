@@ -36,7 +36,8 @@ export default {
     // The room trusts this header because only this Worker can reach the room.
     const headers = new Headers(request.headers);
     headers.set("X-Paeonia-User", ticket.userId);
-    return env.ROOMS.getByName(roomName(ticket)).fetch(new Request(request, { headers }));
+    // Rooms run in the EU only, so what the partners draw and say never leaves it on the way.
+    return env.ROOMS.jurisdiction("eu").getByName(roomName(ticket)).fetch(new Request(request, { headers }));
   },
 };
 

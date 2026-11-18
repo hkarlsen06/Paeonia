@@ -5,6 +5,7 @@ import { action, internalMutation, mutation, query, type MutationCtx } from "./_
 import { requestAccountDeletion, runDeleteAccount } from "./accountDeletion";
 import { endLiveCallOfUser } from "./lib/calls";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
+import { alertAdminsOfNewCase } from "./lib/adminAlerts";
 import { readAccessSnapshot } from "./lib/accessSnapshot";
 import { fetchLinkedSignInProviders } from "./lib/accountDeletionProviders";
 import { authProviderFromIdentity, ensureCurrentUser, requireUserId, requireUserIdIncludingDeleted } from "./lib/auth";
@@ -462,6 +463,8 @@ export const create_privacy_request = mutation({
       created_at: now,
       updated_at: now,
     });
+    // A deletion request needs nobody: the account deletion job carries it out.
+    if (kind === "correction") await alertAdminsOfNewCase(ctx, "correction_request", id);
     const row = await ctx.db
       .query("privacy_requests")
       .withIndex("by_uuid", (q) => q.eq("id", id))

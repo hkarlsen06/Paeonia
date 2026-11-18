@@ -484,6 +484,11 @@ async function removeDeletedUserRows(ctx: MutationCtx, userId: string): Promise<
       .collect()),
     ...(await reactionsByUser(ctx, userId)),
     ...(await listUserFavoriteRows(ctx, userId)),
+    // A block lasts until the person who made it deletes their account, as the privacy policy says.
+    ...(await ctx.db
+      .query("relationship_blocks")
+      .withIndex("by_blocked_by_user_id", (q) => q.eq("blocked_by_user_id", userId))
+      .collect()),
   ];
   for (const row of rows) await ctx.db.delete(row._id);
   // The record of each privacy request stays. What the person typed into it goes.

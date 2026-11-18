@@ -89,6 +89,8 @@ export const notificationKind = literals(
   "subscription_trial_reminder",
   "subscription_payment_failed",
   "subscription_ending",
+  "subscription_running",
+  "admin_case_opened",
   "memory_created",
   "story_posted",
   "thread_message_sent",
