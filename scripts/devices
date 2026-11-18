@@ -74,9 +74,10 @@ take_lock() {
 # next command starts a new one here. The sessions it held are opened again.
 stop_orphaned_daemon() {
   local pid cwd
-  pid="$(sed -n 's/^ *"pid": *\([0-9][0-9]*\).*/\1/p' "$STATE_ROOT/agent-device/daemon.json" 2>/dev/null)"
+  # No daemon.json while no daemon has started, and no live process once it exited.
+  pid="$(sed -n 's/^ *"pid": *\([0-9][0-9]*\).*/\1/p' "$STATE_ROOT/agent-device/daemon.json" 2>/dev/null || true)"
   [[ -n "$pid" ]] || return 0
-  cwd="$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')"
+  cwd="$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' || true)"
   if [[ -n "$cwd" && ! -d "$cwd" ]]; then
     kill "$pid" 2>/dev/null || true
     echo "devices: restarted agent-device, whose folder $cwd was removed" >&2
