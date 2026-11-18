@@ -17,7 +17,7 @@ Use a device for anything it shows better than a simulator: how the real app loo
 - Keep the app's data. `install` installs over the app, which keeps it. Never uninstall the app, sign out, leave the couple or delete content you did not create for the test.
 - Do not change device settings unless the test needs it, and set them back afterwards.
 - The accounts hold the developer's test data. Content you create to test something, such as a message, a drawing or a memory, is fine. Remove it afterwards when the app lets you.
-- Each device has its own lock (`device-iphone`, `device-ipad` in `scripts/lock`), which `scripts/devices` takes, so two worktrees can each use one device. Run `scripts/devices release` when you are done. A session nobody used for 10 minutes frees itself.
+- Each device has its own lock (`device-iphone`, `device-ipad` in `scripts/lock`), which `scripts/devices` takes, so two worktrees can each use one device. Run `scripts/devices release` when you are done. It also restarts Paeonia if it is running, because an app that `agent-device` drove keeps showing extra controls until it restarts. A session nobody used for 10 minutes frees itself.
 
 ## Commands
 

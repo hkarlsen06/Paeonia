@@ -13,7 +13,8 @@
 #                                                collect its system log since <start>
 #                                                ("YYYY-MM-DD HH:MM:SS") and print Paeonia's
 #                                                lines, or one category's, such as CallStats
-#   scripts/devices release [iphone] [ipad]      close the sessions and give the devices back
+#   scripts/devices release [iphone] [ipad]      close the sessions, restart a running Paeonia
+#                                                and give the devices back
 #
 # Each device has its own lock (scripts/lock device-iphone, device-ipad), so two
 # worktrees can each drive one, and a session frees itself 10 minutes after its
@@ -184,6 +185,14 @@ cmd_release() {
   for device in "${targets[@]}"; do
     udid_of "$device" >/dev/null
     agent_device close --session "$device" >/dev/null 2>&1 || true
+    # A Paeonia that agent-device drove keeps SwiftUI's accessibilityEnabled on
+    # after the session ends, which shows extra controls until
+    # it restarts. Restart a running one so the developer gets the normal app.
+    local udid
+    udid="$(udid_of "$device")"
+    if xcrun devicectl device info processes --device "$udid" 2>/dev/null | grep -qE '/PaeoniaApp\.app/PaeoniaApp *$'; then
+      xcrun devicectl device process launch --device "$udid" --terminate-existing "$BUNDLE_ID" >/dev/null 2>&1 || true
+    fi
     "$ROOT/scripts/lock" release "device-$device" 2>/dev/null || true
   done
 }
