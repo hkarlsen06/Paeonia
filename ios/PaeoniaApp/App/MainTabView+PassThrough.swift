@@ -59,15 +59,53 @@ enum TabPassThrough: Equatable {
     }
 }
 
+/// When the tab view appears in a window already on screen, as after pairing or bringing the
+/// couple back, Home's cards read their first data a moment later, and each would move the page
+/// as it arrived. So Home stays hidden until the cards that set its layout have their first data,
+/// or for two seconds at most, and then fades in once. Under the launch overlay Home loads while
+/// the overlay covers it, so it doesn't wait.
+extension MainTabView {
+    var isWaitingForHomeLayout: Bool {
+        !isHomeLayoutSettled && !launchOverlayShowing && selection.wrappedValue == .us
+    }
+
+    /// Today's question, the visit card and the countdown tile know what they show.
+    var homeHasFirstLayout: Bool {
+        dailyChallengeViewModel.homeCardState.kind != .loading && models.visits.hasLoaded
+            && milestoneViewModel.isPresentationReady && coupleDatesViewModel.hasLoaded
+    }
+
+    /// Runs again each time `homeHasFirstLayout` changes. The wait's limit counts from the first run.
+    func settleHomeLayout() async {
+        guard !isHomeLayoutSettled else { return }
+        guard !launchOverlayShowing, selection.wrappedValue == .us, !homeHasFirstLayout else {
+            isHomeLayoutSettled = true
+            return
+        }
+        let deadline = homeLayoutDeadline ?? .now + .seconds(2)
+        homeLayoutDeadline = deadline
+        try? await Task.sleep(until: deadline)
+        guard !Task.isCancelled else { return }
+        isHomeLayoutSettled = true
+    }
+}
+
 extension View {
-    /// Hides the tab view until its pass is over, then fades it in and cues its content's
-    /// launch entrance (`launchEntrance(order:)`).
+    /// Hides the tab view until its pass is over and Home's first layout is in, then fades it
+    /// in and cues its content's launch entrance (`launchEntrance(order:)`).
     func revealedAfterPassThrough(_ tabs: MainTabView) -> some View {
-        let isWaiting = tabs.isWaitingForPassThrough
+        let isWaiting = tabs.isWaitingForPassThrough || tabs.isWaitingForHomeLayout
         return environment(\.launchContentRevealed, tabs.launchContentRevealed && !isWaiting)
+            // Hidden changes land in place, so nothing still moves once the tabs fade in.
+            .transaction { transaction in
+                guard isWaiting else { return }
+                transaction.animation = nil
+                transaction.disablesAnimations = true
+            }
             .animation(tabs.reduceMotion ? nil : .easeOut(duration: PaeoniaMotion.motionDefault)) {
                 $0.opacity(isWaiting ? 0 : 1)
             }
             .task(id: tabs.launchOverlayShowing) { await tabs.passThroughTab() }
+            .task(id: tabs.homeHasFirstLayout) { await tabs.settleHomeLayout() }
     }
 }
