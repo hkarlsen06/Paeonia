@@ -167,6 +167,31 @@ if [[ $record == 1 ]]; then
     echo "Take one with: SIM=\"\$(scripts/lock acquire \"$simulator\")\", open that simulator for your tap tool, then run this again." >&2
     exit 64
   fi
+  if [ -n "$then_command" ]; then
+    # The lock can hand out any free simulator, and a tap tool left open on another one
+    # taps another agent's screen. T3's agent-device keeps its simulator in the launcher
+    # beside it, and a plain agent-device names it with --udid.
+    held_udid=$(xcrun simctl list devices -j | python3 -c '
+import json, sys
+runtimes = json.load(sys.stdin)["devices"]
+print(next((d["udid"] for devices in runtimes.values() for d in devices if d["name"] == sys.argv[1]), ""))
+' "$held_before")
+    read -ra then_words <<<"$then_command"
+    then_udids=$(
+      for word in "${then_words[@]}"; do
+        launcher=${word%/agent-device}/agent-device-launcher.mjs
+        [[ $word == */agent-device && -f $launcher ]] && grep -oE '"--udid","[0-9A-Fa-f-]{36}"' "$launcher" | cut -d'"' -f4
+      done
+      grep -oE -- '--udid[ =]+[0-9A-Fa-f-]{36}' <<<"$then_command" | grep -oE '[0-9A-Fa-f-]{36}$'
+    ) || true
+    for udid in $then_udids; do
+      if [[ $udid != "$held_udid" ]]; then
+        target=$(xcrun simctl list devices | grep -F "($udid)" | sed -E 's/^ *(.*) \([0-9A-F-]{36}\).*/\1/' | head -1 || true)
+        echo "--then taps ${target:-$udid}, but this worktree holds $held_before, which is the one recorded. Close that device, open $held_before for your tap tool, and run this again with its command." >&2
+        exit 64
+      fi
+    done
+  fi
 fi
 
 bundle_id=no.paeonia.app

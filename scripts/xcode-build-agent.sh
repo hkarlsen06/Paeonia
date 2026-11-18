@@ -183,6 +183,12 @@ else:
             print(e)
 PY
 
+# Xcode reports a missing Metal toolchain only as an unreadable .dia file, and the
+# toolchain belongs to one Xcode, which may not be the one xcode-select picks.
+if [ "$EXIT_CODE" -ne 0 ] && grep -q "missing Metal Toolchain" "$LOG_FILE"; then
+  echo "[xcode-build-agent] The Metal toolchain is not installed for $DEVELOPER_DIR, which this build uses. Ask the developer before downloading it with: DEVELOPER_DIR=\"$DEVELOPER_DIR\" xcodebuild -downloadComponent MetalToolchain" >&2
+fi
+
 # CI sets this so a compiler warning fails the build. Local builds keep warnings.
 if [ "${XCODE_BUILD_AGENT_FAIL_ON_WARNINGS:-0}" = "1" ] && [ "$EXIT_CODE" -eq 0 ] &&
   python3 -c 'import json, sys; sys.exit(0 if json.load(open(sys.argv[1]))["warnings"] else 1)' "$PARSED_FILE"; then
