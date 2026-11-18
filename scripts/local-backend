@@ -132,6 +132,9 @@ for name in "${copy_vars[@]}"; do
 done
 if $reseed; then
   echo "Copying the data on api.paeonia.no to the local backend..."
+  # one-s emails a security alert for a snapshot export that nobody announced.
+  ssh one-s sudo -n /srv/backup/expect-snapshot paeonia scripts/local-backend ||
+    echo "Could not announce the export on one-s, so it will email a security alert." >&2
   hosted export --include-file-storage --path "$work/hosted.zip" >/dev/null
   npx convex import --replace-all -y "$work/hosted.zip" 2>&1 | tail -3 ||
     { echo "Could not import the data from api.paeonia.no" >&2; exit 1; }
