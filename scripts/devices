@@ -68,6 +68,21 @@ take_lock() {
   "$ROOT/scripts/lock" acquire "device-$1" 2> >(grep -v "is held by this worktree" >&2) >/dev/null
 }
 
+# agent-device's daemon keeps the working directory of the command that started
+# it. Once that worktree is removed, it can no longer start xcodebuild and every
+# command fails with "xcodebuild not found in PATH". Stop such a daemon, so the
+# next command starts a new one here. The sessions it held are opened again.
+stop_orphaned_daemon() {
+  local pid cwd
+  pid="$(sed -n 's/^ *"pid": *\([0-9][0-9]*\).*/\1/p' "$STATE_ROOT/agent-device/daemon.json" 2>/dev/null)"
+  [[ -n "$pid" ]] || return 0
+  cwd="$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')"
+  if [[ -n "$cwd" && ! -d "$cwd" ]]; then
+    kill "$pid" 2>/dev/null || true
+    echo "devices: restarted agent-device, whose folder $cwd was removed" >&2
+  fi
+}
+
 agent_device() {
   local version
   version="$(ls "$HOME/.t3/tools/agent-device" 2>/dev/null | sort -V | tail -1)"
@@ -77,6 +92,7 @@ agent_device() {
     exit 1
   fi
   mkdir -p "$STATE_ROOT/agent-device"
+  stop_orphaned_daemon
   AGENT_DEVICE_IOS_TEAM_ID=48ZSLD4RMP \
     AGENT_DEVICE_IOS_BUNDLE_ID=no.hkarlsen.agentdevice.runner \
     AGENT_DEVICE_STATE_DIR="$STATE_ROOT/agent-device" \
