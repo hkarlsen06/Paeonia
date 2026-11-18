@@ -21,6 +21,7 @@ Paeonia is ready for MVP when:
 - Marketing/app contract: `docs/marketing-app-contract.md`
 - Design and copy rules: `docs/phase-2-design/`
 - Question authoring rules: `.agents/skills/paeonia-questions/`
+- GDPR paperwork for the controller to sign (impact assessment, record of processing, breach routine): `docs/legal/`
 
 ## Release Blockers
 
