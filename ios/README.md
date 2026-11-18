@@ -4,7 +4,7 @@ Native iOS app workspace for the app, widget, notification service extension, an
 
 Project setup rule: use an Xcode-managed `.xcodeproj`, matching Tidex. Keep the setup nearly identical to Tidex, and discuss deviations before applying them.
 
-Foundation decisions: minimum deployment target iOS 27.0, Sign in with Apple and Google Sign-In only, `applinks:paeonia.no`, URL scheme `paeonia://`, English and Norwegian Bokmal with generated String Catalog symbols.
+Foundation decisions: minimum deployment target iOS 27.0, Sign in with Apple, Google Sign-In and a 6-digit code sent by email, `applinks:paeonia.no`, URL scheme `paeonia://`, English and Norwegian Bokmal with generated String Catalog symbols.
 
 The shared `App` scheme and the Debug-only `Scenarios` scheme, and both Xcode wrappers, run
 `scripts/generate-ios-build-number.sh` before Xcode evaluates the build. The

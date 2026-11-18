@@ -8,7 +8,7 @@ export const legalEn = {
     },
     title: 'Accessibility in Paeonia',
     description: 'Paeonia is still in development. We are working to make every shared activity usable with different ways of seeing, hearing, moving, and reading.',
-    updated: 'Last reviewed 1 November 2026',
+    updated: 'Last reviewed 18 November 2026',
     sections: [
       {
         heading: 'System preferences',
@@ -97,7 +97,7 @@ export const legalEn = {
         heading: 'Invites and sign-in',
         paragraphs: [
           'An invite code has 6 characters. Type or paste it in Paeonia, or open the invite link on the iPhone that has Paeonia installed. If the link opens this website instead of the app, tap Open Paeonia on the page. If the code does not work, ask your partner for a new one.',
-          'You sign in with Apple or Google. Paeonia has no password or email sign-in.',
+          'You sign in with Apple, with Google, or with a 6-digit code we send to your email address. Paeonia has no passwords.',
         ],
       },
     ],
@@ -108,7 +108,7 @@ export const legalEn = {
       description: 'How Paeonia collects, uses, shares, and protects your personal data.',
     },
     title: 'Privacy Policy',
-    updated: 'Last updated 17 November 2026',
+    updated: 'Last updated 18 November 2026',
     sections: [
       {
         heading: 'Who this policy is for',
@@ -120,13 +120,12 @@ export const legalEn = {
       {
         heading: 'Data we collect',
         paragraphs: [
-          'Account and profile data includes your account identifier, sign-in provider, email and name when Apple or Google makes them available, your chosen display name, profile photo, language, time zone, and account status. An OAuth profile photo may be used as a fallback if you have not added a Paeonia photo.',
+          'Account and profile data includes your account identifier, how you sign in, your email address when you sign in with it or when Apple or Google shares it, your name when Apple or Google shares it, your chosen display name, profile photo, language, time zone, and account status. An OAuth profile photo may be used as a fallback if you have not added a Paeonia photo.',
           'Relationship data includes invites, relationship membership and status, your relationship start date if you add it, blocks, safety warnings, and the choices needed to manage access to a shared space.',
           'Content you choose to add includes your answers to daily questions (text, photos, voice, and partner choices), chat messages with replies, photos, GIFs, videos, and voice messages, memories with photos, videos, and notes, stories (a photo or a video of up to a minute, with an optional caption), short notes, dates and countdowns, hearts, drawings, and your moves, drawings, words, and guesses in games. Paeonia only reads the photos and videos you pick, take, or record, and it saves a photo or video to your photo library only when you tap Save to Photos. When you record a story video, Paeonia uses the microphone for its sound. This content is private to the shared space unless it is reported or access is needed for the limited purposes described below.',
           'Call history includes who called, when, and how long the call lasted, or that it was missed. Paeonia does not record the sound or video of a call. When a call ends, your phone also sends a short report about its connection: how the call ended, how fast it connected, whether it went directly or through a relay, delay, sound and video that got lost, how long video was on, how many pictures a second the video and a shared screen reached and how hard the phone worked to send them, how warm the phone got, and the app version. The report holds nothing you said or showed and no location. Paeonia uses it to find and fix call problems, and deletes it after 30 days or when the relationship ends.',
           'Service data includes subscription and access status, App Store transaction references (including one-time purchases such as bringing back a streak), streak progress, notification choices, your phone\'s push token, app version, language, and time zone, upload and sync status, request identifiers used to prevent duplicate actions, and security or operational records. Apple processes your payment details. Paeonia does not receive your payment-card details.',
-          'Usage statistics and crash reports show us which parts of Paeonia get used and where the app breaks. The app asks you once, after you pair, whether to share them, and sends none of them before you say yes. If you do, it sends which screens you open, which actions you take (for example that you sent an answer, never what it says), crash reports, and details about your iPhone such as model, iOS version, language, and time zone. It never records your screen. This data is linked to your Paeonia account, and PostHog keeps a random code on your phone to tell one phone from another. It is not used for advertising, and Paeonia does not track you across other apps or websites.',
-          'Before you sign in, the app counts how many people reach each step of the welcome screens, such as choosing to start or picking a date. It sends only the name of the step, and our server adds one to a count for that day. Nothing in this count is tied to you or your phone, and it does not use PostHog.',
+          'Usage statistics and crash reports show us which parts of Paeonia get used and where the app breaks. The app asks you once whether to share them, when you set up your profile or later if you have not answered yet, and sends none of them before you say yes. If you do, it sends which screens you open, which actions you take (for example that you sent an answer, never what it says), crash reports, and details about your iPhone such as model, iOS version, language, and time zone. It never records your screen. This data is linked to your Paeonia account, and PostHog keeps a random code on your phone to tell one phone from another. It is not used for advertising, and Paeonia does not track you across other apps or websites.',
           'The website paeonia.no sets no cookies and uses no analytics. Cloudflare, which delivers the website, processes technical request data such as your IP address to serve the pages.',
           'If you turn on location sharing, Paeonia processes your latest precise location and when it was recorded. We do not keep a history of where you have been. When you both share your location and a new location from one phone is less than 1 km from the latest location the other shared in the last 12 hours, Paeonia notes the date, never the place, so your streak can rest that day. A letter saved for when you next meet can arrive then too. It deletes these dates after 45 days.',
         ],
@@ -134,7 +133,7 @@ export const legalEn = {
       {
         heading: 'Where data comes from',
         paragraphs: [
-          'Most data comes directly from you and your use of Paeonia. We also receive limited identity data from Apple or Google when you sign in, subscription information from Apple, and content or relationship actions from your partner inside your shared space.',
+          'Most data comes directly from you and your use of Paeonia. We also receive limited identity data from Apple or Google when you sign in with them, subscription information from Apple, and content or relationship actions from your partner inside your shared space.',
         ],
       },
       {
@@ -188,7 +187,7 @@ export const legalEn = {
       {
         heading: 'Who we share data with',
         paragraphs: [
-          'These service providers process data for Paeonia, and only to run the service. Apple handles Sign in with Apple, App Store payments and subscriptions, and push notifications. Google handles Sign in with Google. Clerk handles sign-in and sessions. Cloudflare stores photos, videos, voice messages, drawings, and other files in the EU, runs the relays for live drawing and calls, and delivers the website. OpenFreeMap provides the map in the Us tab, and Apple Maps provides it on iPad or when OpenFreeMap is down. To draw the map, your phone asks them for the area on screen, so they receive your IP address and roughly where that area is, usually around you and your partner. They do not learn who you are in Paeonia. PostHog stores usage statistics and crash reports on its EU servers in Frankfurt, Germany, and keeps neither your IP address nor a location worked out from it. Paeonia\'s database and application server run on a server we rent in a data centre in Leipzig, Germany, so this data stays in the EU and EEA. Each provider is subject to its own security and privacy obligations.',
+          'These service providers process data for Paeonia, and only to run the service. Apple handles Sign in with Apple, App Store payments and subscriptions, and push notifications. Google handles Sign in with Google. Clerk handles sign-in and sessions, and sends the sign-in code to your email address when you sign in with email. Cloudflare stores photos, videos, voice messages, drawings, and other files in the EU, runs the relays for live drawing and calls, and delivers the website. OpenFreeMap provides the map in the Us tab, and Apple Maps provides it on iPad or when OpenFreeMap is down. To draw the map, your phone asks them for the area on screen, so they receive your IP address and roughly where that area is, usually around you and your partner. They do not learn who you are in Paeonia. PostHog stores usage statistics and crash reports on its EU servers in Frankfurt, Germany, and keeps neither your IP address nor a location worked out from it. Paeonia\'s database and application server run on a server we rent in a data centre in Leipzig, Germany, so this data stays in the EU and EEA. Each provider is subject to its own security and privacy obligations.',
           'We may disclose data when required by law, to protect a person or the service, or as part of a business reorganization with appropriate safeguards. Trusted support or moderation personnel may access the minimum data needed to resolve a request, review reported content, keep the service safe, complete a data request, or perform deletion and recovery work.',
           'We do not sell personal data. We do not use relationship content for advertising, and Paeonia does not include third-party advertising or cross-app tracking.',
         ],
@@ -263,7 +262,7 @@ export const legalEn = {
       description: 'The terms that apply when you create an account or use Paeonia.',
     },
     title: 'Terms of Service',
-    updated: 'Last updated 1 November 2026',
+    updated: 'Last updated 18 November 2026',
     sections: [
       {
         heading: 'Agreement',
@@ -283,7 +282,7 @@ export const legalEn = {
       {
         heading: 'Your account',
         paragraphs: [
-          'You sign in with Apple or Google. You are responsible for keeping access to that provider account and your device secure, for giving accurate profile information, and for activity under your Paeonia account. Tell us at support@paeonia.no if you believe someone has accessed your account without permission.',
+          'You sign in with Apple, with Google, or with a 6-digit code we send to your email address. You are responsible for keeping access to that Apple account, Google account, or email inbox and your device secure, for giving accurate profile information, and for activity under your Paeonia account. Tell us at support@paeonia.no if you believe someone has accessed your account without permission.',
           'You may have only one active relationship space at a time. You may not transfer, sell, share, or use an account to impersonate another person.',
         ],
       },
