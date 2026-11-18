@@ -79,9 +79,10 @@ struct PresencePlaceBadge: View {
     var body: some View {
         switch place {
         case let .playing(kind):
+            // The pictures are rectangles, so they get a size whose corners stay inside the circle.
             PaeoniaBannerGameIcon(kind: kind)
-                .frame(width: 20, height: 20)
-                .padding(PaeoniaSpacing.space2)
+                .frame(width: 16, height: 16)
+                .padding(PaeoniaSpacing.space4)
                 .background(.paeoniaSurfacePrimary, in: Circle())
         case .drawing:
             symbolBadge("pencil")

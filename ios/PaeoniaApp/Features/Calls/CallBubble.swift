@@ -122,7 +122,8 @@ struct CallBubble: View {
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius20).strokeBorder(.white.opacity(0.25))
             }
-            .overlay(alignment: .bottomTrailing) { placeBadge.padding(PaeoniaSpacing.space8) }
+            // Centered on the rounded corner's curve, so it hangs on the edge as it does on a face.
+            .overlay(alignment: .bottomTrailing) { placeBadge.offset(x: 6, y: 6) }
             .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
             .accessibilityElement()
             .accessibilityLabel(Text(.callsBubbleAccessibilityLabel(participants.partnerName)))
