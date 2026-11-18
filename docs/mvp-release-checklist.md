@@ -56,13 +56,11 @@ Run these before a release candidate and record any skipped one with the reason:
 - [ ] Days together, Next countdown, Their time, Distance apart, Streak, Today's question, and Your move can each be added to the Lock Screen. Needs a device.
 - [ ] The countdown title stays hidden while the phone is locked and shows after Face ID. Needs a device. The view uses `.privacySensitive()`.
 - [ ] A partner's answer, game move, countdown change, or start date change updates the other phone's widgets while Paeonia is closed. Needs a device. The server side is tested (`widget.test.ts`).
-- [ ] Widget names and copy are audited in English and Norwegian. Needs a person. Both languages are complete.
 
 ## Home Screen Widgets
 
 - [ ] Days together (small, medium), Countdown (small, medium), Streak (small), Today's question (small, medium) and the drawing widget in its new medium size can each be added to the Home Screen. Needs a device.
 - [ ] Countdown titles stay hidden on a locked phone (StandBy). Needs a device.
-- [ ] Widget names, settings and copy are audited in English and Norwegian. Needs a person.
 
 ## Countdown And Relationship Milestones
 
@@ -98,10 +96,7 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 
 ## Localization And Copy
 
-- [ ] English strings are clear enough for a 16-year-old user. Needs a person. No technical words were found.
-- [ ] Norwegian Bokmal strings are natural, not technical database-sounding translations. Needs a native speaker.
-- [ ] Daily answer reveal copy is audited in English and Norwegian. Needs a person.
-- [ ] Widget drawing save/clear copy is audited in English and Norwegian. Needs a person.
+- [ ] The Norwegian permission texts in `InfoPlist.xcstrings` read naturally. Gap in the source. The app and widget catalogs and the push copy were audited on 2026-11-18, but this file was left for its owner to edit. `NSUserNotificationsUsageDescription` says "tar en tur i et spill", which reads as going on a trip, so it should say "gjør et trekk i et spill". Both location texts say "En dag telefonene deres er mindre enn 1 km fra hverandre, kan rekken hvile.", which is missing a word, so they should say "På dager da telefonene deres er under 1 km fra hverandre, kan rekken hvile." `NSCameraUsageDescription` says "og så partneren din kan se deg", which reads as "and then", so it should say "og slik at partneren din kan se deg".
 
 ## Accessibility And Device QA
 
