@@ -5,7 +5,7 @@ description: Libraries.dev effects in the Paeonia iOS app. Use to add another pr
 
 # Libraries.dev in Paeonia
 
-Libraries.dev (`https://github.com/Jakubantalik/Libraries.dev`, by Jakub Antalik) is one repository of SwiftUI effects drawn with Metal shaders. Paeonia links it as one Swift package and uses three products from it: `DistortionWavesKit`, for the wave that rises from Send on the Us tab's drawing screen, `ThinkingOrbsKit`, for the ring of dots around the partner on Mind Meld's waiting screen, and `VoiceGlowKit`, for the glow on the chat composer's recording bar. Most effects from it are **shader effects**: SwiftUI views passed through `.layerEffect` or `.colorEffect`. That fact drives most rules below. `ThinkingOrbsKit` is the exception. It draws with `Canvas` in a `TimelineView`, so the shader rules and the Metal toolchain don't apply to it.
+Libraries.dev (`https://github.com/Jakubantalik/Libraries.dev`, by Jakub Antalik) is one repository of SwiftUI effects drawn with Metal shaders. Paeonia links it as one Swift package and uses three products from it: `DistortionWavesKit`, for the wave that rises from Send on the Us tab's drawing screen, `ThinkingOrbsKit`, for the dots that show the app waiting on the partner, and `VoiceGlowKit`, for the glow on the chat composer's recording bar. Most effects from it are **shader effects**: SwiftUI views passed through `.layerEffect` or `.colorEffect`. That fact drives most rules below. `ThinkingOrbsKit` is the exception. It draws with `Canvas` in a `TimelineView`, so the shader rules and the Metal toolchain don't apply to it.
 
 ## The package
 
@@ -50,14 +50,16 @@ Libraries.dev (`https://github.com/Jakubantalik/Libraries.dev`, by Jakub Antalik
 
 ## Thinking orbs
 
-- **Look.** The kit draws grey dots, white on `.dark` and black on `.light`. Pass `theme: .dark` and add `.colorMultiply(.paeoniaAccentPrimary)` to tint them, so the color is the same in both appearances. `displaySize` scales the drawing without blurring it. Render all nine states headless on the Mac with the kit's `snapshot.sh`, run on a copy of the port in the scratchpad, to choose one.
+- **Look.** The kit draws grey dots, white on `.dark` and black on `.light`. Pass `theme: .dark` and add `.colorMultiply(.paeoniaAccentPrimary)` to tint them, or `.paeoniaPartnerTwo` next to the partner's photo, so the color is the same in both appearances. `displaySize` scales the drawing without blurring it. Render all nine states headless on the Mac with the kit's `snapshot.sh`, run on a copy of the port in the scratchpad, to choose one.
 - **VoiceOver.** The kit labels each orb in English ("Thinking…"), so hide it with `.accessibilityHidden(true)` and let the text next to it speak.
 - **Reduce Motion.** The kit draws one still frame, so the caller needs no branch.
+- **Size.** The `.px20` preset is tuned to read at 20 pt, but its `.connecting` is a few loose dots there. The `.px64` web keeps its lines down to about 40 pt with `displaySize`, so use that for a small web.
+- **Around a photo.** An orb behind a round photo shows only its rim. Make it about 1.75 times the photo's width, as `CallIdentity` does, so the dots show around the photo. Take away any disc or glow behind the photo while the orb shows, as `CallIdentity` and Mind Meld's waiting card (`showsBackMark: false`) do, because a second ring there competes with the dots.
 
 ## In the app
 
 - `DistortionWavesKit`: `PaeoniaScreenWave.swift` (the host) and `WidgetDrawingSendWave.swift` (the drawing screen's style).
-- `ThinkingOrbsKit`: `MindMeldWaitingView.swift` (the `.breathing` ring around the partner's portrait while they are in the game).
+- `ThinkingOrbsKit`: `MindMeldWaitingView.swift` (the `.breathing` ring around the partner's portrait while they are in the game), `PairingInviteCodeTiles.swift` (a 40 pt `.connecting` web on the invite's waiting line) and `CallIdentity.swift` (a `.connecting` web around the photo while the call connects).
 - `VoiceGlowKit`: `ThreadChatComposer+Voice.swift`, the recording bar. It is an overlay drawn over its content, not a shader over it, so the bar's glass stays. Drive it with `levelProvider: recorder.liveLevel`, never the kit's `VoiceMeter`: the meter runs its own audio engine and sets its own audio session category, which would fight `DailyVoiceAudioSession` (ducking, never pausing music) and the `AVAudioRecorder` that records the take. `liveLevel` applies the meter's gain of 15.5 to the recorder's RMS, so the glow reacts as the kit tunes it. The kit's emotion detection and live transcript are VoiceGlow Pro and are not used. On the simulator the Mac's microphone feeds the recorder, so `say` during a take shows the glow rise.
 
 ## Verifying
