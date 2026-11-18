@@ -120,7 +120,8 @@ export default defineSchema({
   })
     .index("by_uuid", ["id"])
     .index("by_request_id", ["request_id"])
-    .index("by_user_id", ["user_id"]),
+    .index("by_user_id", ["user_id"])
+    .index("by_status_updated_at", ["status", "updated_at"]),
 
   // FK: user_id -> users cascade
   app_account_tokens: defineTable({
@@ -1341,6 +1342,7 @@ export default defineSchema({
   })
     .index("by_uuid", ["id"])
     .index("by_user_id_request_kind_status", ["user_id", "request_kind", "status"])
+    .index("by_request_kind_status_requested_at", ["request_kind", "status", "requested_at"])
     .index("by_user_id_requested_at", ["user_id", "requested_at"])
     .index("by_user_id_updated_at_id", ["user_id", "updated_at", "id"]),
 

@@ -1,10 +1,10 @@
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
-import { internalMutation, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { findCurrentCouple, resolveUserEntitlement } from "./lib/access";
 import { getCurrentUserId } from "./lib/auth";
 import { banUser, unbanUser } from "./lib/bans";
-import { getByUuid } from "./lib/db";
+import { getByUuid, withTouch } from "./lib/db";
 import { fail } from "./lib/errors";
 import { newUuid, uuidArg } from "./lib/ids";
 import { nowIso } from "./lib/time";
@@ -278,5 +278,114 @@ export const operator_unban_user = internalMutation({
       await writeAudit(ctx, { action: "user_unbanned", operatorIdentifier: args.p_operator, targetUserId: userId });
     }
     return { changed };
+  },
+});
+
+// ---- What waits for the operator ----
+
+/** `operator_inbox` counts and lists at most this many rows of each kind and status. */
+const INBOX_LIMIT = 200;
+const INBOX_IDS = 20;
+
+/** The count of some waiting rows, the times of the first and the last, and the ids of the first few. */
+function waitingSummary(waiting: { count: number; first: string[]; last: string[]; ids: string[] }) {
+  return {
+    count: waiting.count,
+    oldest: waiting.first.sort()[0] ?? null,
+    newest: waiting.last.sort().at(-1) ?? null,
+    ids: waiting.ids.slice(0, INBOX_IDS),
+  };
+}
+
+/**
+ * What waits for the operator and nothing in the app will finish by itself: reports nobody
+ * resolved, correction requests nobody answered, and account deletions that ran out of tries.
+ * Each part holds a count, when its oldest and newest item arrived, and a few ids to act on.
+ * The watchdog on the server asks every few minutes and emails when an answer changes. A count
+ * stops at the limit, and `newest` still moves with every new item.
+ *
+ * To clear an item: `moderation:apply_report_moderation_action` (`dismiss` when a report needs no
+ * action), `admin:operator_resolve_correction_request`, `accountDeletion:retry_account_deletion_job`.
+ */
+export const operator_inbox = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const empty = () => ({ count: 0, first: [] as string[], last: [] as string[], ids: [] as string[] });
+    const add = (to: ReturnType<typeof empty>, rows: { id: string }[], first?: string, last?: string) => {
+      to.count += rows.length;
+      to.ids.push(...rows.map((row) => row.id));
+      if (first !== undefined) to.first.push(first);
+      if (last !== undefined) to.last.push(last);
+    };
+
+    const reports = empty();
+    for (const status of ["submitted", "under_review"] as const) {
+      const waiting = () =>
+        ctx.db.query("content_reports").withIndex("by_status_created_at", (q) => q.eq("status", status));
+      const rows = await waiting().take(INBOX_LIMIT);
+      add(reports, rows, rows[0]?.created_at, (await waiting().order("desc").first())?.created_at);
+    }
+
+    const corrections = empty();
+    for (const status of ["submitted", "verifying", "processing"] as const) {
+      const waiting = () =>
+        ctx.db
+          .query("privacy_requests")
+          .withIndex("by_request_kind_status_requested_at", (q) => q.eq("request_kind", "correction").eq("status", status));
+      const rows = await waiting().take(INBOX_LIMIT);
+      add(corrections, rows, rows[0]?.requested_at, (await waiting().order("desc").first())?.requested_at);
+    }
+
+    const deletions = empty();
+    const stuck = () =>
+      ctx.db.query("account_deletion_jobs").withIndex("by_status_updated_at", (q) => q.eq("status", "attention_required"));
+    const stuckRows = await stuck().take(INBOX_LIMIT);
+    add(deletions, stuckRows, stuckRows[0]?.updated_at, (await stuck().order("desc").first())?.updated_at);
+
+    return {
+      reports: waitingSummary(reports),
+      correction_requests: waitingSummary(corrections),
+      account_deletions: waitingSummary(deletions),
+    };
+  },
+});
+
+/**
+ * Answers a correction request from the command line, after the operator made the correction or
+ * decided against it. `p_message` is what the person reads under the request in the app, so write
+ * it for them. Returns false for a request that is not an open correction request.
+ */
+export const operator_resolve_correction_request = internalMutation({
+  args: {
+    p_request_id: v.string(),
+    p_outcome: v.union(v.literal("completed"), v.literal("rejected")),
+    p_message: v.optional(v.string()),
+    p_operator: v.string(),
+  },
+  handler: async (ctx, args): Promise<boolean> => {
+    const operator = args.p_operator.trim();
+    const message = args.p_message?.trim() || undefined;
+    if (operator === "") fail("23514", "operator identifier is required");
+    if (message !== undefined && Array.from(message).length > 500) fail("23514", "status message is too long");
+    const request = await getByUuid(ctx, "privacy_requests", uuidArg(args.p_request_id));
+    const isOpen = request !== null && ["submitted", "verifying", "processing"].includes(request.status);
+    if (!request || request.request_kind !== "correction" || !isOpen) return false;
+    const now = nowIso();
+    await ctx.db.patch(
+      request._id,
+      withTouch(request, {
+        status: args.p_outcome,
+        completed_at: args.p_outcome === "completed" ? now : undefined,
+        visible_status_message: message,
+      }),
+    );
+    await ctx.db.insert("privacy_request_events", {
+      id: newUuid(),
+      request_id: request.id,
+      event_kind: "correction_resolved",
+      metadata: { outcome: args.p_outcome, operator },
+      created_at: now,
+    });
+    return true;
   },
 });
