@@ -51,7 +51,7 @@ struct PresenceAvatar: View {
             size: Self.size
         )
         .padding(PaeoniaSpacing.space4)
-        .overlay(alignment: .bottomTrailing) { badge }
+        .overlay(alignment: .bottomTrailing) { PresencePlaceBadge(place: place) }
         .glassEffect(hasOwnGlass ? .regular.interactive() : .identity, in: Circle())
         // The photo's own frame, which the call's photo matches. The glass and the badge reach
         // past it and scale with it, so the whole avatar grows out of the call and back into it.
@@ -59,6 +59,13 @@ struct PresenceAvatar: View {
         .callMorph(.photo, size: Self.size)
         .padding(PaeoniaSpacing.space4)
     }
+}
+
+/// Where the partner is, as a small badge for the bottom trailing corner of their face: the game's
+/// picture, a pencil for the drawing or a chat bubble. Nothing while they are elsewhere in the app.
+/// The partner's avatar wears it, and the call's bubble while it covers the avatar.
+struct PresencePlaceBadge: View {
+    let place: PresencePlace
 
     private func symbolBadge(_ name: String) -> some View {
         Image(systemName: name)
@@ -69,8 +76,7 @@ struct PresenceAvatar: View {
             .accessibilityHidden(true)
     }
 
-    @ViewBuilder
-    private var badge: some View {
+    var body: some View {
         switch place {
         case let .playing(kind):
             PaeoniaBannerGameIcon(kind: kind)

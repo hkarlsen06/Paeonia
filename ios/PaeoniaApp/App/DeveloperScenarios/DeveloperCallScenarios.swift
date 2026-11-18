@@ -88,16 +88,16 @@
     }
 
     static let callBubbleVoiceGame = DeveloperScenario(
-      "call-bubble-voice-game", "Call · voice bubble over a game", "Four in a Row with the call shrunk to its bubble",
-      .calls
+      "call-bubble-voice-game", "Call · voice bubble over a game",
+      "Four in a Row with the call shrunk to its bubble. Robin is in the game too", .calls
     ) { _ in
-      DeveloperCallLocalFlow(
-        session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active), presentation: .small, game: true)
+      DeveloperCallLocalFlow(session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active),
+        presentation: .small, game: true, partnerPlays: true)
     }
 
     static let callBubbleVideoGame = DeveloperScenario(
-      "call-bubble-video-game", "Call · video bubble over a game", "Four in a Row with Robin's video in the bubble",
-      .calls
+      "call-bubble-video-game", "Call · video bubble over a game",
+      "Four in a Row with Robin's video in the bubble. Robin is in the game too", .calls
     ) { _ in
       DeveloperCallLocalFlow(
         session: DeveloperCallFixture.session(phase: DeveloperCallFixture.active) {
@@ -105,7 +105,7 @@
           $0.partnerCamera = .on
           $0.partnerVideoAspectRatio = 9.0 / 16
         },
-        presentation: .small, game: true)
+        presentation: .small, game: true, partnerPlays: true)
     }
 
     static let callBubblePartnerOpenedGame = DeveloperScenario(
@@ -162,7 +162,7 @@
           $0.isUsingFrontCamera = false
         },
         backCameraZoom: CallCameraZoom(range: 0.5...10, factor: 1), game: true, partnerMoves: true,
-        keepsNews: true)
+        partnerPlays: true)
     }
 
     static let callScreenPartnerMessage = DeveloperScenario(
@@ -399,8 +399,9 @@
 
   /// The real paired app from a local flow, with a call center of its own. `game` opens Four in a
   /// Row on Robin's turn, and with `partnerMoves` Robin plays a disc a moment after the app shows.
-  /// `backCameraZoom` puts the back camera's zoom slider above the call's buttons, and with `keepsNews`
-  /// what the call says stays until the scenario closes (`DeveloperPresenceFixture`).
+  /// `backCameraZoom` puts the back camera's zoom slider above the call's buttons. With `partnerPlays`
+  /// Robin is in Four in a Row, so the bubble wears its badge, and what the call says stays until the
+  /// scenario closes (`DeveloperPresenceFixture`).
   /// `coupleCalls` opens "Just us" with its call rows, and `nightPrompt` has the night question up.
   /// With `partnerDoes`, Robin is in the app, playing Mind Meld, and does it a moment after the app
   /// shows.
@@ -417,14 +418,14 @@
     init(
       session: CallSession? = nil, presentation: CallPresentation = .full,
       backCameraZoom: CallCameraZoom? = nil, game: Bool = false,
-      partnerMoves: Bool = false, keepsNews: Bool = false, coupleCalls: Bool = false,
+      partnerMoves: Bool = false, partnerPlays: Bool = false, coupleCalls: Bool = false,
       nightPrompt: CallStarter.NightPrompt? = nil, partnerDoes: PresenceNotice? = nil
     ) {
       self.presentation = presentation
       self.partnerDoes = partnerDoes
       _presence = State(initialValue: partnerDoes.map { _ in
         DeveloperPresenceFixture.model(partner: PartnerPresence(games: [.mindMeld]))
-      } ?? (keepsNews ? DeveloperPresenceFixture.model(partner: PartnerPresence(games: [.connectFour])) : nil))
+      } ?? (partnerPlays ? DeveloperPresenceFixture.model(partner: PartnerPresence(games: [.connectFour])) : nil))
       let center = CallCenter(engine: DeveloperCallEngine(), session: session)
       center.backCameraZoom = backCameraZoom
       _center = State(initialValue: center)

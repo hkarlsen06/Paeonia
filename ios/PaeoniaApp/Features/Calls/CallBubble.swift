@@ -2,12 +2,15 @@ import SwiftUI
 
 /// The call, shrunk to a bubble that floats over every screen. A voice call shows the partner's
 /// face, the call time, mute and end. A video call shows the partner's video, at the size the
-/// person pinched it to, blurred while it has stopped (`CallPartnerVideoCover`). A tap opens the
-/// call screen again.
+/// person pinched it to, blurred while it has stopped (`CallPartnerVideoCover`). Either way it
+/// wears the partner's place badge at its bottom trailing corner, as their avatar does, because it
+/// covers the avatar. A tap opens the call screen again.
 struct CallBubble: View {
     let center: CallCenter
     let session: CallSession
     let participants: DailyChallengeParticipants
+    /// Where the partner is in the app. Nil while they are away or either partner hides their presence.
+    var place: PresencePlace?
     /// How much bigger or smaller than `videoSize(for:)` the video shows.
     var videoScale: CGFloat = 1
     /// VoiceOver's swipe up or down makes the video bigger or smaller.
@@ -70,7 +73,13 @@ struct CallBubble: View {
                 partnerName: participants.partnerName
             )
         }
+        .overlay(alignment: .bottomTrailing) { placeBadge.offset(x: 4, y: 4) }
         .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private var placeBadge: some View {
+        if let place, !isEnded { PresencePlaceBadge(place: place) }
     }
 
     private var voice: some View {
@@ -113,6 +122,7 @@ struct CallBubble: View {
             .overlay {
                 RoundedRectangle(cornerRadius: PaeoniaRadius.radius20).strokeBorder(.white.opacity(0.25))
             }
+            .overlay(alignment: .bottomTrailing) { placeBadge.padding(PaeoniaSpacing.space8) }
             .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
             .accessibilityElement()
             .accessibilityLabel(Text(.callsBubbleAccessibilityLabel(participants.partnerName)))

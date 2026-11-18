@@ -64,7 +64,8 @@ struct CallBubbleLayer: View {
             frameChanged: { model.bubbleFrame = $0 }, tabFrameChanged: { model.tabFrame = $0 }
         ) { scale, resize, tuck in
             CallBubble(
-                center: model.center, session: session, participants: model.participants, videoScale: scale,
+                center: model.center, session: session, participants: model.participants,
+                place: model.presence.status?.place, videoScale: scale,
                 resizeVideo: resize, tuck: tuck, open: { model.openFull(showing: .partner) })
         } notices: { _ in
             CallNotices(
