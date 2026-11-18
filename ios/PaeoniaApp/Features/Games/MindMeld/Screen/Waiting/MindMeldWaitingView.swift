@@ -84,6 +84,8 @@ struct MindMeldWaitingView: View {
             word: nil,
             isFaceUp: false,
             faceDownLabel: .mindMeldWaitPartnerCardA11Y(viewModel.partnerName),
+            // The partner's portrait and the orb take the middle.
+            showsBackMark: false,
             maxWidth: maxWidth
         )
         .overlay {

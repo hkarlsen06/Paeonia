@@ -22,6 +22,8 @@ struct MindMeldWordCard: View {
     var tone: Tone = .plain
     /// Shows a lock on a face-up card, for the word this person has locked in.
     var isLocked = false
+    /// The petal mark in its disc on the back. Off when something else sits in the middle.
+    var showsBackMark = true
     var maxWidth: CGFloat = 160
 
     private static let aspectRatio: CGFloat = 0.8
@@ -67,7 +69,7 @@ struct MindMeldWordCard: View {
                     .foregroundStyle(.paeoniaTextPrimary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
-            } else {
+            } else if showsBackMark {
                 MindMeldPetalMark()
                     .frame(width: 30, height: 30)
                     .foregroundStyle(.paeoniaAccentPrimary)
@@ -108,18 +110,20 @@ struct MindMeldWordCard: View {
             RoundedRectangle(cornerRadius: Self.radius - PaeoniaSpacing.space8, style: .continuous)
                 .strokeBorder(Color.paeoniaAccentPrimary.opacity(0.2), lineWidth: PaeoniaRadius.strokeHairline)
                 .padding(PaeoniaSpacing.space8)
-            Circle()
-                .fill(Color.paeoniaAccentPrimary.opacity(0.12))
-                .overlay(
-                    Circle().strokeBorder(
-                        Color.paeoniaAccentPrimary.opacity(0.3),
-                        lineWidth: PaeoniaRadius.strokeHairline
+            if showsBackMark {
+                Circle()
+                    .fill(Color.paeoniaAccentPrimary.opacity(0.12))
+                    .overlay(
+                        Circle().strokeBorder(
+                            Color.paeoniaAccentPrimary.opacity(0.3),
+                            lineWidth: PaeoniaRadius.strokeHairline
+                        )
                     )
-                )
-                .frame(width: 56, height: 56)
-            MindMeldPetalMark()
-                .frame(width: 30, height: 30)
-                .foregroundStyle(Color.paeoniaAccentPrimary.opacity(0.6))
+                    .frame(width: 56, height: 56)
+                MindMeldPetalMark()
+                    .frame(width: 30, height: 30)
+                    .foregroundStyle(Color.paeoniaAccentPrimary.opacity(0.6))
+            }
         }
         .overlay { border }
     }

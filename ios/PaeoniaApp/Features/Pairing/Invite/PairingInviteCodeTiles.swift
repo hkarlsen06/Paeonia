@@ -1,4 +1,5 @@
 import SwiftUI
+import ThinkingOrbsKit
 
 /// The invite code as six tiles with its label and expiry line. VoiceOver reads the
 /// tiles as one element that spells the code out.
@@ -89,19 +90,17 @@ private struct PairingInviteCodeCharacterTile: View {
 
 /// A quiet line under the code. The app moves on by itself when the partner joins, so
 /// there is nothing to tap. With notifications allowed it promises a notification
-/// instead. The dot pulses, and stays still with Reduce Motion on.
+/// instead. A web of dots slowly links up next to it, and holds still with Reduce Motion on.
 struct PairingInviteWaitingLine: View {
     var notifiesOnJoin = false
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var isDimmed = false
-
     var body: some View {
+        // The web's dots stop short of its frame, so a small gap reads as a normal one.
         HStack(spacing: PaeoniaSpacing.space8) {
-            Circle()
-                .fill(.paeoniaAccentPrimary)
-                .frame(width: PaeoniaSpacing.space8, height: PaeoniaSpacing.space8)
-                .opacity(!reduceMotion && isDimmed ? 0.3 : 1)
+            // The kit draws grey dots, so the accent tints them. Its label is English
+            // only, and the text next to it says what is happening.
+            ThinkingOrb(state: .connecting, theme: .dark, displaySize: 40)
+                .colorMultiply(.paeoniaAccentPrimary)
                 .accessibilityHidden(true)
 
             Text(notifiesOnJoin ? .pairingInviteWaitingNotified : .pairingInviteWaitingStatus)
@@ -110,18 +109,6 @@ struct PairingInviteWaitingLine: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .contentTransition(.opacity)
                 .animation(PaeoniaMotion.stateChange, value: notifiesOnJoin)
-        }
-        .task(id: reduceMotion) {
-            var transaction = Transaction()
-            transaction.disablesAnimations = true
-            withTransaction(transaction) { isDimmed = false }
-            guard !reduceMotion else {
-                return
-            }
-
-            withAnimation(PaeoniaMotion.standardCurve(duration: 1.1).repeatForever(autoreverses: true)) {
-                isDimmed = true
-            }
         }
     }
 }

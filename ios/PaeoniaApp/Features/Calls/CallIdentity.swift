@@ -1,4 +1,5 @@
 import SwiftUI
+import ThinkingOrbsKit
 
 /// The partner's face, their name, what the call is doing and their time, in the middle of the call
 /// screen while no video fills it. The photo and the name grow out of the ring pill (`callMorph`).
@@ -14,6 +15,8 @@ struct CallIdentity: View {
     /// The glow at its largest. It breathes between `glowScales`, which never go past 1.
     private static let glowSize = avatarSize * 1.45
     private static let glowScales: [CGFloat] = [0.86, 1]
+    /// Wider than the glow, so the web shows around the photo. Its dots stop short of the name.
+    private static let orbSize = avatarSize * 1.75
 
     private var isEnded: Bool {
         if case .ended = session.phase { return true }
@@ -56,8 +59,8 @@ struct CallIdentity: View {
                 partnerName: participants.partnerName
             )
         }
-        // The glow grows and moves with the photo.
-        .background { ringingGlow.frame(width: Self.glowSize, height: Self.glowSize) }
+        // The glow and the web grow and move with the photo.
+        .background { waitingDecoration.frame(width: Self.glowSize, height: Self.glowSize) }
         .callMorph(.photo, size: Self.avatarSize)
         // The frame holds the glow at its largest in every phase, so it never reaches the name
         // and the name stays put when the call connects.
@@ -65,12 +68,18 @@ struct CallIdentity: View {
         .accessibilityHidden(true)
     }
 
-    /// A soft glow that breathes while the call rings or connects.
+    /// A soft glow that breathes while the call rings. While the phones connect, a web of
+    /// dots links up around the photo instead.
     @ViewBuilder
-    private var ringingGlow: some View {
+    private var waitingDecoration: some View {
         let glow = Circle().fill(Color.paeoniaPartnerTwo.opacity(0.22))
         switch session.phase {
-        case .ringing, .connecting, .reconnecting:
+        case .connecting, .reconnecting:
+            // The kit draws grey dots, so the partner's color tints them.
+            ThinkingOrb(state: .connecting, theme: .dark, displaySize: Self.orbSize)
+                .colorMultiply(.paeoniaPartnerTwo)
+                .transition(.opacity)
+        case .ringing:
             if reduceMotion {
                 glow
             } else {
