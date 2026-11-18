@@ -166,7 +166,6 @@ struct DrawAndGuessDrawerResultView: View {
     private var statusRow: some View {
         HStack(spacing: PaeoniaSpacing.space12) {
             GameAvatar(player: viewModel.partner, isMe: false, size: 40)
-                .gamePresenceRing(viewModel.partnerPresence.isHere)
                 .accessibilityValue(Text(viewModel.partnerPresence.isHere ? .gamesPresenceHere : .gamesPresenceAway))
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
                 Text(.gamesDrawAndGuessResultSent(viewModel.partnerName))

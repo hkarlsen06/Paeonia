@@ -7,7 +7,6 @@ struct ExquisiteCorpsePartnerAvatar: View {
 
     var body: some View {
         GameAvatar(player: player, isMe: false, size: 96)
-            .gamePresenceRing(isPartnerHere)
             .padding(PaeoniaSpacing.space8)
             .accessibilityValue(Text(isPartnerHere ? .gamesPresenceHere : .gamesPresenceAway))
     }

@@ -113,7 +113,6 @@ struct DrawAndGuessWaitingView: View {
 
     private var avatar: some View {
         GameAvatar(player: viewModel.partner, isMe: false, size: 96)
-            .gamePresenceRing(viewModel.partnerPresence.isHere)
             .accessibilityValue(Text(viewModel.partnerPresence.isHere ? .gamesPresenceHere : .gamesPresenceAway))
             .padding(PaeoniaSpacing.space8)
     }

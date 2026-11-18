@@ -42618,7 +42618,7 @@
       }
     },
     "settings.presence.footer" : {
-      "comment" : "Footer under the Show when I'm here switch on its own Settings screen. It covers only the floating picture and where the person is in the app. The green ring on a game and the typing dots in a chat still show. %1$@ is the partner's name.",
+      "comment" : "Footer under the Show when I'm here switch on its own Settings screen. It covers only the floating picture and where the person is in the app. The typing dots in a chat and a game's own words about who is here still show. %1$@ is the partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {

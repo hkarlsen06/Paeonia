@@ -52,7 +52,6 @@ struct StoryChainWaitingView: View {
     private var avatar: some View {
         StoryChainAvatar(participants: viewModel.participants, isMe: false, size: 96)
             .accessibilityHidden(true)
-            .gamePresenceRing(presence.isHere)
             .padding(PaeoniaSpacing.space8)
     }
 }

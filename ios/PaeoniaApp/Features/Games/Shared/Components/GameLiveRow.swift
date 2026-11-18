@@ -45,7 +45,6 @@ struct GamePresenceLabel: View {
     var body: some View {
         HStack(spacing: PaeoniaSpacing.space8) {
             GameAvatar(player: player, isMe: false, size: 24)
-                .gamePresenceRing(isHere)
                 .accessibilityHidden(true)
             Text(text)
                 .font(PaeoniaTypography.caption.weight(.semibold))

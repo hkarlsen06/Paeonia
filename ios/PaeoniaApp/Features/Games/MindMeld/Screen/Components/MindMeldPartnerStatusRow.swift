@@ -18,7 +18,6 @@ struct MindMeldPartnerStatusRow: View {
                 tint: .paeoniaPartnerTwo,
                 size: Self.avatarSize
             )
-            .gamePresenceRing(isPresent)
             .accessibilityHidden(true)
             line
                 .id(String(describing: status))

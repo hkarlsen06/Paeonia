@@ -100,7 +100,6 @@ struct MindMeldWaitingView: View {
                     tint: .paeoniaPartnerTwo,
                     size: 40
                 )
-                .gamePresenceRing(partnerIsHere)
             }
             .accessibilityHidden(true)
         }

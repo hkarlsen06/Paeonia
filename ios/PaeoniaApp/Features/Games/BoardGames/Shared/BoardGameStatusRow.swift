@@ -38,8 +38,8 @@ nonisolated enum BoardGameStatusLine: Equatable {
 /// turn" for 1.5 seconds each time the extra turn count goes up. The line
 /// cross-fades when it changes. Its height is always held, so nothing around
 /// the row moves when it changes or goes. Whether the partner is here shows
-/// elsewhere: the steady green ring on their avatar, or `BoardGameAwayLine`
-/// under the bottom content.
+/// elsewhere: the floating avatar's game badge, or `BoardGameAwayLine` under
+/// the bottom content.
 struct BoardGameStatusRow: View {
     let turn: BoardGameTurnLabel
     let me: BoardGamePlayerInfo

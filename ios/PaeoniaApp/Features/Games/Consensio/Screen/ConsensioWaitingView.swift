@@ -114,7 +114,6 @@ struct ConsensioWaitingView: View {
             tint: .paeoniaPartnerTwo,
             size: 96
         )
-        .gamePresenceRing(partnerIsHere)
         .accessibilityHidden(true)
     }
 
@@ -128,7 +127,6 @@ struct ConsensioWaitingView: View {
             layout {
                 if isWaitingForGuess {
                     GameAvatar(player: viewModel.partner, isMe: false, size: 24)
-                        .gamePresenceRing(partnerIsHere)
                         .accessibilityHidden(true)
                 }
                 Text(title)

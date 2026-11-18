@@ -17,7 +17,6 @@ struct StoryChainPartnerLine: View {
         HStack(spacing: PaeoniaSpacing.space8) {
             StoryChainAvatar(participants: participants, isMe: false, size: Self.avatarSize)
                 .accessibilityHidden(true)
-                .gamePresenceRing(isHere)
                 .padding(.vertical, 3)
             Text(text)
                 .font(font)

@@ -59,10 +59,9 @@ struct GamePlayersRow: View {
         let active = turn.isActive(forMe: isMe)
         return VStack(spacing: PaeoniaSpacing.space8) {
             if showsMarks {
-                BoardGamePlayerAvatar(player: player, isActive: active, isHere: !isMe && partnerIsHere, size: 48)
+                BoardGamePlayerAvatar(player: player, isActive: active, size: 48)
             } else {
                 BoardGameAvatar(player: player, size: 48)
-                    .gamePresenceRing(!isMe && partnerIsHere)
                     .scaleEffect(active ? 1.1 : 1)
             }
             HStack(spacing: PaeoniaSpacing.space4) {

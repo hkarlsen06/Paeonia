@@ -180,7 +180,6 @@ private struct GuessMySpotToolbarPresence: View {
 
     private var avatar: some View {
         GameAvatar(player: partner, isMe: false, size: 24)
-            .gamePresenceRing(isHere)
     }
 }
 
