@@ -70,7 +70,7 @@ export const legalNo = {
         paragraphs: [
           'Paeonia har ingen gratisversjon. Ett abonnement gjelder for dere begge, og partneren som blir med via en invitasjonskode, betaler ikke.',
           'Apple håndterer all betaling. For å endre eller si opp åpner du Innstillinger på iPhone, trykker på navnet ditt og velger Abonnementer. Du kan også trykke Administrer abonnement i Mer-fanen i Paeonia. Når du sier opp, stopper neste fornyelse, og du beholder tilgangen til den betalte perioden er over. Sletter du appen eller kontoen, sies ikke abonnementet opp.',
-          'Det er Apple som avgjør refusjon, ikke Paeonia. Be om refusjon på reportaproblem.apple.com.',
+          'Refusjon går gjennom Apple, som tar imot betalingen. Be om det på reportaproblem.apple.com. Du har 14 dagers angrerett etter kjøpet. Angrer du innen den tiden og Apple sier nei, skriver du til support@paeonia.no, så betaler vi deg tilbake selv. Hvis noe i Paeonia ikke virker, skriver du til oss, så retter vi det.',
           'Har du betalt og Paeonia fortsatt er låst, trykker du Gjenopprett kjøp på abonnementsskjermen. Hvis partneren din betaler, ber du vedkommende trykke Gjenopprett kjøp på sin telefon.',
         ],
       },
@@ -84,13 +84,13 @@ export const legalNo = {
       {
         heading: 'Se, kopier eller rett opplysningene dine',
         paragraphs: [
-          'Åpne Mer-fanen og deretter Personvern og trygghet. Der kan du be om å se hva vi lagrer, be om en kopi eller be om retting. Vi svarer på e-post til adressen som er knyttet til kontoen, vanligvis innen en måned.',
+          'Åpne Mer-fanen og deretter Personvern og trygghet. Trykk Last ned dataene mine for å få en kopi av alt du har lagt inn. Den er vanligvis klar i løpet av noen minutter og krever ikke abonnement. Trykk Be om retting hvis noe må rettes. Vi svarer på e-post, vanligvis innen en måned. For alt annet kan du skrive til contact@paeonia.no.',
         ],
       },
       {
         heading: 'Trygghet og rapporter',
         paragraphs: [
-          'Hvis noe i forholdet ditt føles utrygt, åpner du Mer-fanen, så Personvern og trygghet, og trykker Rapporter og forlat forholdet. Vi viser aldri rapporten din til den andre. Vi ser på hver rapport og svarer innen tre virkedager. Du kan også sende e-post til support@paeonia.no. Er du i fare, ring nødnummeret der du bor først.',
+          'Hvis noe i forholdet ditt føles utrygt, åpner du Mer-fanen, så Personvern og trygghet, og trykker Rapporter og forlat forholdet. Vi viser aldri rapporten din til den andre. Vi går gjennom hver rapport innen tre virkedager. Du kan også sende e-post til support@paeonia.no. Er du i fare, ring nødnummeret der du bor først.',
         ],
       },
       {
@@ -142,13 +142,15 @@ export const legalNo = {
           'Vi bruker personopplysninger for å opprette og sikre kontoen, koble deg til partneren du velger, levere og synkronisere fellesfunksjoner, vise abonnementstilgang, sende varsler du tillater, svare på henvendelser og holde tjenesten pålitelig.',
           'Vi bruker også opplysninger for å forebygge svindel og misbruk, håndheve blokkeringer og tilgangsregler, gjennomgå rapporter, beskytte brukere, følge lovpålagte krav, behandle personvernforespørsler og slette eller anonymisere opplysninger når det kreves.',
           'Vi bruker bruksstatistikk og krasjrapporter til å finne feil og bestemme hva vi skal forbedre. Vi samler dem bare inn hvis du samtykker, og du kan trekke samtykket tilbake når som helst i appen. Å si nei, eller å ombestemme deg senere, påvirker ikke abonnementet ditt eller noe annet i Paeonia.',
-          'Når samtykke er riktig behandlingsgrunnlag, for eksempel for nøyaktig posisjonsdeling, bruksstatistikk og enhetstillatelser, kan du trekke det tilbake ved å slå av funksjonen eller endre innstillingene på enheten. Annen behandling er nødvendig for å levere tjenesten, oppfylle avtalen med deg, følge rettslige plikter eller ivareta berettigede sikkerhets- og driftsinteresser.',
+          'Loven krever at vi oppgir et grunnlag for hver bruk. Kontoen din, sammenkoblingen, fellesfunksjonene, samtaler, abonnement og brukerstøtte bygger på avtalen vi har med deg. Posisjonsdeling, bruksstatistikk, Flørt og varsler bygger på samtykket ditt, som du trekker tilbake ved å slå dem av. Det endrer ikke det som har skjedd før. Rapporter om samtaleforbindelsen, vern mot misbruk, rapporter og blokkeringer bygger på vår berettigede interesse i en tjeneste som virker og er trygg. Du kan protestere mot dette, og da stopper vi med mindre vi har en tungtveiende grunn til å fortsette. Kjøpsopplysninger bygger på bokføringsloven.',
         ],
       },
       {
         heading: 'Partneren din og delt innhold',
         paragraphs: [
           'Den aktive partneren din kan se profilopplysningene og forholdsinnholdet som appen gjør til en del av fellesrommet. Enkelte daglige svar forblir skjult til vilkåret for å vise dem er oppfylt. Ikke legg til innhold du ikke vil at partneren skal se når funksjonen viser eller deler det.',
+          'Flørt spør om tiltrekning og hva dere liker ved hverandre, så svarene dine der kan si noe om seksuallivet ditt. Paeonia ber om samtykke første gang du åpner Flørt. Du trekker det tilbake ved å slå av Flørt under Personvern og trygghet, og da slettes Flørt-svarene dine. Ellers bestemmer du selv hva du deler. Skriver du om helsen din, livssynet ditt eller kjærlighetslivet ditt, lagrer vi det for å vise det til partneren din og bruker det ikke til noe annet.',
+          'Mens dere begge har Paeonia åpen, kan partneren din se at du er der, og om du er i en chat, et spill eller tegningen, eller skriver. Du ser det samme om partneren. Slår du av Vis når jeg er her i Mer-fanen, ser ingen av dere den andre.',
           'Hvis en av dere forlot forholdet og dere to kobler dere sammen igjen innen omtrent 30 dager, kan dere begge velge å få tilbake svar, samtaler, minner, tegninger, bilder og talemeldinger dere delte. Det kommer bare tilbake hvis dere begge sier ja. Posisjoner, hjerter, anropslogg, kallenavn og tilbakeblikk ble slettet da forholdet ble avsluttet, og kommer ikke tilbake.',
         ],
       },
@@ -171,7 +173,7 @@ export const legalNo = {
       {
         heading: 'Samtaler',
         paragraphs: [
-          'Du kan ringe partneren din med lyd eller video i Paeonia. Samtalen går som regel rett fra den ene telefonen til den andre. Den er kryptert underveis, og Paeonia tar ikke opp eller lagrer det dere sier eller viser.',
+          'Du kan ringe partneren din med lyd eller video i Paeonia. Samtalen går som regel rett fra den ene telefonen til den andre. Den er kryptert underveis, og Paeonia tar ikke opp eller lagrer det dere sier eller viser. Når du deler skjermen i en samtale, hører partneren din også lyden fra appene du viser, selv om du har slått av mikrofonen.',
           'For å koble til direkte får hver telefon IP-adressen til den andre, også når du ikke deler posisjonen din. En samtale begynner å koble til mens det ringer, så telefonene du ringer til, får IP-adressen din før partneren din svarer. En telefon som ringer, sender sin egen adresse først når noen svarer på den. En IP-adresse kan vise omtrent hvor en telefon er. Mens du har satt posisjonsdeling på pause, går samtalene dine gjennom en relétjeneste som Cloudflare driver, så partnerens telefon ikke får IP-adressen din. Hvis et nettverk stopper en direkte forbindelse, går samtalen også gjennom denne relétjenesten. Den sender samtalen videre og lagrer den ikke. Meldingene som setter opp en samtale, går gjennom relétjenesten for live-tegning, som heller ikke lagrer dem.',
           'Når en samtale er over, viser en rad i chatten når den var og hvor lenge den varte, eller at den ble tapt. Raden blir liggende i fellesrommet og slettes som annet delt innhold når forholdet avsluttes. Samtalene vises også i listen over nylige anrop i Telefon-appen på iPhonen, med navnet til partneren din. Paeonia kan ikke fjerne dem derfra, så de blir liggende etter at du logger ut, forlater forholdet eller sletter kontoen. Du kan slette dem selv i Telefon-appen.',
           'Innkommende samtaler ringer gjennom pushtjenesten til Apple. Ringesignalet inneholder ingen navn og ingenting du har skrevet, bare koder for samtalen og den som ringer, og når det slutter å ringe. Mens du deler posisjonen din og ikke har satt den på pause, kan partneren din se hva klokka er hos deg på samtaleskjermen.',
@@ -182,12 +184,13 @@ export const legalNo = {
         paragraphs: [
           'Hvis du tillater varsler, bruker vi en enhetsnøkkel og valgene dine til å sende oppdateringer om tjenesten og forholdet. Forhåndsvisninger kan vises utenfor appen avhengig av iPhone-innstillingene dine. Velg innstillingene som passer for deg.',
           'Widgeten på hjemskjermen bruker en klargjort lokal forhåndsvisning på enheten. Den er skjult som standard og tømmer privat mellomlagret innhold når du logger ut, sletter kontoen eller mister tilgang til forholdet.',
+          'Paeonia legger chattene, datoene og minnene dine til i søket på iPhonen, slik at Spotlight og Siri finner dem. Indeksen blir på telefonen din, tar ikke med Flørt, og tømmes når du logger ut, forlater forholdet eller sletter kontoen.',
         ],
       },
       {
         heading: 'Hvem vi deler opplysninger med',
         paragraphs: [
-          'Disse leverandørene behandler opplysninger for Paeonia, og bare for å drive tjenesten. Apple håndterer Logg inn med Apple, betaling og abonnement i App Store og pushvarsler. Google håndterer Logg inn med Google. Clerk håndterer innlogging og økter, og sender innloggingskoden til e-postadressen din når du logger inn med e-post. Cloudflare lagrer bilder, videoer, talemeldinger, tegninger og andre filer i EU, kjører relétjenestene for live-tegning og samtaler og leverer nettsiden. OpenFreeMap leverer kartet i Oss-fanen, og Apple Kart leverer det på iPad eller når OpenFreeMap er nede. For å tegne kartet ber telefonen om området som vises, så de får IP-adressen din og omtrent hvor området er, som regel rundt deg og partneren din. De får ikke vite hvem du er i Paeonia. PostHog lagrer bruksstatistikk og krasjrapporter på sine EU-servere i Frankfurt i Tyskland, og tar verken vare på IP-adressen din eller et sted som er utledet fra den. Databasen og applikasjonsserveren til Paeonia kjører på en server vi leier i et datasenter i Leipzig i Tyskland, så disse opplysningene blir i EU og EØS. Hver leverandør er underlagt egne krav til sikkerhet og personvern.',
+          'Disse selskapene hjelper oss å drive Paeonia. Clerk, Cloudflare, PostHog og serverleverandøren vår arbeider etter våre instrukser og bare for å drive tjenesten. Apple og Google bestemmer selv hvordan de håndterer Logg inn med Apple, Logg inn med Google, betaling i App Store og pushvarsler, etter sine egne personvernregler. Clerk håndterer innlogging og økter, og sender innloggingskoden til e-postadressen din når du logger inn med e-post. Cloudflare lagrer bilder, videoer, talemeldinger, tegninger og andre filer i EU, kjører relétjenestene for live-tegning og samtaler og leverer nettsiden. OpenFreeMap leverer kartet i Oss-fanen, og Apple Kart leverer det på iPad eller når OpenFreeMap er nede. For å tegne kartet ber telefonen om området som vises, så de får IP-adressen din og omtrent hvor området er, som regel rundt deg og partneren din. De får ikke vite hvem du er i Paeonia. Når du legger til et sted i et minne, søker etter et sted eller spiller Gjett hvor, slår Apple Kart det opp. Hvis et bilde du velger, inneholder stedet der det ble tatt, spør Paeonia Apple Kart hva stedet heter, for å kunne foreslå det. Apple får stedet eller søketeksten og IP-adressen din, men ikke hvem du er i Paeonia. PostHog lagrer bruksstatistikk og krasjrapporter på sine EU-servere i Frankfurt i Tyskland, og tar verken vare på IP-adressen din eller et sted som er utledet fra den. Databasen og applikasjonsserveren til Paeonia kjører på en server vi leier i et datasenter i Leipzig i Tyskland, så disse opplysningene blir i EU og EØS. En sikkerhetskopi av databasen og filene lagres hos Cloudflare i EU. Hver leverandør er underlagt egne krav til sikkerhet og personvern.',
           'Vi kan utlevere opplysninger når loven krever det, for å beskytte en person eller tjenesten, eller som del av en omorganisering med egnede sikkerhetstiltak. Betrodde personer innen brukerstøtte eller moderering kan få tilgang til minst mulig informasjon for å løse en henvendelse, vurdere rapportert innhold, ivareta sikkerhet, fullføre en personvernforespørsel eller utføre sletting og gjenoppretting.',
           'Vi selger ikke personopplysninger. Vi bruker ikke forholdsinnhold til annonsering, og Paeonia har ikke tredjepartsannonser eller sporing på tvers av apper.',
         ],
@@ -195,15 +198,15 @@ export const legalNo = {
       {
         heading: 'Rapporter, blokkeringer og sikkerhet',
         paragraphs: [
-          'Du kan rapportere innhold eller oppførsel knyttet til det nåværende eller nylig avsluttede forholdet. En rapport kan inneholde en beskyttet kopi av rapportert tekst, metadata, bilde, video, talesvar, tegning eller annet relevant innhold, slik at det kan vurderes selv om originalen endres eller slettes.',
-          'Personen som rapporteres, får ikke se rapporten. Vi går gjennom hver rapport og svarer innen tre virkedager. En blokkering stenger kontakten gjennom Paeonia og hindrer ny sammenkobling frem til personen som blokkerte, fjerner blokkeringen. Sikkerhets- og modereringsopplysninger kan beholdes etter at annet forholdsinnhold er slettet når det er nødvendig for å hindre gjentatt skade og dokumentere behandlingen av en rapport.',
+          'Du kan rapportere innhold eller oppførsel i forholdet ditt. Er det allerede avsluttet, kan du sende e-post til support@paeonia.no. En rapport kan inneholde en beskyttet kopi av rapportert tekst, metadata, bilde, video, talesvar, tegning eller annet relevant innhold, slik at det kan vurderes selv om originalen endres eller slettes.',
+          'Personen som rapporteres, får ikke se rapporten. Vi går gjennom hver rapport innen tre virkedager. En blokkering stenger kontakten gjennom Paeonia og hindrer ny sammenkobling frem til personen som blokkerte, fjerner blokkeringen. Vi beholder rapporter og det vi gjorde med dem etter at annet forholdsinnhold er slettet, slik at vi kan hindre gjentatt skade og vise hvordan en rapport ble behandlet. Hvor lenge står under Hvor lenge vi beholder opplysninger.',
         ],
       },
       {
         heading: 'Hvor lenge vi beholder opplysninger',
         paragraphs: [
           'Vi beholder aktive konto- og forholdsopplysninger så lenge de trengs for å levere Paeonia. Når et forhold avsluttes, skjules delt innhold med en gang og planlegges vanligvis slettet etter omtrent 30 dager. Nyeste delte posisjoner slettes med en gang. Kobler de samme to personene seg sammen igjen før den tid, kan begge velge å få det skjulte innholdet tilbake. Innhold fra et forhold som ble avsluttet fordi en konto ble slettet, kommer aldri tilbake. Lokale private mellomlagre skjules eller tømmes når tilgangen opphører.',
-          'Kopier av rapportert innhold beholdes mens en rapport er åpen og vanligvis i 180 dager etter at den er ferdigbehandlet. Selve rapporten, modereringshandlinger, blokkeringer, sikkerhetsvarsler, abonnementsopplysninger, revisjonsspor for personvernforespørsler og begrensede sikkerhets- eller lovopplysninger kan beholdes lenger når det trengs for sikkerhet, regnskap, tvister, svindelforebygging eller rettslige plikter.',
+          'Kopier av rapportert innhold beholdes mens en rapport er åpen og vanligvis i 180 dager etter at den er ferdigbehandlet. Rapporter, det vi gjorde med dem, sikkerhetsvarsler og opplysninger om personvernforespørsler beholdes i tre år etter at saken er avsluttet. Kjøpsopplysninger beholdes i fem år etter utløpet av året kjøpet ble gjort, slik bokføringsloven krever. En blokkering blir stående til personen som blokkerte, fjerner den eller sletter kontoen sin.',
           'Ventende opplastinger og driftsopplysninger beholdes bare så lenge de trengs for å fullføre, prøve på nytt, sikre eller rydde opp handlingen. Varslings- og forespørselsopplysninger slettes vanligvis etter omtrent 30 dager, og rapporter om samtaleforbindelsen etter 30 dager. En kopi av dataene dine som du lager med Last ned dataene mine, slettes fra serverne våre etter tre dager, eller tidligere hvis du sletter den selv. Slettede opplysninger kan bli liggende i sikkerhetskopiene på serveren i opptil 14 dager før kopiene byttes ut.',
           'Bruksstatistikk og krasjrapporter slettes når du ikke har brukt Paeonia på et år. De slettes tidligere hvis du slår av Del bruksstatistikk eller sletter kontoen.',
           'Oppbevaringstiden kan forlenges når loven krever det eller et rettskrav må bevares.',
@@ -229,15 +232,14 @@ export const legalNo = {
       {
         heading: 'Behandling i andre land',
         paragraphs: [
-          'Leverandørene våre kan behandle opplysninger i andre land enn der du bor. Når det kreves, bruker vi anerkjente overføringsgrunnlag og krever at leverandørene beskytter opplysningene de behandler for oss.',
-          'PostHog, Inc., som lagrer bruksstatistikk og krasjrapporter for oss, holder til i USA. Opplysningene lagres i Tyskland, og eventuell tilgang fra USA er dekket av EU-US Data Privacy Framework og EUs standard personvernbestemmelser. Send e-post til contact@paeonia.no for å få en kopi av disse garantiene.',
+          'Alt du deler i Paeonia, lagres i EU. Tre av leverandørene våre er amerikanske: Clerk, Cloudflare og PostHog. Clerk, Inc. håndterer innlogging og oppbevarer innloggingsopplysningene dine i USA: e-postadressen din, navnet ditt, hvilken innloggingsmetode du bruker, og øktene dine. Cloudflare lagrer filene dine og sikkerhetskopien vår i EU, og sender samtaler og live-tegninger videre uten å lagre dem. PostHog, Inc. lagrer bruksstatistikk og krasjrapporter i Tyskland, hvis du har sagt ja til å dele dem. Alle tre er sertifisert under EU-US Data Privacy Framework, og avtalene våre med dem inneholder EUs standard personvernbestemmelser. Send e-post til contact@paeonia.no for å få en kopi.',
         ],
       },
       {
         heading: 'Valgene og rettighetene dine',
         paragraphs: [
           'Du kan redigere profilopplysninger, slå av posisjonsdeling og varsler, forlate et forhold, blokkere en partner og slette kontoen i appen der disse valgene er tilgjengelige. For å trekke tilbake samtykket til bruksstatistikk og krasjrapporter åpner du Mer-fanen og deretter Personvern og trygghet, og slår av Del bruksstatistikk. Telefonen slutter å sende dem med en gang, og vi ber PostHog slette det de allerede har, noe som tar omtrent en uke. Noe som blir sendt akkurat i det øyeblikket, kan likevel komme fram.',
-          'Du kan be om innsyn i eller en kopi av dataene dine, retting, sletting, begrensning eller en annen rettighet som gjelder der du bor. For å få en kopi selv åpner du Mer-fanen, deretter Personvern og trygghet og så Last ned dataene mine. Det er gratis og krever ikke abonnement. Paeonia lager den i bakgrunnen, vanligvis i løpet av noen minutter, gir deg beskjed når den er klar og har den tilgjengelig i tre dager. Den inneholder kontoopplysningene dine og alt du har skrevet, lastet opp eller valgt, som JSON-filer andre tjenester kan lese, sammen med de originale bildene, talemeldingene og tegningene dine. En README forklarer hver fil og hvordan vi bruker dataene dine. Den inneholder også det du deler med partneren din som ett, som minner, nedtellinger, rekker og resultater i spill, så lenge dere er sammen. Den inneholder ikke det partneren din har skrevet eller lastet opp, posisjonen eller innstillingene deres, eller rapporter om deg, fordi dette er andres personopplysninger. For å be om retting åpner du Personvern og trygghet og trykker på Be om retting. Vi svarer på e-post til adressen som er knyttet til kontoen, vanligvis innen en måned. Bruksstatistikken PostHog har, er ikke med i kopien. Har du sagt ja til å dele den, kan du sende e-post til contact@paeonia.no, så henter vi den for deg. Du kan også skrive til contact@paeonia.no om alt annet.',
+          'Du kan be om innsyn i eller en kopi av dataene dine, retting, sletting eller begrensning, eller protestere mot hvordan vi bruker dem. For å få en kopi selv åpner du Mer-fanen, deretter Personvern og trygghet og så Last ned dataene mine. Det er gratis og krever ikke abonnement. Paeonia lager den i bakgrunnen, vanligvis i løpet av noen minutter, gir deg beskjed når den er klar og har den tilgjengelig i tre dager. Den inneholder kontoopplysningene dine og alt du har skrevet, lastet opp eller valgt, som JSON-filer andre tjenester kan lese, sammen med de originale bildene, talemeldingene og tegningene dine. En README forklarer hver fil og hvordan vi bruker dataene dine. Den inneholder også det du deler med partneren din som ett, som minner, nedtellinger, rekker og resultater i spill, så lenge dere er sammen. Den inneholder ikke det partneren din har skrevet eller lastet opp, posisjonen eller innstillingene deres, eller rapporter om deg, fordi dette er andres personopplysninger. For å be om retting åpner du Personvern og trygghet og trykker på Be om retting. Vi svarer på e-post til adressen som er knyttet til kontoen, vanligvis innen en måned. Bruksstatistikken PostHog har, er ikke med i kopien. Har du sagt ja til å dele den, kan du sende e-post til contact@paeonia.no, så henter vi den for deg. Tror du vi har noe om deg som ikke er med i kopien, kan du skrive til oss, så går vi gjennom det manuelt. Du kan også skrive til contact@paeonia.no om alt annet.',
           'Du kan også klage til den lokale personvernmyndigheten. I Norge er dette Datatilsynet. Vi kan måtte bekrefte identiteten din før en forespørsel fullføres.',
         ],
       },
@@ -267,7 +269,7 @@ export const legalNo = {
       {
         heading: 'Avtalen',
         paragraphs: [
-          'Disse vilkårene er en avtale mellom deg og Hjalmar Karlsen, Storgata 61, 0182 Oslo, Norge, som driver Paeonia. De gjelder når du oppretter konto eller bruker Paeonia-appen og tilknyttede tjenester. Ved å bruke Paeonia godtar du vilkårene og personvernteksten. Hvis du ikke godtar dem, må du ikke bruke tjenesten.',
+          'Disse vilkårene er en avtale mellom deg og Hjalmar Karlsen, Storgata 61, 0182 Oslo, Norge, som driver Paeonia. De gjelder når du oppretter konto eller bruker Paeonia-appen og tilknyttede tjenester. Når du oppretter konto, godtar du vilkårene. Personvernteksten forklarer hvordan vi behandler opplysningene dine. Hvis du ikke godtar vilkårene, må du ikke bruke tjenesten.',
           'Du må være minst 16 år og etter loven kunne godta vilkårene. Hvis loven der du bor krever tillatelse fra en forelder eller verge, må du ha denne tillatelsen. Paeonia er laget for par og er ikke rettet mot barn.',
           'Apples standard lisensavtale for apper (Licensed Application End User License Agreement, https://www.apple.com/legal/internet-services/itunes/dev/stdeula/) gjelder også for appen, og disse vilkårene kommer i tillegg. Apple er ikke part i disse vilkårene og er ikke ansvarlig for appen eller for brukerstøtten.',
         ],
@@ -297,8 +299,8 @@ export const legalNo = {
         heading: 'Abonnement og betaling',
         paragraphs: [
           'Paeonia har ingen gratisversjon. Appen virker så lenge én av partnerne har et aktivt abonnement. Ett abonnement gjelder for begge partnerne, og partneren som blir med via en invitasjonskode, betaler ikke. Alle funksjoner er med. Abonnementet tilhører Apple-kontoen og Paeonia-kontoen som ble brukt ved kjøpet. Det flyttes ikke av seg selv til en annen konto eller et annet forhold.',
-          'Paeonia tilbyr månedlige og årlige abonnement, og kan tilby en gratis prøveperiode til deg som ikke har hatt en før. Prisen, lengden på hver periode og lengden på en eventuell prøveperiode vises på kjøpsskjermen før du bekrefter. Apple trekker beløpet fra Apple-kontoen din når du bekrefter kjøpet, eller når en gratis prøveperiode er over. Abonnementet fornyes automatisk for samme periode til prisen som vises i App Store, med mindre du sier det opp minst 24 timer før perioden er over. Apple trekker fornyelsen senest 24 timer før perioden er over.',
-          'Du kan administrere eller avslutte et abonnement i Innstillinger, så navnet ditt, så Abonnementer på iPhone, eller i delen Abonnement i Mer-fanen i Paeonia. Når du sier opp, stopper neste fornyelse, og du beholder tilgangen til den betalte perioden er over. Apple avgjør refusjon, og du kan be om det på reportaproblem.apple.com. Trykk Gjenopprett kjøp på abonnementsskjermen eller i Mer-fanen for å få tilbake et kjøp du allerede har gjort, for eksempel på en ny telefon.',
+          'Paeonia tilbyr månedlige og årlige abonnement, og kan tilby en gratis prøveperiode til deg som ikke har hatt en før. Prisen, lengden på hver periode og lengden på en eventuell prøveperiode vises på kjøpsskjermen før du bekrefter. Apple trekker beløpet fra Apple-kontoen din når du bekrefter kjøpet, eller når en gratis prøveperiode er over. Abonnementet fornyes automatisk for samme periode til prisen som vises i App Store, med mindre du sier det opp minst 24 timer før perioden er over. Apple trekker fornyelsen i løpet av de siste 24 timene før perioden er over.',
+          'Du kan administrere eller avslutte et abonnement i Innstillinger, så navnet ditt, så Abonnementer på iPhone, eller i delen Abonnement i Mer-fanen i Paeonia. Når du sier opp, stopper neste fornyelse, og du beholder tilgangen til den betalte perioden er over. Du har 14 dagers angrerett etter kjøpet. Apple tar imot betalingen, så du ber Apple om pengene tilbake på reportaproblem.apple.com. Sier Apple nei, skriver du til support@paeonia.no, så betaler vi deg tilbake selv. Trykk Gjenopprett kjøp på abonnementsskjermen eller i Mer-fanen for å få tilbake et kjøp du allerede har gjort, for eksempel på en ny telefon. Minst hver sjette måned minner vi den som betaler, om at abonnementet løper og hvordan det sies opp.',
           'Hvis ingen av partnerne har aktiv tilgang, er fellesrommet låst til et abonnement gjenopprettes eller kjøpes. Et utløpt abonnement avslutter ikke i seg selv forholdet. Sletting av Paeonia-kontoen eller appen avslutter ikke App Store-abonnementet.',
           'Paeonia kan også selge engangskjøp, for eksempel for å få tilbake en streak som er brutt. Et engangskjøp fornyes ikke.',
         ],
@@ -320,7 +322,7 @@ export const legalNo = {
       {
         heading: 'Rapporter, blokkeringer og moderering',
         paragraphs: [
-          'Paeonia er et privat rom for to og har ingen offentlige innlegg, men reglene gjelder alt du legger til. Slik rapporterer du partneren din: Åpne Mer-fanen, så Personvern og trygghet, og trykk Rapporter og forlat forholdet. Rapporten avslutter forholdet, og du kan også velge å blokkere personen. Du kan også sende e-post til support@paeonia.no. Vi går gjennom hver rapport og svarer innen tre virkedager. Vi kan bevare rapportert materiale, vurdere det, skjule eller fjerne innhold, begrense kontoer eller sammenkobling og ta andre forholdsmessige grep for å beskytte brukere og tjenesten.',
+          'Paeonia er et privat rom for to og har ingen offentlige innlegg, men reglene gjelder alt du legger til. Slik rapporterer du partneren din: Åpne Mer-fanen, så Personvern og trygghet, og trykk Rapporter og forlat forholdet. Rapporten avslutter forholdet, og du kan også velge å blokkere personen. Du kan også sende e-post til support@paeonia.no. Vi går gjennom hver rapport innen tre virkedager. Vi kan bevare rapportert materiale, vurdere det, skjule eller fjerne innhold, begrense kontoer eller sammenkobling og ta andre forholdsmessige grep for å beskytte brukere og tjenesten.',
           'Vi lover ikke å overvåke alt privat innhold. Kontakt lokale nødtjenester hvis noen er i umiddelbar fare. Rapporter som bevisst er uriktige, eller misbruk av sikkerhetsverktøy, kan i seg selv bryte vilkårene.',
         ],
       },
@@ -342,7 +344,7 @@ export const legalNo = {
         heading: 'Endringer og tilgjengelighet',
         paragraphs: [
           'Vi arbeider for at Paeonia skal være pålitelig, men tjenesten kan bli avbrutt, forsinket, endret eller utilgjengelig. Synkronisering, varsler, widget, posisjonsoppdateringer og tredjepartstjenester for innlogging eller betaling er ikke garantert å være umiddelbare eller feilfrie.',
-          'Vi kan legge til, endre eller fjerne funksjoner når det er rimelig nødvendig. Hvis en vesentlig endring påvirker en betalt tjeneste, gir vi beskjed når loven krever det.',
+          'Paeonia endrer seg. Vi legger til ting, forbedrer dem og fjerner av og til noe få bruker. En endring koster deg aldri noe ekstra. Hvis vi fjerner eller endrer noe slik at Paeonia blir klart dårligere for deg, sier vi fra på e-post og i appen minst 30 dager før, og du kan si opp og få tilbake det du har betalt for tiden som er igjen. Be Apple om de pengene på reportaproblem.apple.com først. Sier Apple nei, skriver du til support@paeonia.no, så betaler vi dem tilbake selv.',
         ],
       },
       {
@@ -355,20 +357,20 @@ export const legalNo = {
       {
         heading: 'Forbehold og ansvar',
         paragraphs: [
-          'Paeonia leveres med rimelig aktsomhet, men ingen nettjeneste kan være helt sikker eller alltid tilgjengelig. Så langt loven tillater det, er vi ikke ansvarlige for indirekte eller uforutsette tap, en annen brukers handlinger eller feil som skyldes enheten, nettet, Apple, Google eller andre systemer utenfor vår rimelige kontroll.',
-          'Ingenting i vilkårene begrenser rettigheter eller krav som ikke lovlig kan begrenses, blant annet ufravikelige forbrukerrettigheter eller ansvar for forsett eller grov uaktsomhet.',
+          'Vi lager Paeonia med omhu, men ingen nettjeneste er alltid tilgjengelig eller helt sikker. Hvis Paeonia ikke virker slik vilkårene beskriver, sier du fra til support@paeonia.no, så retter vi det innen rimelig tid. Klarer vi ikke det, har du rettighetene forbrukerlovgivningen gir deg: prisavslag, pengene tilbake for tiden feilen varte, eller erstatning for tap feilen har påført deg. Vil du ha penger tilbake, ber du Apple om det på reportaproblem.apple.com først. Sier Apple nei, betaler vi deg tilbake selv.',
+          'Vi er ikke ansvarlige for det partneren din gjør, eller for feil i telefonen din, nettet ditt eller tjenestene til Apple og Google.',
         ],
       },
       {
         heading: 'Lovvalg og tvister',
         paragraphs: [
-          'Vilkårene reguleres av norsk rett uten å begrense ufravikelig forbrukervern som gjelder der du bor. Kontakt support@paeonia.no først, slik at vi kan prøve å løse problemet. Tvister kan bringes inn for domstolen eller forbrukerorganet som har myndighet etter gjeldende rett.',
+          'Norsk rett gjelder for vilkårene. Bor du i et annet EØS-land, beholder du forbrukervernet i landet du bor i. Skriv til support@paeonia.no først, så prøver vi å løse problemet. Blir vi ikke enige, kan du be Forbrukertilsynet (forbrukertilsynet.no) om gratis mekling, eller gå til domstolene der du bor.',
         ],
       },
       {
         heading: 'Endringer og kontakt',
         paragraphs: [
-          'Vi kan oppdatere vilkårene når Paeonia endres. Vi oppdaterer datoen øverst og gir ekstra beskjed når det kreves. Hvis du fortsetter å bruke Paeonia etter at oppdaterte vilkår trer i kraft, gjelder de oppdaterte vilkårene, med forbehold om rettighetene dine etter loven.',
+          'Vi oppdaterer vilkårene når Paeonia endres, og endrer datoen øverst. Hvis en endring betyr noe for det du betaler for eller har godtatt, sier vi fra på e-post og i appen minst 30 dager før den gjelder. Vil du ikke ha de nye vilkårene, kan du si opp før den tid.',
           'For spørsmål om vilkårene kan du sende e-post til contact@paeonia.no. For hjelp med produktet eller kontoen kan du bruke support@paeonia.no.',
         ],
       },

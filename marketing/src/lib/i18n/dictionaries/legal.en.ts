@@ -70,7 +70,7 @@ export const legalEn = {
         paragraphs: [
           'Paeonia has no free version. One subscription covers both of you, and the partner who joins with an invite code does not pay.',
           'Apple handles all payments. To change or cancel, open Settings on your iPhone, tap your name, then tap Subscriptions. You can also tap Manage subscription in the More tab of Paeonia. Cancelling stops the next renewal, and you keep access until the paid period ends. Deleting the app or your account does not cancel a subscription.',
-          'Apple decides refunds, not Paeonia. Ask for one at reportaproblem.apple.com.',
+          'Refunds go through Apple, which takes the payment. Ask at reportaproblem.apple.com. You have 14 days after buying to change your mind. If you change your mind in that time and Apple says no, write to support@paeonia.no and we pay you back ourselves. If something in Paeonia does not work, write to us so we can fix it.',
           'If you paid and Paeonia is still locked, tap Restore purchases on the subscription screen. If your partner pays, ask them to tap Restore purchases on their phone.',
         ],
       },
@@ -84,13 +84,13 @@ export const legalEn = {
       {
         heading: 'See, copy, or fix your data',
         paragraphs: [
-          'Open the More tab, then Privacy and safety. You can ask to see what we store, ask for a copy, or ask for a correction. We email you at the address on your account, normally within a month.',
+          'Open the More tab, then Privacy and safety. Tap Download my data to get a copy of everything you added. It is usually ready within minutes and needs no subscription. Tap Ask for a correction to have something fixed. We reply by email, normally within a month. For anything else, email contact@paeonia.no.',
         ],
       },
       {
         heading: 'Safety and reports',
         paragraphs: [
-          'If something in your relationship feels unsafe, open the More tab, then Privacy and safety, and tap Report and leave. We never show your report to the other person. We look at every report and reply within three working days. You can also email support@paeonia.no. If you are in danger, call your local emergency number first.',
+          'If something in your relationship feels unsafe, open the More tab, then Privacy and safety, and tap Report and leave. We never show your report to the other person. We review every report within three working days. You can also email support@paeonia.no. If you are in danger, call your local emergency number first.',
         ],
       },
       {
@@ -142,13 +142,15 @@ export const legalEn = {
           'We use personal data to create and secure your account, connect you with the partner you choose, provide and sync shared features, show subscription access, deliver notifications you allow, answer support requests, and keep the service reliable.',
           'We also use data to prevent fraud and misuse, enforce blocks and access rules, review reports, protect users, comply with legal obligations, handle data requests, and delete or anonymize data when required.',
           'We use usage statistics and crash reports to find bugs and decide what to improve. We collect them only if you agree, and you can withdraw your consent at any time in the app. Saying no, or changing your mind later, does not affect your subscription or anything else in Paeonia.',
-          'Where consent is the appropriate legal basis, such as precise location sharing, usage statistics, and device permissions, you can withdraw it by turning the feature off or changing your device settings. Other processing is necessary to provide the service, fulfill our agreement with you, meet legal duties, or protect legitimate security and service interests.',
+          'The law asks us to name a reason for each use. Your account, pairing, the shared features, calls, subscriptions and support rest on our agreement with you. Location sharing, usage statistics, Flirt and notifications rest on your consent, which you take back by turning them off. That does not undo what happened before. Call connection reports, protection against misuse, reports and blocks rest on our legitimate interest in a service that works and is safe. You can object to these, and we stop unless we have a weighty reason to continue. Purchase records rest on the accounting law.',
         ],
       },
       {
         heading: 'Your partner and shared content',
         paragraphs: [
           'Your active partner can see the profile details and relationship content that the app makes part of your shared space. Some daily answers stay hidden until the matching reveal condition is met. Do not add content you do not want your partner to see when the feature reveals or shares it.',
+          'Flirt asks about attraction and what you like about each other, so your answers there can say something about your sex life. Paeonia asks for your consent the first time you open Flirt. You take it back by turning Flirt off under Privacy and safety, which deletes your Flirt answers. Elsewhere you decide what you share. If you write about your health, your beliefs or your love life, we store it to show it to your partner and use it for nothing else.',
+          'While you both have Paeonia open, your partner can see that you are there and whether you are in a chat, a game or the drawing, or typing. You see the same about them. Turn off Show when I\'m here in the More tab, and neither of you sees the other.',
           'If one of you left the relationship and the same two of you pair again within about 30 days, you can both choose to get back the answers, chats, memories, drawings, photos and voice messages you shared. It only comes back if both of you say yes. Locations, hearts, call history, nicknames and recaps were deleted when the relationship ended and do not come back.',
         ],
       },
@@ -171,7 +173,7 @@ export const legalEn = {
       {
         heading: 'Calls',
         paragraphs: [
-          'You can call your partner with voice or video in Paeonia. A call usually goes straight from one phone to the other. It is encrypted on the way, and Paeonia does not record or store what you say or show.',
+          'You can call your partner with voice or video in Paeonia. A call usually goes straight from one phone to the other. It is encrypted on the way, and Paeonia does not record or store what you say or show. When you share your screen in a call, your partner also hears the sound of the apps you show, even while your microphone is muted.',
           'To connect directly, each phone gets the other phone\'s IP address, even if you do not share your location. A call starts connecting while it rings, so the phones you call get your IP address before your partner answers. A ringing phone sends its own address only once someone answers on it. An IP address can show roughly where a phone is. While you have paused location sharing, your calls go through a relay run by Cloudflare, so your partner\'s phone does not get your IP address. If a network blocks a direct connection, the call also goes through that relay. The relay forwards the call and does not store it. The messages that set up a call pass through the live drawing relay, which does not store them either.',
           'When a call ends, a row in your chat shows when it happened and how long it lasted, or that it was missed. The row stays in your shared space and is deleted like other shared content when the relationship ends. Calls also show in the list of recent calls in your iPhone\'s Phone app, with your partner\'s name. Paeonia cannot remove them from there, so they stay after you sign out, leave the relationship, or delete your account. You can delete them yourself in the Phone app.',
           'Incoming calls ring through Apple\'s push service. The ring holds no names and nothing you wrote, only codes for the call and the caller and the time the ringing stops. While you share your location and have not paused it, your partner\'s call screen can show your local time.',
@@ -182,12 +184,13 @@ export const legalEn = {
         paragraphs: [
           'If you allow notifications, we use a device token and your preferences to deliver service and relationship updates. Notification previews can appear outside the app depending on your iPhone settings, so choose the preview settings that are right for you.',
           'The Home Screen widget uses a prepared local preview on your device. It is redacted by default and clears private cached content when you sign out, delete your account, or lose access to the relationship.',
+          'Paeonia adds your chats, dates and memories to search on your iPhone, so Spotlight and Siri can find them. The index stays on your phone, leaves Flirt out, and is cleared when you sign out, leave the relationship or delete your account.',
         ],
       },
       {
         heading: 'Who we share data with',
         paragraphs: [
-          'These service providers process data for Paeonia, and only to run the service. Apple handles Sign in with Apple, App Store payments and subscriptions, and push notifications. Google handles Sign in with Google. Clerk handles sign-in and sessions, and sends the sign-in code to your email address when you sign in with email. Cloudflare stores photos, videos, voice messages, drawings, and other files in the EU, runs the relays for live drawing and calls, and delivers the website. OpenFreeMap provides the map in the Us tab, and Apple Maps provides it on iPad or when OpenFreeMap is down. To draw the map, your phone asks them for the area on screen, so they receive your IP address and roughly where that area is, usually around you and your partner. They do not learn who you are in Paeonia. PostHog stores usage statistics and crash reports on its EU servers in Frankfurt, Germany, and keeps neither your IP address nor a location worked out from it. Paeonia\'s database and application server run on a server we rent in a data centre in Leipzig, Germany, so this data stays in the EU and EEA. Each provider is subject to its own security and privacy obligations.',
+          'These companies help us run Paeonia. Clerk, Cloudflare, PostHog and our server host work on our instructions and only to run the service. Apple and Google decide for themselves how they handle Sign in with Apple, Sign in with Google, App Store payments and push notifications, under their own privacy policies. Clerk handles sign-in and sessions, and sends the sign-in code to your email address when you sign in with email. Cloudflare stores photos, videos, voice messages, drawings, and other files in the EU, runs the relays for live drawing and calls, and delivers the website. OpenFreeMap provides the map in the Us tab, and Apple Maps provides it on iPad or when OpenFreeMap is down. To draw the map, your phone asks them for the area on screen, so they receive your IP address and roughly where that area is, usually around you and your partner. They do not learn who you are in Paeonia. When you add a place to a memory, search for a place, or play Guess my spot, Apple Maps looks it up. If a photo you pick holds the spot where it was taken, Paeonia asks Apple Maps what that place is called, so it can suggest it. Apple gets the spot or the search text and your IP address, and not who you are in Paeonia. PostHog stores usage statistics and crash reports on its EU servers in Frankfurt, Germany, and keeps neither your IP address nor a location worked out from it. Paeonia\'s database and application server run on a server we rent in a data centre in Leipzig, Germany, so this data stays in the EU and EEA. A backup of the database and the files is stored with Cloudflare in the EU. Each provider is subject to its own security and privacy obligations.',
           'We may disclose data when required by law, to protect a person or the service, or as part of a business reorganization with appropriate safeguards. Trusted support or moderation personnel may access the minimum data needed to resolve a request, review reported content, keep the service safe, complete a data request, or perform deletion and recovery work.',
           'We do not sell personal data. We do not use relationship content for advertising, and Paeonia does not include third-party advertising or cross-app tracking.',
         ],
@@ -195,15 +198,15 @@ export const legalEn = {
       {
         heading: 'Reports, blocks, and safety',
         paragraphs: [
-          'You can report content or conduct connected to your current or recently ended relationship. A report can include a protected snapshot of the reported text, metadata, photo, video, voice answer, drawing, or other relevant content so it can still be reviewed if the original is changed or deleted.',
-          'The reported person is not shown the report. We review every report and reply within three working days. A block closes contact through Paeonia and prevents pairing again unless the person who blocked later removes the block. Safety and moderation records may be kept after other relationship content is deleted when needed to prevent repeated harm and document how a report was handled.',
+          'You can report content or conduct in your relationship. If it has already ended, email support@paeonia.no. A report can include a protected snapshot of the reported text, metadata, photo, video, voice answer, drawing, or other relevant content so it can still be reviewed if the original is changed or deleted.',
+          'The reported person is not shown the report. We review every report within three working days. A block closes contact through Paeonia and prevents pairing again unless the person who blocked later removes the block. We keep reports and what we did about them after other relationship content is deleted, so we can prevent repeated harm and show how a report was handled. The periods are under How long we keep data.',
         ],
       },
       {
         heading: 'How long we keep data',
         paragraphs: [
           'We keep active account and relationship data while it is needed to provide Paeonia. When a relationship ends, shared content is hidden immediately and is normally scheduled for deletion after about 30 days. Latest shared locations are deleted immediately. If the same two people pair again before then, they can both choose to get the hidden content back. Content from a relationship that ended because an account was deleted never comes back. Local private caches are hidden or cleared when access ends.',
-          'Reported-content snapshots are kept while a report is open and normally for 180 days after it is resolved. The report record, moderation actions, block state, safety warning, subscription records, privacy-request audit records, and limited security or legal records may be kept longer when needed for safety, accounting, dispute handling, fraud prevention, or legal obligations.',
+          'Reported-content snapshots are kept while a report is open and normally for 180 days after it is resolved. Reports, what we did about them, safety warnings and records of data requests are kept for three years after the case is closed. Purchase records are kept for five years after the year of the purchase, as the Norwegian accounting law requires. A block stays until the person who made it removes it or deletes their account.',
           'Pending uploads and operational records are kept only as long as needed to finish, retry, secure, or clean up the related action. Notification and request records are normally deleted after about 30 days, and call connection reports after 30 days. A copy of your data that you prepare with Download my data is deleted from our servers after three days, or sooner if you delete it. Deleted data can stay in our server backups for up to 14 days before the backups are replaced.',
           'Usage statistics and crash reports are deleted once you have not used Paeonia for a year. They are deleted sooner if you turn off Share usage statistics or delete your account.',
           'Retention periods may be extended where the law requires it or a legal claim must be preserved.',
@@ -229,15 +232,14 @@ export const legalEn = {
       {
         heading: 'International processing',
         paragraphs: [
-          'Our service providers may process data in countries outside your own. Where required, we use recognized transfer safeguards and require providers to protect the data they process for us.',
-          'PostHog, Inc., which stores usage statistics and crash reports for us, is based in the USA. The data is stored in Germany, and any access from the USA is covered by the EU-US Data Privacy Framework and the EU standard contractual clauses. Email contact@paeonia.no for a copy of these safeguards.',
+          'Everything you share in Paeonia is stored in the EU. Three of our providers are American: Clerk, Cloudflare and PostHog. Clerk, Inc. handles sign-in and keeps your sign-in details in the USA: your email address, your name, which sign-in method you use, and your sessions. Cloudflare stores your files and our backup in the EU, and passes calls and live drawings on without storing them. PostHog, Inc. stores usage statistics and crash reports in Germany, if you agreed to share them. All three are certified under the EU-US Data Privacy Framework, and our agreements with them include the EU standard contractual clauses. Email contact@paeonia.no for a copy.',
         ],
       },
       {
         heading: 'Your choices and rights',
         paragraphs: [
           'You can edit profile details, turn location sharing and notifications off, leave a relationship, block a partner, and delete your account from the app where those controls are available. To withdraw your consent to usage statistics and crash reports, open the More tab, then Privacy and safety, and turn off Share usage statistics. Your phone stops sending them right away, and we ask PostHog to delete what it already has, which takes about a week. Something being sent at that exact moment can still arrive.',
-          'You may ask for access to or a copy of your data, correction, deletion, restriction, or another right available where you live. To get a copy yourself, open the More tab, then Privacy and safety, then Download my data. It is free and needs no subscription. Paeonia prepares it in the background, usually within minutes, tells you when it is ready, and keeps it for three days. It holds your account data and everything you wrote, uploaded, or chose, as JSON files that other services can read, with your original photos, voice messages, and drawings. A README explains each file and how we use your data. It also holds the things you share with your partner as one, such as memories, countdowns, streaks, and game results, while you are together. It does not include what your partner wrote or uploaded, their location or settings, or reports about you, because that is other people\'s personal data. To ask for a correction, open Privacy and safety and tap Ask for a correction. We reply by email to the address on your account, normally within a month. The usage statistics PostHog keeps are not in the copy. If you agreed to share them, email contact@paeonia.no and we will fetch them for you. You can also write to contact@paeonia.no for anything else.',
+          'You may ask for access to or a copy of your data, correction, deletion or restriction, or object to how we use it. To get a copy yourself, open the More tab, then Privacy and safety, then Download my data. It is free and needs no subscription. Paeonia prepares it in the background, usually within minutes, tells you when it is ready, and keeps it for three days. It holds your account data and everything you wrote, uploaded, or chose, as JSON files that other services can read, with your original photos, voice messages, and drawings. A README explains each file and how we use your data. It also holds the things you share with your partner as one, such as memories, countdowns, streaks, and game results, while you are together. It does not include what your partner wrote or uploaded, their location or settings, or reports about you, because that is other people\'s personal data. To ask for a correction, open Privacy and safety and tap Ask for a correction. We reply by email to the address on your account, normally within a month. The usage statistics PostHog keeps are not in the copy. If you agreed to share them, email contact@paeonia.no and we will fetch them for you. If you think we hold something about you that is not in the copy, write to us and we go through it by hand. You can also write to contact@paeonia.no for anything else.',
           'You may also complain to your local data protection authority. In Norway, this is Datatilsynet. We may need to verify your identity before completing a request.',
         ],
       },
@@ -267,7 +269,7 @@ export const legalEn = {
       {
         heading: 'Agreement',
         paragraphs: [
-          'These terms are an agreement between you and Hjalmar Karlsen, Storgata 61, 0182 Oslo, Norway, who operates Paeonia. They apply when you create an account or use the Paeonia app and related services. By using Paeonia, you agree to these terms and the Privacy Policy. If you do not agree, do not use the service.',
+          'These terms are an agreement between you and Hjalmar Karlsen, Storgata 61, 0182 Oslo, Norway, who operates Paeonia. They apply when you create an account or use the Paeonia app and related services. By creating an account, you agree to these terms. The Privacy Policy explains how we handle your data. If you do not agree to the terms, do not use the service.',
           'You must be at least 16 years old and legally able to agree to these terms. If the law where you live requires permission from a parent or guardian, you must have that permission. Paeonia is made for couples and is not aimed at children.',
           'Apple\'s standard Licensed Application End User License Agreement (https://www.apple.com/legal/internet-services/itunes/dev/stdeula/) also applies to the app, and these terms add to it. Apple is not a party to these terms and is not responsible for the app or for support.',
         ],
@@ -298,7 +300,7 @@ export const legalEn = {
         paragraphs: [
           'Paeonia has no free version. It works while one partner has an active subscription. One subscription covers both partners, and the partner who joins with an invite code does not pay. Every feature is included. A subscription belongs to the Apple Account and Paeonia account used to buy it. It does not move to an unrelated account or a different relationship on its own.',
           'Paeonia offers monthly and yearly subscriptions, and may offer a free trial to people who have not had one. The price, the length of each period, and the length of any trial are shown on the purchase screen before you confirm. Apple charges your Apple Account when you confirm the purchase, or when a free trial ends. The subscription renews automatically for the same period at the price shown in the App Store, unless you cancel at least 24 hours before the period ends. Apple charges the renewal within 24 hours before the period ends.',
-          'You can manage or cancel a subscription in Settings, then your name, then Subscriptions on your iPhone, or from the Subscription section of the More tab in Paeonia. Cancelling stops the next renewal, and you keep access until the paid period ends. Apple handles refunds, and you can ask for one at reportaproblem.apple.com. Tap Restore purchases on the subscription screen or in the More tab to bring back a purchase you already made, for example on a new phone.',
+          'You can manage or cancel a subscription in Settings, then your name, then Subscriptions on your iPhone, or from the Subscription section of the More tab in Paeonia. Cancelling stops the next renewal, and you keep access until the paid period ends. You have 14 days after buying to change your mind. Apple takes the payment, so you ask Apple at reportaproblem.apple.com. If Apple says no, write to support@paeonia.no and we pay you back ourselves. Tap Restore purchases on the subscription screen or in the More tab to bring back a purchase you already made, for example on a new phone. At least every six months we remind the person who pays that the subscription is running and how to cancel.',
           'If neither partner has active access, the shared space is locked until a subscription is restored or bought. Subscription expiry does not by itself end the relationship. Deleting your Paeonia account or the app does not cancel the App Store subscription.',
           'Paeonia may also sell one-time purchases, for example to bring back a streak that ended. A one-time purchase does not renew.',
         ],
@@ -320,7 +322,7 @@ export const legalEn = {
       {
         heading: 'Reports, blocks, and moderation',
         paragraphs: [
-          'Paeonia is a private space for two people and has no public posts, but these rules apply to everything you add. To report your partner, open the More tab, then Privacy and safety, and tap Report and leave. Reporting ends the relationship, and you can also choose to block the person. You can also email support@paeonia.no. We review every report and reply within three working days. We may preserve reported material, review it, hide or remove content, restrict accounts or pairing, and take other proportionate steps to protect users and the service.',
+          'Paeonia is a private space for two people and has no public posts, but these rules apply to everything you add. To report your partner, open the More tab, then Privacy and safety, and tap Report and leave. Reporting ends the relationship, and you can also choose to block the person. You can also email support@paeonia.no. We review every report within three working days. We may preserve reported material, review it, hide or remove content, restrict accounts or pairing, and take other proportionate steps to protect users and the service.',
           'We do not promise to monitor all private content. If anyone is in immediate danger, contact local emergency services. Reports made in bad faith or attempts to misuse safety tools may themselves violate these terms.',
         ],
       },
@@ -342,7 +344,7 @@ export const legalEn = {
         heading: 'Service changes and availability',
         paragraphs: [
           'We work to keep Paeonia reliable, but the service may be interrupted, delayed, changed, or unavailable. Sync, notifications, widgets, location updates, and third-party sign-in or payment services are not guaranteed to be immediate or error-free.',
-          'We may add, change, or remove features where reasonably necessary. If a material change affects a paid service, we will provide notice where required by law.',
+          'Paeonia keeps changing. We add things, improve them, and sometimes remove something few people use. A change never costs you extra. If we remove or change something so that Paeonia gets clearly worse for you, we tell you by email and in the app at least 30 days ahead, and you can cancel and get back what you paid for the time that is left. Ask Apple for that money at reportaproblem.apple.com first. If Apple says no, write to support@paeonia.no and we pay it back ourselves.',
         ],
       },
       {
@@ -355,20 +357,20 @@ export const legalEn = {
       {
         heading: 'Disclaimers and responsibility',
         paragraphs: [
-          'Paeonia is provided with reasonable care, but no online service can be completely secure or continuously available. To the extent permitted by law, we are not responsible for indirect or unforeseeable loss, another user\'s conduct, or failures caused by your device, network, Apple, Google, or other systems outside our reasonable control.',
-          'Nothing in these terms excludes rights or remedies that cannot lawfully be excluded, including mandatory consumer rights or liability for intentional misconduct or gross negligence.',
+          'We make Paeonia with care, but no online service is always available or completely secure. If Paeonia does not work as these terms describe, tell us at support@paeonia.no and we fix it within a reasonable time. If we cannot, you have the rights consumer law gives you: a lower price, your money back for the time the fault lasted, or compensation for a loss the fault caused. For money back, ask Apple at reportaproblem.apple.com first. If Apple says no, we pay you back ourselves.',
+          'We are not responsible for what your partner does, or for faults in your phone, your network, or Apple\'s and Google\'s services.',
         ],
       },
       {
         heading: 'Law and disputes',
         paragraphs: [
-          'These terms are governed by Norwegian law, without taking away mandatory consumer protections that apply where you live. Please contact support@paeonia.no first so we can try to resolve a problem. Disputes may be brought before the courts or consumer-dispute body that has jurisdiction under applicable law.',
+          'Norwegian law applies to these terms. If you live in another EEA country, you keep the consumer protection of the country you live in. Write to support@paeonia.no first so we can try to solve the problem. If we cannot agree, you can ask Forbrukertilsynet (forbrukertilsynet.no) to mediate for free, or go to court where you live.',
         ],
       },
       {
         heading: 'Changes and contact',
         paragraphs: [
-          'We may update these terms as Paeonia changes. We will update the date above and provide additional notice when required. Continuing to use Paeonia after updated terms take effect means the updated terms apply, subject to rights you have under law.',
+          'We update these terms when Paeonia changes, and change the date above. If a change matters for what you pay for or what you have agreed to, we tell you by email and in the app at least 30 days before it applies. If you do not want the new terms, you can cancel before then.',
           'For questions about these terms, email contact@paeonia.no. For product or account help, email support@paeonia.no.',
         ],
       },
