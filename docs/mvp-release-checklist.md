@@ -160,14 +160,12 @@ The proposed v1 iPhone and iPad sets are in `ios/ASConnectScreenshots/1.0.0/3d/`
 
 ## TestFlight
 
-- [ ] Internal TestFlight build uploaded.
+There is no external beta. Internal TestFlight builds go straight to App Review once these pass. Build 20261118.2257 was uploaded on 2026-11-18.
+
 - [ ] TestFlight install launches.
 - [ ] App icon and display name are correct in TestFlight.
 - [ ] Production-like push notifications work in TestFlight.
 - [ ] StoreKit sandbox/subscription works in TestFlight.
-- [ ] App Review beta notes explain login, pairing, subscription, and demo path.
-- [ ] External TestFlight review passes before broad beta.
-- [ ] Small beta group has enough couples to test paired behavior.
 - [ ] Feedback collection path exists.
 - [ ] Crash reports are monitored.
 
