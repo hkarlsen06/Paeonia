@@ -143,8 +143,8 @@ Signature: ____________________
 
 ## To confirm or sign outside the repository
 
-- **Data processing agreements.** Accept or sign one with each of Clerk, Cloudflare, PostHog, the server host and the mail provider, and keep a copy. The mail for contact@paeonia.no and support@paeonia.no goes to iCloud Mail. iCloud+ is a consumer service, so check that Apple offers an agreement for it, and move the two addresses to a provider that does if not.
-- **Transfers to the USA.** Clerk and PostHog both say they are certified under the EU-US Data Privacy Framework. Confirm each entry, and Cloudflare's, at dataprivacyframework.gov/list, and that each agreement includes the EU standard contractual clauses.
+- **Data processing agreements.** Accept or sign one with each of Clerk, Cloudflare, PostHog and the server host, and keep a copy. PostHog's agreement needs a signature. The mail for contact@paeonia.no and support@paeonia.no goes to iCloud Mail, and Apple offers no processing agreement for iCloud+. The controller accepts that for a one-person support inbox and moves the two addresses to a provider with an agreement if support grows.
+- **Transfers to the USA.** Clerk, Inc., PostHog Inc and Cloudflare, Inc. are active on the EU-US Data Privacy Framework list (checked 18 November 2026). Check again at each yearly review.
 - **App Store Connect privacy answers.** They must match the privacy manifests (`ios/PaeoniaApp/Resources/PrivacyInfo.xcprivacy`) and the record of processing.
 - **Age rating.** Answer the questionnaire so that the rating is 16+.
 - **EU trader status.** A private person who sells a paid app is most likely a trader under the Digital Services Act. Apple then publishes the trader's address and phone number on the App Store page, and asks for both to be verified.

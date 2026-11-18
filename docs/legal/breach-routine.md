@@ -28,9 +28,12 @@ The notice says what happened, how many people and which kinds of data, the like
 
 ## Telling the people
 
-Tell them without delay when the risk to them is high. Email the address on the account (`users.email`) with what happened, what it means for them, what Paeonia has done and what they can do. Also send a push, which reaches the accounts that have no address. It carries no detail, because a push shows on a lock screen. Where one partner's safety is at stake, write to that person alone.
+Tell them without delay when the risk to them is high. Use both channels, so the notice reaches people who turned notifications off, were banned or deleted the app.
 
-Neither message has a command yet. A push to many accounts needs a new kind in `NOTIFICATION_PAYLOAD_FIELDS` (`backend/convex/lib/notifications.ts`), and mail to Apple's hidden addresses needs the sender registered with Apple's email relay. Both are needed before launch.
+- Push. `admin:operator_send_breach_notice` sends one push to every phone of every account, in English and Norwegian. The push opens the app, which has no screen for it, so the body says where to read more. It shows on a lock screen, so it names no detail of anyone's data.
+- Email. `admin:operator_list_account_emails` lists every account's address from Clerk. Send the notice by hand from contact@paeonia.no with the addresses in Bcc. Apple's hidden addresses accept mail from it.
+
+`backend/AGENTS.md` under "Breach notice" has the exact commands and limits. Where one partner's safety is at stake, write to that person alone instead.
 
 ## The register
 
