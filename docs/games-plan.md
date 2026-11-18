@@ -33,7 +33,7 @@ Decisions and rules for the Games tab. Each game has its own doc in `docs/games/
 - The Games tab badge counts turns, unseen results and open invites waiting for this person, except "Not now" items and those already there when the hub last showed. Opening the hub clears the badge without hiding a game.
 - Every game with live play has a "Tell [Name] you want to play" button, shown when the partner doesn't have the game open. It sends one push, at most once every 15 minutes.
 - When the partner opens a game, their avatar (`Features/Presence/`) opens with Call, Message and Join for 5 seconds on any screen, so joining is one tap (2026-11-15). Its toolbar offers Join while the partner is in a game this person does not have open. This replaced the partner-opened-game banner on 2026-11-15, and like the avatar it shows only while both partners share their presence. The partner's open game also shows as a Lock Screen Live Activity that names the game and whose turn it is, never a move.
-- Inside a game, the partner's floating avatar says they are there, with the game's picture as its badge. Game screens draw no presence ring of their own around avatars (removed 2026-11-18). The game's own words, such as "[Name] is here" or "[Name] isn't here now", stay.
+- Inside a game, the partner's floating avatar says they are there, with the game's picture as its badge. During a call the call's bubble covers the avatar and wears the same badge. Game screens draw no presence ring of their own around avatars (removed 2026-11-18). The game's own words, such as "[Name] is here" or "[Name] isn't here now", stay.
 - Game notices use the shared bottom glass banner, kept above action bars and composers.
 
 ### Game chat
