@@ -113,25 +113,30 @@ struct PaeoniaScreenWaveHost: ViewModifier {
 }
 
 /// The haptic of a screen wave, timed from its style: a soft buzz that tightens while the
-/// screen falls toward the source, a sharp tap as the front leaves it, and a buzz that fades
-/// as the swell travels out.
+/// screen falls toward the source, a beat of silence, a full-strength thump and crack as the
+/// front leaves it, and a buzz that fades as the swell travels out. The release is the
+/// strongest moment, so the pull stays near half its strength and stops just before it:
+/// a buzz right up to a tap masks the tap.
 private enum ScreenWaveHaptics {
     static func play(for style: DistortionWaveStyle) {
         let launch = style.anticipation
+        let pullEnd = launch - 0.06
         let swell = style.travel * 0.4
         PaeoniaHapticPattern.play(
             [
-                .buzz(at: 0, duration: launch, sharpness: 0.15),
-                .tap(at: launch, sharpness: 0.7),
-                .buzz(at: launch, duration: swell, sharpness: 0.3),
+                .buzz(at: 0, duration: pullEnd, sharpness: 0.1),
+                .tap(at: launch, sharpness: 0.45),
+                .tap(at: launch + 0.025, sharpness: 1),
+                .buzz(at: launch + 0.04, duration: swell, sharpness: 0.35),
             ],
             curves: [
                 CHHapticParameterCurve(
                     parameterID: .hapticIntensityControl,
                     controlPoints: [
-                        .init(relativeTime: 0, value: 0.15),
-                        .init(relativeTime: launch, value: 0.8),
-                        .init(relativeTime: launch + 0.02, value: 0.55),
+                        .init(relativeTime: 0, value: 0.1),
+                        .init(relativeTime: pullEnd, value: 0.5),
+                        .init(relativeTime: pullEnd + 0.01, value: 1),
+                        .init(relativeTime: launch + 0.04, value: 0.7),
                         .init(relativeTime: launch + swell, value: 0),
                     ],
                     relativeTime: 0
