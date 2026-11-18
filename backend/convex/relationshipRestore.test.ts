@@ -4,6 +4,7 @@ import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
 import { cleanupCoupleContent } from "./lib/relationshipCleanup";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
+import { failure, setMediaEnv, uploadAsset } from "./media.testing";
 import { deliverDuePushes } from "./push.testing";
 import { addDevice, createSignedInUser, grantLifetime, newTest, relationshipStateOf, type TestConvex, type TestUser } from "./test.setup";
 
@@ -130,6 +131,7 @@ describe("bringing an ended relationship back", () => {
       invite_id: inviteId,
       partner_user_id: robin.userId,
       partner_name: "Robin",
+      partner_profile_photo_asset_id: null,
       requested_at: expect.any(String),
     });
     const asked = await t.run((ctx) =>
@@ -370,6 +372,46 @@ describe("bringing an ended relationship back", () => {
       expect(await answer(alex, inviteId, robin, true)).toEqual({ couple_id: null, restored: false });
       expect((await coupleRow(t, coupleId))?.status).toBe("ended");
     }
+  });
+
+  test("the person who answers sees the requester's photo while the request stands, and nobody else does", async () => {
+    setMediaEnv();
+    const t = newTest();
+    const { alex, robin } = await leftCouple(t);
+    const stranger = await createSignedInUser(t, { name: "Sam" });
+    const photo = await uploadAsset(t, robin, {
+      kind: "profile_photo",
+      purpose: "profile_photo",
+      mediaType: "image",
+      extension: "jpg",
+      mime: "image/jpeg",
+      parentId: robin.userId,
+    });
+    await t.run(async (ctx) => {
+      const profile = await ctx.db.query("profiles").withIndex("by_user_id", (q) => q.eq("user_id", robin.userId)).unique();
+      await ctx.db.patch(profile!._id, { profile_photo_asset_id: photo.assetId });
+    });
+    const read = (user: TestUser) => user.as.mutation(api.media.get_media_signed_url, { p_media_asset_id: photo.assetId });
+
+    // Alex left, so the old couple no longer shows Robin's photo to Alex.
+    expect(await failure(read(alex))).toMatchObject({ code: "42501" });
+
+    await join(robin, "DEF456", true);
+    expect((await restoreRequestOf(alex))?.partner_profile_photo_asset_id).toBe(photo.assetId);
+    expect(await read(alex)).toHaveLength(1);
+    expect(await failure(read(stranger))).toMatchObject({ code: "42501" });
+
+    await robin.as.mutation(api.reports.submit_leave_and_report, {
+      p_reason: "harassment",
+      p_note: null,
+      p_target_kind: "conduct",
+      p_target_id: alex.userId,
+      p_target_aux_id: null,
+      p_block_reported_user: true,
+      ...operation(),
+    });
+    expect(await restoreRequestOf(alex)).toBeNull();
+    expect(await failure(read(alex))).toMatchObject({ code: "42501" });
   });
 
   test("a phone that missed the end of a couple that came back is never told to purge it, and a later end still reaches it", async () => {

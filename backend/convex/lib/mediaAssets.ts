@@ -6,6 +6,7 @@ import { fail } from "./errors";
 import { canReadCorpseAsset } from "./exquisiteCorpse"; // Exquisite corpse
 import { canReadGuessMySpotPhoto } from "./guessMySpot"; // Guess my spot
 import { isUsableMediaAsset } from "./mediaAssetState";
+import { isAskedToRestoreBy } from "./relationshipRestore";
 
 /** Port of `internal.media_byte_limit`. */
 export function mediaByteLimit(mediaType: string): number {
@@ -101,7 +102,9 @@ async function canReadProfilePhoto(ctx: ReaderCtx, userId: string, asset: Doc<"m
   for (const membership of memberships) {
     if (await canAccessCoupleContent(ctx, userId, membership.couple_id)) return true;
   }
-  return false;
+  // A former partner who asked to bring the relationship back shows their photo to the person
+  // who answers, while the request stands.
+  return await isAskedToRestoreBy(ctx, userId, asset.owner_user_id);
 }
 
 async function canReadDailyAnswerMedia(ctx: ReaderCtx, userId: string, asset: Doc<"media_assets">): Promise<boolean> {

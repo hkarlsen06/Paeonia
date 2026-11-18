@@ -129,29 +129,52 @@ export async function reopenCouple(ctx: WriterCtx, couple: Doc<"couples">, initi
   }
 }
 
-/**
- * The request waiting for this person's answer, for the access snapshot, or null. It comes from
- * their newest pending invite with a request that still stands. An expired invite still shows
- * until the hourly cron marks it, so the answer then pairs nobody. The app sends `invite_id` and
- * `partner_user_id` back with the answer, so the answer is about the person it showed.
- */
-export async function restoreRequestFor(ctx: ReaderCtx, userId: string) {
+/** This person's pending invites that someone asked through, newest request first. */
+async function askedInvitesOf(ctx: ReaderCtx, userId: string): Promise<Doc<"pairing_invites">[]> {
   const invites = await ctx.db
     .query("pairing_invites")
     .withIndex("by_created_by_user_id_status_expires_at", (q) => q.eq("created_by_user_id", userId).eq("status", "pending"))
     .collect();
-  const asked = invites
+  return invites
     .filter((invite) => invite.restore_requested_at !== undefined)
     .sort((a, b) => (a.restore_requested_at! < b.restore_requested_at! ? 1 : -1));
-  for (const invite of asked) {
+}
+
+/**
+ * The request waiting for this person's answer, for the access snapshot, or null. It comes from
+ * their newest pending invite with a request that still stands. An expired invite still shows
+ * until the hourly cron marks it, so the answer then pairs nobody. The app sends `invite_id` and
+ * `partner_user_id` back with the answer, so the answer is about the person it showed. The
+ * requester's profile photo comes along, and `isAskedToRestoreBy` lets this person read it.
+ */
+export async function restoreRequestFor(ctx: ReaderCtx, userId: string) {
+  for (const invite of await askedInvitesOf(ctx, userId)) {
     const request = await standingRestoreRequest(ctx, invite);
     if (!request) continue;
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user_id", (q) => q.eq("user_id", request.requesterUserId))
+      .unique();
+    const visible = profile?.moderation_status === "visible" && profile.deleted_at === undefined;
     return {
       invite_id: invite.id,
       partner_user_id: request.requesterUserId,
       partner_name: await nameForViewer(ctx, userId, request.requesterUserId),
+      partner_profile_photo_asset_id: visible
+        ? profile.profile_photo_asset_id ?? profile.provider_profile_photo_asset_id ?? null
+        : null,
       requested_at: invite.restore_requested_at!,
     };
   }
   return null;
+}
+
+/** True while `requesterUserId` has a request that stands and waits for this person's answer. */
+export async function isAskedToRestoreBy(ctx: ReaderCtx, userId: string, requesterUserId: string): Promise<boolean> {
+  for (const invite of await askedInvitesOf(ctx, userId)) {
+    if (invite.restore_requested_by_user_id === requesterUserId && (await standingRestoreRequest(ctx, invite)) !== null) {
+      return true;
+    }
+  }
+  return false;
 }
