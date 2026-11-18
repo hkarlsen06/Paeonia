@@ -53,41 +53,101 @@ struct DeveloperHomeLaunchTiming {
 }
 
 /// The Home tile's drawing in a folder of the scenario's own, so the simulator's widget is untouched.
-/// It starts as a cleared canvas waiting for its first sync, as after the couple comes back.
+/// It goes through the app's sync. The canvas starts cleared, as after the couple parted, and a
+/// push to the restore screen starts a sync that the server refuses, since there is no couple yet.
 struct DeveloperHomeDrawing {
     let directory: URL
-    private let canvas: WidgetCanvasService
+    private let server = DeveloperHomeDrawingServer(heart: DeveloperPostPairingFixture.heart().dataRepresentation())
+    private let sync: WidgetCanvasSyncService
     private let defaults = UserDefaults(suiteName: "DeveloperHomeDrawing") ?? .standard
+    private static let identity = WidgetSyncIdentity(
+        currentUserID: DeveloperScenarioFixture.currentUserID, currentDisplayName: nil, partnerDisplayName: "Robin"
+    )
 
     init() {
         directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("DeveloperHomeDrawing-\(UUID().uuidString)", isDirectory: true)
         WidgetCanvasSyncService.clearPersistedState(defaults: defaults)
-        canvas = WidgetCanvasService(
-            appGroupContainerURL: directory,
-            canonicalDrawingURL: directory.appendingPathComponent("current.pkdrawing"),
-            reloader: NoWidgetReload(),
-            sharedDefaults: nil
+        sync = WidgetCanvasSyncService(
+            gateway: server,
+            localStore: WidgetCanvasService(
+                appGroupContainerURL: directory,
+                canonicalDrawingURL: directory.appendingPathComponent("current.pkdrawing"),
+                reloader: NoWidgetReload(),
+                sharedDefaults: nil
+            ),
+            downloader: server,
+            pendingStore: WidgetPendingUploadStore(defaults: defaults),
+            defaults: defaults
         )
     }
 
     var loader: HomeWidgetPreviewLoader { HomeWidgetPreviewLoader(containerURL: directory, defaults: defaults) }
 
-    /// The sync finds the partner's heart and saves it, which tells the open tile to read it again.
-    func partnerDrew() async throws {
-        let side = WidgetDrawingViewModel.fallbackCanvasSide
-        try await canvas.saveDescribedDrawing(
-            DeveloperPostPairingFixture.heart().dataRepresentation(),
-            canvasSize: CGSize(width: side, height: side), authorName: "Robin",
-            createdAt: Date(), revisionID: UUID(), accessibilityText: nil, publicationID: nil
-        )
-        await WidgetCanvasSyncService.finishAwaitingSync(defaults: defaults)
+    /// A push reaches the restore screen, and its sync fails.
+    func syncWhileApart() async {
+        await sync.sync(identity: Self.identity)
+    }
+
+    /// The couple is back, and the sync fetches the partner's heart, which tells the open tile
+    /// to read it again.
+    func syncAfterRestore() async {
+        await server.bringCoupleBack()
+        await sync.sync(identity: Self.identity)
     }
 
     private struct NoWidgetReload: WidgetTimelineReloading {
         // swiftlint:disable:next async_without_await
         func reloadWidget() async {}
     }
+}
+
+/// The server's side of the scenario's drawing. It refuses the canvas until the couple is back,
+/// as the real one does for a person with no couple, then names the partner's heart.
+private actor DeveloperHomeDrawingServer {
+    private let heart: Data
+    private var coupleIsBack = false
+    private let revisionID = UUID()
+
+    init(heart: Data) {
+        self.heart = heart
+    }
+
+    func bringCoupleBack() { coupleIsBack = true }
+}
+
+extension DeveloperHomeDrawingServer: WidgetCanvasGateway, WidgetPayloadDownloading {
+    func getCanvasState() throws -> WidgetCanvasState? {
+        guard coupleIsBack else { throw WidgetCanvasGatewayError.emptyResponse }
+        return WidgetCanvasState(
+            canvasID: UUID(), activeRevisionID: revisionID,
+            activeRevisionAuthorUserID: DeveloperScenarioFixture.partnerUserID, payloadMediaAssetID: UUID(),
+            bounds: nil, revisionCreatedAt: Date(), coupleID: DeveloperScenarioFixture.coupleID
+        )
+    }
+
+    func signedPayloadURL(mediaAssetID: UUID) -> URL? {
+        URL(string: "https://paeonia.invalid/\(mediaAssetID)")
+    }
+
+    func download(from _: URL) -> Data { heart }
+
+    func getOrCreateCanvas() throws -> WidgetCanvasReference { throw WidgetCanvasGatewayError.emptyResponse }
+    func reserveDrawingUpload(
+        coupleID _: UUID, canvasID _: UUID, revisionID _: UUID, operation _: WidgetCanvasClientOperation
+    ) throws -> MediaUploadReservation { throw WidgetCanvasGatewayError.emptyResponse }
+    func uploadPayload(reservation _: MediaUploadReservation, data _: Data) throws -> String {
+        throw WidgetCanvasGatewayError.emptyResponse
+    }
+    func finalizeDrawingUpload(_: WidgetDrawingFinalizeInput, operation _: WidgetCanvasClientOperation) throws {
+        throw WidgetCanvasGatewayError.emptyResponse
+    }
+    func submitRevision(
+        _: WidgetDrawingRevisionSubmission, operation _: WidgetCanvasClientOperation
+    ) throws -> WidgetDrawingRevisionResult { throw WidgetCanvasGatewayError.emptyResponse }
+    func listRevisions(
+        canvasID _: UUID, limit _: Int, createdBefore _: Date?, createdBeforeRevisionID _: UUID?
+    ) -> [WidgetDrawingRevisionSummary] { [] }
 }
 
 actor DeveloperDelayedStartedOnService {

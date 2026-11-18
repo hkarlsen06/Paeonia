@@ -98,7 +98,10 @@
         }
       }
       .task(id: environment.rootViewModel.state) {
-        guard environment.rootViewModel.state == .paired else { return }
+        guard environment.rootViewModel.state == .paired else {
+          await environment.homeDrawing?.syncWhileApart()
+          return
+        }
         await environment.prepareHomeLaunch()
       }
     }
@@ -333,7 +336,7 @@
     func prepareHomeLaunch() async {
       guard let homeLaunch else { return }
       async let map: Void = seedMap(homeLaunch)
-      async let drawing: Void = drawPartnerHeart(after: homeLaunch.drawing)
+      async let drawing: Void = fetchPartnerDrawing(after: homeLaunch.drawing)
       _ = await (map, drawing)
     }
 
@@ -350,11 +353,11 @@
       } catch { }
     }
 
-    private func drawPartnerHeart(after delay: Duration?) async {
+    private func fetchPartnerDrawing(after delay: Duration?) async {
       guard let delay, let homeDrawing else { return }
       do {
         try await Task.sleep(for: delay)
-        try await homeDrawing.partnerDrew()
+        await homeDrawing.syncAfterRestore()
       } catch { }
     }
 
