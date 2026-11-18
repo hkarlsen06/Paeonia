@@ -50,6 +50,30 @@ async function createInvite(user: TestUser, code = "ABC123", expiresAt = inDays(
   });
 }
 
+/** Saves a first day answer and drawing for the user. The drawing has no media asset, because the preview only asks whether one waits. */
+async function saveFirstDayGifts(t: TestConvex, user: TestUser) {
+  await t.run(async (ctx) => {
+    await ctx.db.insert("first_day_drafts", {
+      user_id: user.userId,
+      answer: { body: "The night we met", answered_at: NOW },
+      drawing: {
+        media_asset_id: newUuid(),
+        revision_id: newUuid(),
+        payload_bytes: 10,
+        uncompressed_bytes: 10,
+        compression: "none",
+        sha256: "00",
+        client_decode_validated_at: NOW,
+        client_renderer_version: "1",
+        client_validation_version: "1",
+        saved_at: NOW,
+      },
+      created_at: NOW,
+      updated_at: NOW,
+    });
+  });
+}
+
 describe("invite code hash", () => {
   test("accepts only six characters from the invite alphabet and hashes with the pepper", async () => {
     const hash = await hashPairingInviteCode("ABC123");
@@ -148,6 +172,29 @@ describe("preview_pairing_invite", () => {
         has_safety_warning: false,
         can_restore: false,
         restore_requested: false,
+        first_day_gifts: [],
+      },
+    ]);
+  });
+
+  test("names the first day drawing and answer that wait for the joiner, not what they hold", async () => {
+    const t = newTest();
+    const owner = await inviter(t, "Ada");
+    const id = await createInvite(owner);
+    await saveFirstDayGifts(t, owner);
+    const guest = await createSignedInUser(t, {});
+    const rows = await guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "ABC123" });
+    expect(rows).toEqual([
+      {
+        invite_id: id,
+        inviter_user_id: owner.userId,
+        inviter_display_name: "Ada",
+        inviter_photo_url: null,
+        expires_at: inDays(7),
+        has_safety_warning: false,
+        can_restore: false,
+        restore_requested: false,
+        first_day_gifts: ["drawing", "answer"],
       },
     ]);
   });
@@ -229,6 +276,7 @@ describe("preview_pairing_invite", () => {
     const t = newTest();
     const owner = await inviter(t);
     await createInvite(owner);
+    await saveFirstDayGifts(t, owner);
     const guest = await createSignedInUser(t, {});
     const [from, about] = reporter === "guest" ? [guest, owner] : [owner, guest];
     await t.run(async (ctx) => {
@@ -253,6 +301,8 @@ describe("preview_pairing_invite", () => {
     });
     const rows = await guest.as.mutation(api.pairing.preview_pairing_invite, { p_invite_code: "ABC123" });
     expect(rows[0].has_safety_warning).toBe(warned);
+    // A warned invite must not look inviting, so it names nothing that waits.
+    expect(rows[0].first_day_gifts).toEqual(warned ? [] : ["drawing", "answer"]);
   });
 
   test("throttles a user after ten misses on one code and twenty misses in a day", async () => {
@@ -329,6 +379,7 @@ describe("preview_pairing_invite", () => {
         has_safety_warning: false,
         can_restore: false,
         restore_requested: false,
+        first_day_gifts: [],
       },
     ]);
   });

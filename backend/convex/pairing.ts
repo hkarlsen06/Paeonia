@@ -9,7 +9,7 @@ import { hmacSha256Hex } from "./lib/crypto";
 import { getByUuid, type ReaderCtx, withUpdatedAt } from "./lib/db";
 import { fail, uniqueViolation } from "./lib/errors";
 import { newUuid, optionalDateArg, optionalTimestampArg, timestampArg, uuidArg } from "./lib/ids";
-import { materializeFirstDayDrafts } from "./lib/firstDay";
+import { type FirstDayGift, findFirstDayGifts, materializeFirstDayDrafts } from "./lib/firstDay";
 import { enqueueNotificationForUser } from "./lib/notifications";
 import { findActiveReviewAccessCode, redeemReviewAccess } from "./lib/reviewAccess";
 import { userHasDirectEntitlement } from "./lib/entitlements";
@@ -266,6 +266,7 @@ export const preview_pairing_invite = mutation({
           has_safety_warning: false,
           can_restore: false,
           restore_requested: false,
+          first_day_gifts: [] as FirstDayGift[],
         },
       ];
     }
@@ -305,6 +306,8 @@ export const preview_pairing_invite = mutation({
         can_restore: canRestore,
         // This person already asked, so the app shows that they are waiting for the answer.
         restore_requested: canRestore && invite.restore_requested_by_user_id === userId,
+        // A flagged invite must not look inviting, and the restore screen shows what comes back instead.
+        first_day_gifts: flagged || canRestore ? [] : await findFirstDayGifts(ctx, invite.created_by_user_id),
       },
     ];
   },

@@ -74,6 +74,18 @@ export async function findFirstDayDraft(ctx: ReaderCtx, userId: string): Promise
     .unique();
 }
 
+/** A kind of first day content that waits for the partner. */
+export type FirstDayGift = "drawing" | "answer";
+
+/** Which of the user's first day drawing and answer wait in their draft, never what they hold. */
+export async function findFirstDayGifts(ctx: ReaderCtx, userId: string): Promise<FirstDayGift[]> {
+  const draft = await findFirstDayDraft(ctx, userId);
+  const gifts: FirstDayGift[] = [];
+  if (draft?.drawing) gifts.push("drawing");
+  if (draft?.answer) gifts.push("answer");
+  return gifts;
+}
+
 export async function ensureFirstDayDraft(ctx: WriterCtx, userId: string): Promise<Draft> {
   const existing = await findFirstDayDraft(ctx, userId);
   if (existing) return existing;
