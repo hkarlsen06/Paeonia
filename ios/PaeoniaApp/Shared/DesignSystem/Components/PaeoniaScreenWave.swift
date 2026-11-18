@@ -23,8 +23,8 @@ extension EnvironmentValues {
 /// Draws a screen wave over the whole window, bars included. Sits once at the app's root.
 /// The wave bends a picture of the window taken when it starts: SwiftUI cannot pass UIKit
 /// views such as the PencilKit canvas or the bars through the kit's shaders, and the kit
-/// mounts each side several times, so a live screen cannot be one. Nothing under the wave
-/// takes touches until it ends. The rules for waves are in the `paeonia-libraries-dev` skill.
+/// mounts each side several times, so a live screen cannot be one. The wave is decoration,
+/// so a touch ends it at once. The rules for waves are in the `paeonia-libraries-dev` skill.
 struct PaeoniaScreenWaveHost: ViewModifier {
     private struct Run: Identifiable {
         let id = UUID()
@@ -36,6 +36,7 @@ struct PaeoniaScreenWaveHost: ViewModifier {
     }
 
     @State private var run: Run?
+    @State private var haptic: (any CHHapticPatternPlayer)?
     /// The whole window, in global coordinates.
     @State private var frame: CGRect = .zero
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -72,11 +73,14 @@ struct PaeoniaScreenWaveHost: ViewModifier {
             picture(run.picture)
         }
         .id(run.id)
+        // The picture under the wave is old, so the touch that ends it does nothing else.
+        .contentShape(.rect)
+        .gesture(DragGesture(minimumDistance: 0).onChanged { _ in finish(run.id) })
         // The wave starts when this flips, so it mounts at rest first. The haptic starts
         // with it, so its pull and release land on the wave's.
         .onAppear {
             self.run?.isRevealed = true
-            ScreenWaveHaptics.play(for: run.style)
+            haptic = ScreenWaveHaptics.play(for: run.style)
         }
         .transition(.opacity)
     }
@@ -95,8 +99,8 @@ struct PaeoniaScreenWaveHost: ViewModifier {
         style.cornerRadius = PaeoniaAppWindow.cornerRadius
         let run = Run(picture: picture, source: source.offsetBy(dx: -frame.minX, dy: -frame.minY), style: style)
         self.run = run
-        // Nothing in the app takes touches until the wave ends, so its end must not hang
-        // on the kit's callback alone.
+        // The app takes no other touches until the wave ends, so its end must not hang on
+        // the kit's callback alone.
         Task {
             try? await Task.sleep(for: .seconds(style.duration + 1))
             finish(run.id)
@@ -106,9 +110,11 @@ struct PaeoniaScreenWaveHost: ViewModifier {
 
     private func finish(_ id: UUID) {
         guard run?.id == id else { return }
+        try? haptic?.stop(atTime: CHHapticTimeImmediate)
+        haptic = nil
         // The picture still shows the screen as it was at the start. A short fade hands
         // over to the live screen instead of a cut.
-        withAnimation(.easeOut(duration: 0.2)) { run = nil }
+        withAnimation(PaeoniaMotion.easeOut(duration: 0.2)) { run = nil }
     }
 }
 
@@ -118,11 +124,11 @@ struct PaeoniaScreenWaveHost: ViewModifier {
 /// strongest moment, so the pull stays near half its strength and stops just before it:
 /// a buzz right up to a tap masks the tap.
 private enum ScreenWaveHaptics {
-    static func play(for style: DistortionWaveStyle) {
+    static func play(for style: DistortionWaveStyle) -> (any CHHapticPatternPlayer)? {
         let launch = style.anticipation
         let pullEnd = launch - 0.06
         let swell = style.travel * 0.4
-        PaeoniaHapticPattern.play(
+        return PaeoniaHapticPattern.play(
             [
                 .buzz(at: 0, duration: pullEnd, sharpness: 0.1),
                 .tap(at: launch, sharpness: 0.45),

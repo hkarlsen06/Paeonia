@@ -8,15 +8,22 @@ enum PaeoniaHapticPattern {
     private static var engine: CHHapticEngine?
     private static let logger = Logger(subsystem: "no.paeonia.app", category: "Haptics")
 
-    static func play(_ events: [CHHapticEvent], curves: [CHHapticParameterCurve] = []) {
-        guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
+    /// Returns the player, so a pattern can stop early when its animation does.
+    @discardableResult
+    static func play(
+        _ events: [CHHapticEvent], curves: [CHHapticParameterCurve] = []
+    ) -> (any CHHapticPatternPlayer)? {
+        guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return nil }
         do {
             let engine = try engine ?? makeEngine()
             try engine.start()
             let pattern = try CHHapticPattern(events: events, parameterCurves: curves)
-            try engine.makePlayer(with: pattern).start(atTime: CHHapticTimeImmediate)
+            let player = try engine.makePlayer(with: pattern)
+            try player.start(atTime: CHHapticTimeImmediate)
+            return player
         } catch {
             logger.error("haptic pattern did not play: \(error.localizedDescription, privacy: .public)")
+            return nil
         }
     }
 
