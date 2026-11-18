@@ -23,6 +23,23 @@ struct WidgetCanvasSyncServiceTests {
         #expect(save.createdAt == Self.revisionCreatedAt)
     }
 
+    /// Home's tile shows no sample sketch for a cleared canvas until a sync has looked for the
+    /// couple's drawing, even a sync that finds none.
+    @Test func aClearedCanvasAwaitsTheNextFinishedSync() async {
+        let env = SyncEnvironment()
+        let tile = HomeWidgetPreviewLoader(
+            containerURL: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString),
+            defaults: env.defaults
+        )
+        #expect(!tile.load().isAwaitingSync)
+
+        await env.service.clearForPrivacy()
+        #expect(tile.load().isAwaitingSync)
+
+        await env.service.sync(identity: Self.identity())
+        #expect(!tile.load().isAwaitingSync)
+    }
+
     @Test func syncSkipsRevisionItAlreadyPublished() async {
         let env = SyncEnvironment()
         env.gateway.state = Self.state(authorUserID: UUID(), canvasSide: 280)
@@ -284,6 +301,7 @@ private final class SyncEnvironment {
     let uploadSpy: SyncUploadSpy
     let pendingStore: WidgetPendingUploadStore
     let downloadedData: Data
+    let defaults = UserDefaults(suiteName: UUID().uuidString) ?? .standard
     let service: WidgetCanvasSyncService
 
     init(
@@ -301,7 +319,7 @@ private final class SyncEnvironment {
             downloader: downloader ?? SyncDownloaderSpy(data: drawingData),
             pendingStore: pendingStore,
             pendingUploader: uploadSpy,
-            defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard
+            defaults: defaults
         )
     }
 

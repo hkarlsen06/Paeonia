@@ -82,6 +82,11 @@ final class DailyChallengeViewModel {
     /// The couple's shared streak, shown on the completion celebration. Loaded on
     /// demand and kept across failures so a transient error never blanks it.
     var streak = CoupleStreak.none
+    /// A cached or server streak has been applied. Until then `streak` is a stand-in,
+    /// so the pill stays hidden rather than showing 0.
+    var hasLoadedStreak = false
+    /// The streak pill, hidden until the streak is known so it fades in once with its count.
+    var streakPill: StreakPillState { hasLoadedStreak ? StreakPillState(streak) : .hidden }
     var threadSummariesByQuestionID: [UUID: ThreadChatSummary] = [:]
     /// When the user last saw each chat on this phone, keyed by thread id.
     var chatReadMarks: [UUID: ThreadChatMessageCursor] = [:]
@@ -196,6 +201,8 @@ final class DailyChallengeViewModel {
         // A new user hasn't resolved today's state yet, so the card returns to its
         // loading state until this user's first load settles.
         hasResolvedTodayState = false
+        streak = .none
+        hasLoadedStreak = false
         // Restore any drafts this person saved earlier so reopening — or relaunching
         // the app — keeps their half-written answers.
         answerDrafts = newUserID.map { draftStore.drafts(for: $0) } ?? [:]
@@ -373,6 +380,7 @@ final class DailyChallengeViewModel {
             adoptFirstDayDrafts()
         }
         streak = result.streak
+        hasLoadedStreak = true
         scheduleDayEnd()
         uploadSeenPartnerAnswers()
     }

@@ -16,20 +16,33 @@ nonisolated struct HomeWidgetPreviewLoader {
         var isRedacted = false
         /// The revision the shown drawing came from, for putting a reaction on it.
         var revisionID: String?
+        /// Nothing is saved on this phone, but the couple's drawing has not been fetched
+        /// since the canvas was cleared, so the tile can't yet say there is none.
+        var isAwaitingSync = false
     }
 
     let containerURL: URL?
     let payloadPath: String
+    let defaults: UserDefaults
 
     init(
         containerURL: URL? = PaeoniaAppGroup.containerURL,
-        payloadPath: String = PaeoniaAppGroup.widgetPayloadPath
+        payloadPath: String = PaeoniaAppGroup.widgetPayloadPath,
+        defaults: UserDefaults = .standard
     ) {
         self.containerURL = containerURL
         self.payloadPath = payloadPath
+        self.defaults = defaults
     }
 
     func load() -> Content {
+        var content = savedContent()
+        content.isAwaitingSync = content.image == nil && !content.isRedacted
+            && WidgetCanvasSyncService.isAwaitingSync(defaults: defaults)
+        return content
+    }
+
+    private func savedContent() -> Content {
         guard let containerURL else {
             return Content(image: nil, authorName: nil, savedAt: nil)
         }
@@ -87,10 +100,12 @@ nonisolated struct HomeWidgetPreviewLoader {
 
 @Observable
 final class HomeWidgetPreviewModel {
+    /// Unknown until the first read, so the sample sketch never shows before a saved drawing.
     private(set) var content = HomeWidgetPreviewLoader.Content(
         image: nil,
         authorName: nil,
-        savedAt: nil
+        savedAt: nil,
+        isAwaitingSync: true
     )
 
     // The payload is a tiny JSON file plus a small PNG, so reading it directly
@@ -143,8 +158,11 @@ struct HomeWidgetCard: View {
             WidgetDrawingReactionControl(shownRevisionID: model.content.revisionID)
                 .padding(PaeoniaSpacing.space4)
         }
-        .task {
+        // Before the first frame, so a saved drawing doesn't fade in over an empty canvas.
+        .onAppear {
             model.reload(using: loader)
+        }
+        .task {
             if live == nil, let coupleID {
                 live = WidgetLiveDrawing(coupleID: coupleID, role: .watching)
             }
@@ -186,6 +204,7 @@ struct HomeWidgetCard: View {
                 .multilineTextAlignment(.center)
         }
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: model.content.image == nil)
+        .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: model.content.isAwaitingSync)
         .animation(reduceMotion ? nil : PaeoniaMotion.stateChange, value: live?.isShowingPartnerCanvas)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.vertical, PaeoniaSpacing.space8)
@@ -218,6 +237,8 @@ struct HomeWidgetCard: View {
                 .foregroundStyle(.paeoniaAccentPrimary)
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                 .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
+                // Keeps the line's height while the drawing is on its way.
+                .opacity(model.content.isAwaitingSync ? 0 : 1)
         }
     }
 
@@ -251,22 +272,16 @@ struct HomeWidgetCard: View {
                     .accessibilityHidden(true)
                     .transition(.opacity)
             } else if model.content.isRedacted {
-                VStack(spacing: PaeoniaSpacing.space8) {
-                    Image(systemName: "eye.slash.fill")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(.paeoniaAccentPrimary)
-                        .accessibilityHidden(true)
-                    Text(.widgetDrawingTitle)
-                        .font(PaeoniaTypography.caption.weight(.semibold))
-                        .foregroundStyle(.paeoniaTextPrimary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                hiddenDrawing
             } else {
-                // The same sample drawing the Home Screen widget shows.
+                // The same sample drawing the Home Screen widget shows. The canvas stays empty
+                // until the couple's drawing is fetched, so the sketch never stands in for one
+                // that is on its way.
                 Image(.placeholderSketch)
                     .resizable()
                     .interpolation(.high)
                     .scaledToFit()
+                    .opacity(model.content.isAwaitingSync ? 0 : 1)
                     .accessibilityHidden(true)
                     .transition(.opacity)
             }
@@ -277,6 +292,21 @@ struct HomeWidgetCard: View {
         .background(.paeoniaSurfacePrimary)
         .clipShape(DrawingCanvasShape())
         .overlay { DrawingCanvasShape().stroke(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault) }
+    }
+}
+
+private extension HomeWidgetCard {
+    var hiddenDrawing: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            Image(systemName: "eye.slash.fill")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(.paeoniaAccentPrimary)
+                .accessibilityHidden(true)
+            Text(.widgetDrawingTitle)
+                .font(PaeoniaTypography.caption.weight(.semibold))
+                .foregroundStyle(.paeoniaTextPrimary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

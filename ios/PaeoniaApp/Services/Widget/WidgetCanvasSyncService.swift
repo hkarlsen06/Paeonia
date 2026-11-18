@@ -130,6 +130,11 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
         if inFlightSync?.identity == identity {
             inFlightSync = nil
         }
+
+        if !Task.isCancelled, privacyResetCount == 0, expectedGeneration == privacyGeneration,
+           Self.isAwaitingSync(defaults: defaults) {
+            await Self.finishAwaitingSync(defaults: defaults)
+        }
     }
 
     func clearForPrivacy() async {
@@ -169,6 +174,7 @@ actor WidgetCanvasSyncService: WidgetCanvasSyncing {
 
     nonisolated static func clearPersistedState(defaults: UserDefaults = .standard) {
         defaults.removeObject(forKey: lastSyncedKey)
+        defaults.set(true, forKey: awaitingSyncKey)
     }
 
     private func performSync(identity: WidgetSyncIdentity) async {
@@ -375,5 +381,23 @@ nonisolated enum WidgetCanvasSyncServiceFactory {
             pendingStore: WidgetPendingUploadStore.shared,
             pendingUploader: WidgetCanvasUploadServiceFactory.shared
         )
+    }
+}
+
+extension WidgetCanvasSyncService {
+    fileprivate nonisolated static let awaitingSyncKey = "paeonia.widgetCanvas.awaitingSync"
+
+    /// The local canvas was cleared and no sync has finished since, so having no drawing on
+    /// this phone says nothing yet about the couple's drawing. Home's tile waits for the sync.
+    nonisolated static func isAwaitingSync(defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: awaitingSyncKey)
+    }
+
+    /// A sync finished, whether it found a drawing or not, so the tile can show what is here.
+    nonisolated static func finishAwaitingSync(defaults: UserDefaults = .standard) async {
+        defaults.removeObject(forKey: awaitingSyncKey)
+        await MainActor.run {
+            NotificationCenter.default.post(name: .paeoniaWidgetCanvasDidUpdate, object: nil)
+        }
     }
 }

@@ -53,13 +53,16 @@ struct DeveloperHomeLaunchTiming {
 }
 
 /// The Home tile's drawing in a folder of the scenario's own, so the simulator's widget is untouched.
+/// It starts as a cleared canvas waiting for its first sync, as after the couple comes back.
 struct DeveloperHomeDrawing {
     let directory: URL
     private let canvas: WidgetCanvasService
+    private let defaults = UserDefaults(suiteName: "DeveloperHomeDrawing") ?? .standard
 
     init() {
         directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("DeveloperHomeDrawing-\(UUID().uuidString)", isDirectory: true)
+        WidgetCanvasSyncService.clearPersistedState(defaults: defaults)
         canvas = WidgetCanvasService(
             appGroupContainerURL: directory,
             canonicalDrawingURL: directory.appendingPathComponent("current.pkdrawing"),
@@ -68,9 +71,9 @@ struct DeveloperHomeDrawing {
         )
     }
 
-    var loader: HomeWidgetPreviewLoader { HomeWidgetPreviewLoader(containerURL: directory) }
+    var loader: HomeWidgetPreviewLoader { HomeWidgetPreviewLoader(containerURL: directory, defaults: defaults) }
 
-    /// Saves the partner's heart, which tells the open tile to read it again.
+    /// The sync finds the partner's heart and saves it, which tells the open tile to read it again.
     func partnerDrew() async throws {
         let side = WidgetDrawingViewModel.fallbackCanvasSide
         try await canvas.saveDescribedDrawing(
@@ -78,6 +81,7 @@ struct DeveloperHomeDrawing {
             canvasSize: CGSize(width: side, height: side), authorName: "Robin",
             createdAt: Date(), revisionID: UUID(), accessibilityText: nil, publicationID: nil
         )
+        await WidgetCanvasSyncService.finishAwaitingSync(defaults: defaults)
     }
 
     private struct NoWidgetReload: WidgetTimelineReloading {

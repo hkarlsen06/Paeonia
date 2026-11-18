@@ -61,6 +61,7 @@ extension DailyChallengeViewModel {
     func refreshStreak() async {
         do {
             streak = try await service.loadStreak()
+            hasLoadedStreak = true
         } catch {
             // Keep the last known streak; the completion screen falls back gracefully.
             if !error.isCancellation {

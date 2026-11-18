@@ -3,13 +3,16 @@ import Foundation
 extension LocationMapViewModel {
     /// Picks what the map card shows. The partner's location only appears when
     /// you share, iOS lets Paeonia read your location, and the server reports
-    /// the partner as visible, so the map is never one-sided.
+    /// the partner as visible, so the map is never one-sided. Until `partnerLocationDue`,
+    /// a partner who shares but has sent no place yet still counts as loading, because
+    /// their phone is about to send it (`LocationMapViewModel.partnerLocationGrace`).
     static func resolveMapState(
         visibility: LocationVisibilitySnapshot?,
         ownLocation: OwnLocationSnapshot?,
         authorization: ForegroundLocationAuthorizationState = .authorized,
         isLocating: Bool = false,
         lastLookupFailed: Bool = false,
+        partnerLocationDue: Date? = nil,
         now: Date = Date()
     ) -> CoupleMapState {
         // Nothing can be shared while iOS location access is off, so that is
@@ -38,7 +41,11 @@ extension LocationMapViewModel {
             )
         }
 
-        return partnerState(visibility: visibility, current: current, now: now)
+        let state = partnerState(visibility: visibility, current: current, now: now)
+        if state == .waitingForPartnerLocation, let partnerLocationDue, partnerLocationDue > now {
+            return .loading
+        }
+        return state
     }
 
     /// What the card shows once you share and have a location of your own: the

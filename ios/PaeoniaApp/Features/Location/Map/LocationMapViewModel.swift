@@ -55,6 +55,13 @@ final class LocationMapViewModel {
     }
 
     private var readiness = Readiness.loading
+    /// The couple's first answer from the server came in while this view model watched,
+    /// as right after pairing or bringing the couple back. A partner who shares then
+    /// has a phone that is sending its first place, so the map waits for it until this
+    /// time before it says the partner has not opened Paeonia yet.
+    private var partnerLocationDue: Date?
+    @ObservationIgnored private var partnerLocationDueTask: Task<Void, Never>?
+    static let partnerLocationGrace: TimeInterval = 5
     private var hasLoadedSnapshots: Bool { readiness == .loaded }
     @ObservationIgnored var pauseExpiryTask: Task<Void, Never>?
 
@@ -208,6 +215,8 @@ final class LocationMapViewModel {
     }
 
     private func resetPresentation() {
+        partnerLocationDue = nil
+        partnerLocationDueTask?.cancel()
         loadedVisibility = nil
         loadedOwnLocation = nil
         readiness = .loading
@@ -226,6 +235,9 @@ final class LocationMapViewModel {
             trackPause(until: visibility?.pausedUntil(at: Date()))
         }
         hasResolvedSharingPreference = visibility != nil
+        if visibility != nil, loadedVisibility == nil, readiness == .loaded {
+            expectPartnerLocation(until: Date().addingTimeInterval(Self.partnerLocationGrace))
+        }
         loadedVisibility = visibility
         loadedOwnLocation = ownLocation
         readiness = .loaded
@@ -262,8 +274,21 @@ final class LocationMapViewModel {
             ownLocation: loadedOwnLocation,
             authorization: authorizationState,
             isLocating: locatingCount > 0,
-            lastLookupFailed: lastLookupFailed
+            lastLookupFailed: lastLookupFailed,
+            partnerLocationDue: partnerLocationDue
         )
+    }
+
+    /// Shows the waiting notice at `due` if the partner's place has not come by then.
+    private func expectPartnerLocation(until due: Date) {
+        partnerLocationDue = due
+        partnerLocationDueTask?.cancel()
+        partnerLocationDueTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(due.timeIntervalSinceNow))
+            guard !Task.isCancelled, let self else { return }
+            partnerLocationDue = nil
+            publishMapState()
+        }
     }
 
     func syncAfterLocalChange() async {

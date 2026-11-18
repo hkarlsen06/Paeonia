@@ -159,6 +159,39 @@ struct LocationMapViewModelTests {
         #expect(viewModel.mapState == .loading)
     }
 
+    /// Right after pairing, the server says the partner shares before their phone has sent a
+    /// place. The map waits for it instead of telling the person the partner hasn't opened
+    /// Paeonia. A phone that already knew the partner had no place says so at once.
+    @Test
+    func partnerPlaceDueInTheCouplesFirstAnswerStaysLoading() async throws {
+        let ownerUserID = locationTestUUID("11111111-1111-1111-1111-111111111111")
+        let coupleID = locationTestUUID("22222222-2222-2222-2222-222222222222")
+        let identity = LocationIdentity(currentUserID: ownerUserID, coupleID: coupleID)
+        let waiting = LocationVisibilitySnapshot(
+            ownerUserID: ownerUserID, coupleID: coupleID, viewerUserID: ownerUserID,
+            partnerUserID: locationTestUUID("33333333-3333-3333-3333-333333333333"),
+            visibilityState: .notSharing, viewerSharingEnabled: true, partnerSharingEnabled: true,
+            partnerLocation: nil, partnerLocationIsStale: false, updatedAt: Date(), refreshedAt: Date()
+        )
+
+        let firstAnswerStore = InMemoryLocationVisibilityRepository()
+        let justPaired = try await makeViewModelWithSavedLocation(
+            visibilityStore: firstAnswerStore, ownerUserID: ownerUserID, coupleID: coupleID
+        )
+        await justPaired.configure(identity: identity)
+        try await firstAnswerStore.save(waiting)
+        await justPaired.reload()
+        #expect(justPaired.mapState == .loading)
+
+        let cachedStore = InMemoryLocationVisibilityRepository()
+        try await cachedStore.save(waiting)
+        let returning = try await makeViewModelWithSavedLocation(
+            visibilityStore: cachedStore, ownerUserID: ownerUserID, coupleID: coupleID
+        )
+        await returning.configure(identity: identity)
+        #expect(returning.mapState == .waitingForPartnerLocation)
+    }
+
     private func makeViewModelWithSavedLocation(
         visibilityStore: any LocationVisibilitySnapshotPersisting,
         ownerUserID: UUID,

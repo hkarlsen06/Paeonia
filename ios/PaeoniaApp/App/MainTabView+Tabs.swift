@@ -277,7 +277,7 @@ extension MainTabView {
                 partnerName: dailyChallengeParticipants.partnerName
             ),
             dailyChallengeCardState: dailyChallengeViewModel.homeCardState,
-            dailyChallengeStreak: StreakPillState(dailyChallengeViewModel.streak),
+            dailyChallengeStreak: dailyChallengeViewModel.streakPill,
             zoomNamespace: zoomNamespace,
             locationMapState: locationMapState,
             mapTiles: models.mapTiles,

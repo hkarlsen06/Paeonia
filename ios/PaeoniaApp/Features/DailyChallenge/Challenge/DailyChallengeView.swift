@@ -174,9 +174,9 @@ struct DailyChallengeScreen: View {
         }
     }
 
-    /// The couple's streak for the toolbar badge — derived from the live server streak.
+    /// The couple's streak for the toolbar badge, derived from the live server streak.
     private var streakPill: StreakPillState {
-        StreakPillState(viewModel.streak)
+        viewModel.streakPill
     }
 
     /// Whether the screen shows today's question as answered. The big card then gives way
