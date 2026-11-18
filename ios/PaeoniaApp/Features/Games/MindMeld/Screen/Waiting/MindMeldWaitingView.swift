@@ -1,4 +1,5 @@
 import SwiftUI
+import ThinkingOrbsKit
 
 /// This person's word is locked in and the partner's is not. It says the word is
 /// safe, shows two cards (mine face up with a lock, theirs face down), and makes
@@ -42,6 +43,7 @@ struct MindMeldWaitingView: View {
         // The partner's phone changes the title, the hint and presence while this
         // screen is open. Everything moves to its new place together.
         .animation(stateChange, value: viewModel.partnerStatus)
+        .animation(stateChange, value: viewModel.isPartnerHere)
         .onChange(of: viewModel.isPartnerHere) { old, new in
             if !old, new {
                 PaeoniaHaptics.partnerDrawingReceived()
@@ -72,13 +74,24 @@ struct MindMeldWaitingView: View {
             )
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(.mindMeldWaitYourWordA11Y(myWord)))
-            MindMeldWordCard(
-                word: nil,
-                isFaceUp: false,
-                faceDownLabel: .mindMeldWaitPartnerCardA11Y(viewModel.partnerName),
-                maxWidth: width
-            )
-            .overlay {
+            partnerCard(maxWidth: width)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func partnerCard(maxWidth: CGFloat) -> some View {
+        MindMeldWordCard(
+            word: nil,
+            isFaceUp: false,
+            faceDownLabel: .mindMeldWaitPartnerCardA11Y(viewModel.partnerName),
+            maxWidth: maxWidth
+        )
+        .overlay {
+            ZStack {
+                if partnerIsHere {
+                    thinkingOrb
+                        .transition(.opacity)
+                }
                 PaeoniaProfilePhotoAvatar(
                     mediaAssetID: viewModel.partner.photoAssetID,
                     name: viewModel.partner.name,
@@ -86,10 +99,16 @@ struct MindMeldWaitingView: View {
                     size: 40
                 )
                 .gamePresenceRing(partnerIsHere)
-                .accessibilityHidden(true)
             }
+            .accessibilityHidden(true)
         }
-        .frame(maxWidth: .infinity)
+    }
+
+    /// A ring of dots around the partner's portrait while they are in the game
+    /// thinking of their word. The kit draws grey dots, so the accent tints them.
+    private var thinkingOrb: some View {
+        ThinkingOrb(state: .breathing, theme: .dark, displaySize: 96)
+            .colorMultiply(.paeoniaAccentPrimary)
     }
 
     // MARK: Text
