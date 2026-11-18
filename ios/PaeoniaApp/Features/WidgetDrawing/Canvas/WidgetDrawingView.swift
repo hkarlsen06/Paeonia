@@ -2,25 +2,28 @@ import PencilKit
 import SwiftUI
 
 /// Draw on the shared widget. The canvas sits on top; the tools, colors, size,
-/// and the Send button sit below it, within reach of the thumb. Status lives in
-/// fixed-height rows, so the canvas never changes size when the status does
-/// (a resize would rescale the drawing).
+/// and the Send button sit below it, within reach of the thumb. In a window wider
+/// than tall, such as an unfolded iPhone Duo, they sit in a column beside it, so
+/// the canvas gets the height. Status lives in fixed-height rows, so the canvas
+/// never changes size when the status does (a resize would rescale the drawing).
 struct WidgetDrawingView: View {
-    @State private var viewModel: WidgetDrawingViewModel
+    @State var viewModel: WidgetDrawingViewModel
     private let historyViewModel: WidgetDrawingHistoryViewModel?
     private let historyThumbnailLoader: (any WidgetRevisionThumbnailLoading)?
     private let partnerName: String
     private let title: LocalizedStringResource
-    private let showsHistory: Bool
+    let showsHistory: Bool
     private let showsShareButton: Bool
     /// The "Not sent yet" pill above the canvas.
     private let showsSendStatus: Bool
     private let emptyCanvasHint: LocalizedStringResource?
-    @State private var isHistoryPresented = false
+    @State var isHistoryPresented = false
     @State private var isCompositionPresented = false
     @State private var isDescriptionPresented = false
+    /// The width of the controls column beside the canvas, or nil while they sit below it.
+    @State private var sideColumnWidth: CGFloat?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
-    @Environment(ReactionStore.self) private var reactionStore: ReactionStore?
+    @Environment(ReactionStore.self) var reactionStore: ReactionStore?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @AccessibilityPresentation(.media) private var showsMedia
@@ -62,6 +65,8 @@ struct WidgetDrawingView: View {
             if dynamicTypeSize.isAccessibilitySize {
                 ScrollView { canvasContent }
                     .scrollBounceBehavior(.basedOnSize)
+            } else if let sideColumnWidth {
+                sideBySideContent(columnWidth: sideColumnWidth)
             } else {
                 canvasContent
             }
@@ -71,7 +76,12 @@ struct WidgetDrawingView: View {
         .padding(.top, PaeoniaSpacing.space8)
         .padding(.bottom, PaeoniaSpacing.space16)
         // A canvas wider than this makes strokes look thin once they shrink onto the widget.
-        .paeoniaReadableWidth()
+        // Beside the controls, GameMetrics.maxSquare caps the canvas instead.
+        .paeoniaReadableWidth(sideColumnWidth == nil ? PaeoniaSpacing.readableContentWidth : .infinity)
+        // The same rule as the games' drawing screens, so every canvas moves beside its tools at one window size.
+        .onGeometryChange(for: CGFloat?.self) { proxy in
+            GameMetrics.isWide(proxy.size) ? GameMetrics.sideColumnWidth(in: proxy.size) : nil
+        } action: { sideColumnWidth = $0 }
         .background(.paeoniaBackgroundSecondary)
         .paeoniaFittingNavigationTitle(Text(title))
         .toolbarBackground(.paeoniaBackgroundSecondary, for: .navigationBar)
@@ -169,55 +179,6 @@ struct WidgetDrawingView: View {
         }
     }
 
-    private var canvasContent: some View {
-        VStack(spacing: PaeoniaSpacing.space12) {
-            WidgetDrawingCanvasHeader(viewModel: viewModel, partnerName: partnerName, showsSendStatus: showsSendStatus)
-
-            if dynamicTypeSize.isAccessibilitySize { compositionButton }
-
-            drawingCanvas
-                .frame(height: dynamicTypeSize.isAccessibilitySize ? 280 : nil)
-
-            if dynamicTypeSize.isAccessibilitySize {
-                WidgetDrawingSetAsideBar(viewModel: viewModel)
-            }
-
-            VStack(spacing: PaeoniaSpacing.space8) {
-                WidgetDrawingToolControlsView(viewModel: viewModel)
-                WidgetDrawingColorControlsView(viewModel: viewModel)
-                WidgetDrawingSizeControlsView(viewModel: viewModel)
-            }
-
-            if !dynamicTypeSize.isAccessibilitySize { compositionButton }
-            if showsMedia || viewModel.accessibilityText.unicodeScalars.count > 500 {
-                Text(viewModel.accessibilityText.trimmedNonEmpty ?? String(localized: .drawingGeometryMissing))
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("widgetDrawing.description")
-                Button(.mediaAccessibilityDrawingDescription) { isDescriptionPresented = true }
-                    .tint(.paeoniaAccentPrimary)
-                    .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
-                    .accessibilityIdentifier("widgetDrawing.description.edit")
-            }
-
-            if viewModel.draftSaveFailed {
-                Text(.widgetDrawingDraftSaveFailed)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Button(.commonTryAgain) { viewModel.retryDraftSave() }
-                    .buttonStyle(PaeoniaQuietButtonStyle())
-                    .accessibilityIdentifier("widgetDrawing.draft.retry")
-            }
-            bottomActions
-        }
-    }
-
-    private var compositionButton: some View {
-        DrawingCompositionButton { isCompositionPresented = true }
-    }
-
     private func showBanner(for failure: WidgetDrawingSaveFailure) {
         switch failure.reason {
         case .couldNotSave:
@@ -279,9 +240,94 @@ struct WidgetDrawingView: View {
         .accessibilityIdentifier("widgetDrawing.canvas")
     }
 
+}
+
+private extension WidgetDrawingView {
+    // MARK: - Layout
+
+    var canvasContent: some View {
+        VStack(spacing: PaeoniaSpacing.space12) {
+            WidgetDrawingCanvasHeader(viewModel: viewModel, partnerName: partnerName, showsSendStatus: showsSendStatus)
+
+            if dynamicTypeSize.isAccessibilitySize { compositionButton }
+
+            drawingCanvas
+                .frame(height: dynamicTypeSize.isAccessibilitySize ? 280 : nil)
+
+            if dynamicTypeSize.isAccessibilitySize {
+                WidgetDrawingSetAsideBar(viewModel: viewModel)
+            }
+
+            toolControls
+
+            if !dynamicTypeSize.isAccessibilitySize { compositionButton }
+            controlsBelowTools
+        }
+    }
+
+    func sideBySideContent(columnWidth: CGFloat) -> some View {
+        HStack(spacing: PaeoniaSpacing.space32) {
+            drawingCanvas
+                .frame(maxWidth: GameMetrics.maxSquare, maxHeight: GameMetrics.maxSquare)
+            ViewThatFits(in: .vertical) {
+                sideColumn
+                ScrollView { sideColumn }
+                    .scrollBounceBehavior(.basedOnSize)
+            }
+            .frame(width: columnWidth)
+        }
+    }
+
+    var sideColumn: some View {
+        VStack(spacing: PaeoniaSpacing.space12) {
+            WidgetDrawingCanvasHeader(viewModel: viewModel, partnerName: partnerName, showsSendStatus: showsSendStatus)
+            toolControls
+            compositionButton
+            controlsBelowTools
+        }
+    }
+
+    var toolControls: some View {
+        VStack(spacing: PaeoniaSpacing.space8) {
+            WidgetDrawingToolControlsView(viewModel: viewModel)
+            WidgetDrawingColorControlsView(viewModel: viewModel)
+            WidgetDrawingSizeControlsView(viewModel: viewModel)
+        }
+    }
+
+    @ViewBuilder
+    var controlsBelowTools: some View {
+        if showsMedia || viewModel.accessibilityText.unicodeScalars.count > 500 {
+            Text(viewModel.accessibilityText.trimmedNonEmpty ?? String(localized: .drawingGeometryMissing))
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("widgetDrawing.description")
+            Button(.mediaAccessibilityDrawingDescription) { isDescriptionPresented = true }
+                .tint(.paeoniaAccentPrimary)
+                .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+                .accessibilityIdentifier("widgetDrawing.description.edit")
+        }
+
+        if viewModel.draftSaveFailed {
+            Text(.widgetDrawingDraftSaveFailed)
+                .font(PaeoniaTypography.caption)
+                .foregroundStyle(.paeoniaTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button(.commonTryAgain) { viewModel.retryDraftSave() }
+                .buttonStyle(PaeoniaQuietButtonStyle())
+                .accessibilityIdentifier("widgetDrawing.draft.retry")
+        }
+        bottomActions
+    }
+
+    var compositionButton: some View {
+        DrawingCompositionButton { isCompositionPresented = true }
+    }
+
     // MARK: - Actions
 
-    private var bottomActions: some View {
+    var bottomActions: some View {
         let layout = dynamicTypeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(spacing: PaeoniaSpacing.space8))
             : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space8))
@@ -309,9 +355,7 @@ struct WidgetDrawingView: View {
             .animation(PaeoniaMotion.stateChange, value: viewModel.canSave)
         }
     }
-}
 
-private extension WidgetDrawingView {
     @ViewBuilder
     var sendButtonLabel: some View {
         // Unsent changes always offer Send, even while an older send is still
@@ -341,20 +385,6 @@ private extension WidgetDrawingView {
         }
     }
 
-    /// The reaction target of the partner's drawing, when it is the one on screen.
-    var partnersDrawingReaction: WidgetDrawingReactionTarget? {
-        guard viewModel.isShowingSavedAttribution,
-              let reaction = LatestWidgetDrawing.shared.reactionTarget(
-                  showing: WidgetCanvasSyncService.lastSyncedRevisionID(),
-                  currentUserID: reactionStore?.participants.currentUserID
-              ),
-              reaction.isFromPartner
-        else {
-            return nil
-        }
-        return reaction
-    }
-
     var canvasView: PencilKitCanvasView {
         PencilKitCanvasView(
             drawing: viewModel.drawing,
@@ -367,39 +397,6 @@ private extension WidgetDrawingView {
             onDrawingApplied: viewModel.canvasDidApplyDrawing,
             onFinishRendering: viewModel.refreshDrawingFromCanvas
         )
-    }
-
-    @ToolbarContentBuilder
-    var toolbarButtons: some ToolbarContent {
-        // Only the partner's drawing takes a reaction. A button without one would show as an empty pill.
-        if reactionStore != nil, let reaction = partnersDrawingReaction {
-            ToolbarItem(placement: .topBarTrailing) {
-                ReactionPickerButton(target: reaction.target, style: .toolbar)
-            }
-        }
-        ToolbarItem(placement: .topBarTrailing) {
-            Button {
-                viewModel.revertToSavedDrawing()
-            } label: {
-                Image(systemName: "arrow.counterclockwise")
-                    .frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
-            }
-            .disabled(!viewModel.canRevertToSavedDrawing)
-            .accessibilityLabel(Text(.widgetDrawingRevertButton))
-        }
-        if showsHistory {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    isHistoryPresented = true
-                } label: {
-                    Image(systemName: "photo.on.rectangle.angled")
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
-                }
-                .accessibilityLabel(Text(.widgetHistoryOpenButton))
-            }
-        }
     }
 
     /// A line on the empty canvas that says who the drawing is for. It fades out
