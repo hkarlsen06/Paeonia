@@ -30,6 +30,8 @@ struct PaywallView: View {
     @State private var isShowingPrivacy = false
     /// The location switch in the privacy settings. It asks the server when the sheet opens.
     @State private var locationSharing: PaywallLocationSharingModel
+    /// The private topics switch in the privacy settings. It asks the server when the sheet opens.
+    @State private var privateTopics: PaywallPrivateTopicsModel
     @State private var isEnteringInviteCode = false
     @State private var isManagingSubscription = false
     /// A purchase or restore went through and the next screen is on its
@@ -55,12 +57,15 @@ struct PaywallView: View {
         viewModel: PaywallViewModel? = nil,
         presentationOverride: PaywallPresentationOverride? = nil,
         locationSharingGateway: (any PaywallLocationSharingGateway)? =
-            PaywallLocationSharingGatewayFactory.makeDefault()
+            PaywallLocationSharingGatewayFactory.makeDefault(),
+        privateTopicsGateway: (any PaywallPrivateTopicsGateway)? =
+            PaywallPrivateTopicsGatewayFactory.makeDefault()
     ) {
         _viewModel = State(
             initialValue: viewModel ?? PaywallViewModel(userID: session?.id)
         )
         _locationSharing = State(initialValue: PaywallLocationSharingModel(gateway: locationSharingGateway))
+        _privateTopics = State(initialValue: PaywallPrivateTopicsModel(gateway: privateTopicsGateway))
         self.presentationOverride = presentationOverride
         self.isCheckingAccess = isCheckingAccess
         self.audience = audience
@@ -121,6 +126,7 @@ struct PaywallView: View {
         .sheet(isPresented: $isShowingPrivacy) {
             PaywallPrivacySheet(
                 location: audience.isPaired ? locationSharing : nil,
+                privateTopics: privateTopics,
                 usageToggle: usageToggle
             )
         }

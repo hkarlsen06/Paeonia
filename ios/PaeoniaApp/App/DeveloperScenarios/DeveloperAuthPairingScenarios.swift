@@ -197,6 +197,18 @@
     }
   }
 
+  actor DeveloperScenarioPrivateTopicsGateway: PaywallPrivateTopicsGateway {
+    private var consented = true
+
+    func ownPrivateTopicsConsent() -> OwnPrivateTopicsConsent {
+      OwnPrivateTopicsConsent(consented: consented, topics: [.init(titleEN: "Flirt", titleNB: "Flirt")])
+    }
+
+    func setPrivateTopicsConsent(_ consents: Bool, notice _: String) {
+      consented = consents
+    }
+  }
+
   struct DeveloperPaywallScenarioView: View {
     let scenario: DeveloperScenario
 
@@ -217,11 +229,16 @@
       gateway: DeveloperScenarioLocationSharingGateway(),
       operationProvider: DeveloperScenarioOperationProvider()
     )
+    @State private var privateTopics = PaywallPrivateTopicsModel(gateway: DeveloperScenarioPrivateTopicsGateway())
     @State private var sharesUsage = true
 
     var body: some View {
       if scenario == .paywallPrivacy {
-        PaywallPrivacySheet(location: locationSharing, usageToggle: UsageSharingToggle(shares: $sharesUsage))
+        PaywallPrivacySheet(
+          location: locationSharing,
+          privateTopics: privateTopics,
+          usageToggle: UsageSharingToggle(shares: $sharesUsage)
+        )
       } else {
         PaeoniaScreenFrame {
           PaywallView(
@@ -234,7 +251,8 @@
             onDeleteAccount: {},
             viewModel: viewModel,
             presentationOverride: presentationOverride,
-            locationSharingGateway: DeveloperScenarioLocationSharingGateway()
+            locationSharingGateway: DeveloperScenarioLocationSharingGateway(),
+            privateTopicsGateway: DeveloperScenarioPrivateTopicsGateway()
           )
         }
       }

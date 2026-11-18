@@ -64,6 +64,12 @@ nonisolated struct LiveTopicsGateway: TopicsGateway {
     }
 }
 
+extension LiveTopicsGateway: PaywallPrivateTopicsGateway {
+    func ownPrivateTopicsConsent() async throws -> OwnPrivateTopicsConsent {
+        try await client.query("topics:get_own_private_topics_consent")
+    }
+}
+
 nonisolated struct TopicKeyRequest: Encodable {
     let topicKey: String
 
