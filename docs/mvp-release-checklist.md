@@ -106,7 +106,6 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 - [ ] A queued push reaches a real device as a widget update. Needs a device with a Paeonia widget on the Home Screen. Alerts reached both devices on 2026-11-17.
 - [ ] A restore from a nightly backup has been tried. Hourly and nightly backups run (checked 2026-10-24). The storage move on 2026-10-14 used the restore steps, but no drill has used a nightly backup.
 - [ ] The nightly backup fits once couples send videos. Each nightly export holds every stored file, a video is up to 80 MiB, and `one-s` keeps 14 exports, so total file storage times 14 must fit in the server's free disk (120 GB on 2026-11-16, when an export was 72 MB). The offsite copy in R2 keeps 3 days inside the free 10 GB. Exports that leave out files, with the files copied once to R2, would remove the limit.
-- [ ] `ios/Scripts/mint-review-codes.mjs` works against production, including registered demo partners. Needs three demo partner accounts on the production Clerk instance.
 
 ## Localization And Copy
 
