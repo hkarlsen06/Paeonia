@@ -207,8 +207,8 @@ export const TABLE_EXPORTS: { [T in TableNames]: TableExport } = {
   users: own("id", "by_uuid", {
     group: "account",
     about: {
-      en: "Your account: how you sign in (Apple, Google, or `unknown` for a code sent to your email), your email address when we have it, and when you joined.",
-      nb: "Kontoen din: hvordan du logger inn (Apple, Google eller `unknown` for en kode sendt til e-postadressen din), e-postadressen din når vi har den, og når du ble med.",
+      en: "Your account: how you sign in (Apple, Google, or `unknown` for a code sent to your email), your email address when we have it, when you joined, and the date of the terms you agreed to then.",
+      nb: "Kontoen din: hvordan du logger inn (Apple, Google eller `unknown` for en kode sendt til e-postadressen din), e-postadressen din når vi har den, når du ble med, og datoen på vilkårene du godtok da.",
     },
     hide: ["banned_by_user_id"],
   }),

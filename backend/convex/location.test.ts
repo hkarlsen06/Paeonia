@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { newUuid } from "./lib/ids";
 import schema from "./schema";
-import { addDevice, createCouple, newTest, transactionClock, type TestConvex, type TestCouple } from "./test.setup";
+import { addDevice, createCouple, createSignedInUser, newTest, transactionClock, type TestConvex, type TestCouple } from "./test.setup";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -46,6 +46,23 @@ async function seedLocation(t: TestConvex, couple: TestCouple, capturedAt: strin
       client_operation_id: newUuid(),
       client_id: newUuid(),
       client_sequence: 1,
+    }),
+  );
+}
+
+/** The first partner's sharing as it stays on after the couple's access ran out. */
+async function shareWithoutAccess(t: TestConvex, couple: TestCouple) {
+  await t.run((ctx) =>
+    ctx.db.insert("location_sharing_preferences", {
+      couple_id: couple.coupleId,
+      user_id: couple.first.userId,
+      is_enabled: true,
+      enabled_at: "2026-06-01T12:00:00.000Z",
+      consent_version: "test-v1",
+      source: "settings_toggle",
+      updates_while_closed: false,
+      created_at: "2026-06-01T12:00:00.000Z",
+      updated_at: "2026-06-01T12:00:00.000Z",
     }),
   );
 }
@@ -327,6 +344,49 @@ describe("update_location_sharing_preference", () => {
     await expect(call({ p_source: "nope" })).rejects.toThrow(/location source is not supported/);
     await expect(call({ p_couple_id: newUuid() })).rejects.toThrow(/42501.*active entitled couple access is required/);
     await expect(call({ p_couple_id: "not-a-uuid" })).rejects.toThrow(/22P02/);
+  });
+
+  // Turning sharing off takes back a consent, so the paywall offers it to a couple without access.
+  test("turning off needs only membership, and turning on needs access", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { entitled: false });
+    await shareWithoutAccess(t, couple);
+    await seedLocation(t, couple, "2026-06-28T12:00:00.000Z");
+    const set = (user: TestCouple["first"], isEnabled: boolean, sequence: number) =>
+      user.as.mutation(api.location.update_location_sharing_preference, {
+        p_couple_id: couple.coupleId,
+        p_is_enabled: isEnabled,
+        p_consent_version: isEnabled ? "test-v1" : null,
+        p_source: "settings_toggle",
+        ...operation(sequence),
+      });
+    const storedLocations = () => t.run((ctx) => ctx.db.query("latest_partner_locations").collect());
+
+    const outsider = (await createCouple(t)).first;
+    await expect(set(outsider, false, 1)).rejects.toThrow(/42501.*active couple membership is required/);
+    await expect(set(couple.first, true, 1)).rejects.toThrow(/42501.*active entitled couple access is required/);
+    expect(await storedLocations()).toHaveLength(1);
+
+    const [off] = await set(couple.first, false, 2);
+    expect(off).toMatchObject({ is_enabled: false });
+    expect(await storedLocations()).toHaveLength(0);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+});
+
+describe("get_own_location_sharing", () => {
+  test("tells a member without access about their own sharing, and nobody else", async () => {
+    const t = newTest();
+    const couple = await createCouple(t, { entitled: false });
+    await shareWithoutAccess(t, couple);
+    const read = (user: TestCouple["first"]) => user.as.query(api.location.get_own_location_sharing, {});
+
+    expect(await read(couple.first)).toEqual({ couple_id: couple.coupleId, is_enabled: true });
+    expect(await read(couple.second)).toEqual({ couple_id: couple.coupleId, is_enabled: false });
+    expect(await read(await createSignedInUser(t))).toBeNull();
+    await expect(t.query(api.location.get_own_location_sharing, {})).rejects.toThrow(
+      /42501.*authenticated user required/,
+    );
   });
 });
 

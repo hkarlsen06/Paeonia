@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import { sha256Hex } from "./lib/crypto";
 import { newUuid } from "./lib/ids";
+import { TERMS_VERSION } from "./lib/terms";
 import { addDevice, createCouple, createSignedInUser, newTest, relationshipStateOf, transactionClock, type TestConvex } from "./test.setup";
 
 beforeEach(() => {
@@ -64,6 +65,31 @@ describe("profile", () => {
     expect(second?.user_id).toBe(first?.user_id);
     const preferences = await as.query(api.identity.get_notification_preferences, {});
     expect(preferences.user_id).toBe(first?.user_id);
+  });
+
+  test("a new account records the terms it agreed to, and a later launch leaves an account as it is", async () => {
+    const t = newTest();
+    const usersRow = (subject: string) =>
+      t.run((ctx) =>
+        ctx.db
+          .query("users")
+          .withIndex("by_clerk_user_id", (q) => q.eq("clerk_user_id", subject))
+          .unique(),
+      );
+    const as = t.withIdentity({ subject: "user_new", issuer: "https://clerk.test", name: "Ada" });
+    await as.mutation(api.identity.launch, {});
+    expect((await usersRow("user_new"))?.accepted_terms_version).toBe(TERMS_VERSION);
+
+    await t.run(async (ctx) => {
+      const row = await ctx.db
+        .query("users")
+        .withIndex("by_clerk_user_id", (q) => q.eq("clerk_user_id", "user_new"))
+        .unique();
+      await ctx.db.patch(row!._id, { accepted_terms_version: "2025-01-01" });
+    });
+    await as.mutation(api.identity.launch, {});
+    await as.mutation(api.identity.ensure_current_user, {});
+    expect((await usersRow("user_new"))?.accepted_terms_version).toBe("2025-01-01");
   });
 
   test("signed out callers are rejected", async () => {

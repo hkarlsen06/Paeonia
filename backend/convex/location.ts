@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { deliverMeetingLetters } from "./letters";
-import { canAccessCoupleContent, getCurrentEntitledCoupleId } from "./lib/access";
+import { canAccessCoupleContent, findCurrentCouple, getCurrentEntitledCoupleId, isActiveCoupleMember } from "./lib/access";
 import { consumeRateLimit } from "./lib/rateLimits";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
@@ -286,8 +286,14 @@ export const update_location_sharing_preference = mutation({
       fail("23514", "location sharing pause is too long");
     }
     const coupleId = uuidArg(args.p_couple_id);
-    if (!(await canAccessCoupleContent(ctx, userId, coupleId))) {
-      fail("42501", "active entitled couple access is required");
+    // Turning sharing off takes back a consent, so it works without a subscription, from the
+    // paywall. Turning it on is part of the paid app.
+    if (isEnabled) {
+      if (!(await canAccessCoupleContent(ctx, userId, coupleId))) {
+        fail("42501", "active entitled couple access is required");
+      }
+    } else if (!(await isActiveCoupleMember(ctx, userId, coupleId))) {
+      fail("42501", "active couple membership is required");
     }
 
     const stored = await runClientOperation(
@@ -385,6 +391,25 @@ export const update_location_sharing_preference = mutation({
       },
     );
     return [stored];
+  },
+});
+
+/**
+ * Whether the caller shares their location in their current couple, or null without one. The
+ * paywall's privacy sheet reads it, so it needs membership and no subscription. It names nothing
+ * about the partner.
+ */
+export const get_own_location_sharing = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireUserId(ctx);
+    const couple = await findCurrentCouple(ctx, userId);
+    if (!couple) return null;
+    const preference = await ctx.db
+      .query("location_sharing_preferences")
+      .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", couple.id).eq("user_id", userId))
+      .unique();
+    return { couple_id: couple.id, is_enabled: preference?.is_enabled ?? false };
   },
 });
 

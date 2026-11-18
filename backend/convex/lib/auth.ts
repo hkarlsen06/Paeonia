@@ -7,6 +7,7 @@ import { withTouch } from "./db";
 import { nowIso } from "./time";
 import { assertNoPendingAccountDeletion } from "./accountDeletion";
 import { DEFAULT_QUESTION_TIME_MINUTES } from "./questionTime";
+import { TERMS_VERSION } from "./terms";
 
 type AuthProvider = "apple" | "google" | "unknown";
 
@@ -146,6 +147,8 @@ export async function ensureCurrentUser(ctx: MutationCtx): Promise<string> {
     auth_provider: authProviderFromIdentity(identity),
     email: identity.email || undefined,
     created_at: now,
+    // The sign-in step says that continuing agrees to the terms, and this call follows it.
+    accepted_terms_version: TERMS_VERSION,
     claim_display_name: displayName,
   });
   await ctx.db.insert("profiles", {

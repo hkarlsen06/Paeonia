@@ -71,6 +71,9 @@ export default defineSchema({
     auth_provider: authProvider,
     email: optString,
     created_at: ts,
+    // The date of the terms the sign-in step linked to when the account was created
+    // (`TERMS_VERSION`). `created_at` is when the person agreed to them.
+    accepted_terms_version: optString,
     // Last display name seen in the Clerk claims, used to detect provider name changes.
     claim_display_name: optString,
     // Set while the account is banned. Every session lookup treats a banned user as

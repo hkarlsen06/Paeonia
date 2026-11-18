@@ -142,6 +142,7 @@ import type * as lib_streakDeadlines from "../lib/streakDeadlines.js";
 import type * as lib_streaks from "../lib/streaks.js";
 import type * as lib_subscriptionNotices from "../lib/subscriptionNotices.js";
 import type * as lib_syncEvents from "../lib/syncEvents.js";
+import type * as lib_terms from "../lib/terms.js";
 import type * as lib_text from "../lib/text.js";
 import type * as lib_threadMessageProjection from "../lib/threadMessageProjection.js";
 import type * as lib_threadSubjects from "../lib/threadSubjects.js";
@@ -329,6 +330,7 @@ declare const fullApi: ApiFromModules<{
   "lib/streaks": typeof lib_streaks;
   "lib/subscriptionNotices": typeof lib_subscriptionNotices;
   "lib/syncEvents": typeof lib_syncEvents;
+  "lib/terms": typeof lib_terms;
   "lib/text": typeof lib_text;
   "lib/threadMessageProjection": typeof lib_threadMessageProjection;
   "lib/threadSubjects": typeof lib_threadSubjects;
