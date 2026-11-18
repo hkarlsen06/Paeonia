@@ -486,6 +486,16 @@ async function removeDeletedUserRows(ctx: MutationCtx, userId: string): Promise<
     ...(await listUserFavoriteRows(ctx, userId)),
   ];
   for (const row of rows) await ctx.db.delete(row._id);
+  // The record of each privacy request stays. What the person typed into it goes.
+  const requests = await ctx.db
+    .query("privacy_requests")
+    .withIndex("by_user_id_requested_at", (q) => q.eq("user_id", userId))
+    .collect();
+  for (const request of requests) {
+    if (request.requester_note !== undefined) {
+      await ctx.db.patch(request._id, withUpdatedAt({ requester_note: undefined }));
+    }
+  }
   await ctx.scheduler.runAfter(0, internal.retention.delete_user_client_operations, { p_user_id: userId });
   // Ending the relationship already removed the couple's presence rooms. This clears any left.
   await removePresenceRooms(ctx, [userId], "");

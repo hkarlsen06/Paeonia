@@ -524,6 +524,15 @@ export const record_sign_in_methods = internalMutation({
   },
 });
 
+/** Takes one of the caller's tries at `sync_sign_in_methods`, before the action asks Clerk. */
+export const take_sign_in_methods_sync = internalMutation({
+  args: { clerk_user_id: v.string() },
+  handler: async (ctx, args): Promise<null> => {
+    await consumeRateLimit(ctx, "signInMethodsSync", args.clerk_user_id);
+    return null;
+  },
+});
+
 /**
  * Called by the app after the person links or unlinks Apple or Google. It asks
  * Clerk, which is the source of truth, and stores the result in
@@ -538,6 +547,7 @@ export const sync_sign_in_methods = action({
     if (!identity) {
       return fail("not_signed_in", "Invalid session");
     }
+    await ctx.runMutation(internal.identity.take_sign_in_methods_sync, { clerk_user_id: identity.subject });
     const providers = await fetchLinkedSignInProviders(identity.subject);
     if (providers === null) {
       return fail("sign_in_methods_unavailable", "Could not read the linked sign-in methods");

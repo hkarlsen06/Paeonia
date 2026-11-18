@@ -908,6 +908,27 @@ describe("the streak", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 
+  test("an answer counts on the day it was written only when it arrives within a day", async () => {
+    const { t, a, b, question } = await readyCouple();
+    const streakDayOf = (user: TestUser) =>
+      t.run(async (ctx) =>
+        (await ctx.db.query("couple_activity_events").collect()).find((row) => row.user_id === user.userId)?.couple_day_id,
+      );
+    // Written on the 10th before a night without signal, and sent the next morning.
+    vi.setSystemTime(new Date("2026-10-11T07:00:00.000Z"));
+    await submit(a, question.id, { text: "last night" }, "2026-10-10T21:00:00.000Z");
+    expect(await streakDayOf(a)).toBe(question.couple_day_id);
+
+    // Three days on, a phone clock set back to the 10th fills no missed day. The answer is kept and counts today.
+    await nextDay(b, "13");
+    const todays = await currentQuestionFor(t, b.userId);
+    await submit(b, question.id, { text: "clock set back" }, "2026-10-10T12:00:00.000Z");
+    expect(await streakDayOf(b)).toBe(todays.couple_day_id);
+    const answers = await answerDetails(t, b, question.couple_day_id!);
+    expect(answers.map((row) => row.answer_user_id).sort()).toEqual([a.userId, b.userId].sort());
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
   test("a late answer counts on the day it was given", async () => {
     const { t, a, b, question } = await readyCouple();
     await submit(a, question.id, { text: "mine" });

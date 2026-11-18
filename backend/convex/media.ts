@@ -554,6 +554,11 @@ export const get_media_serve_target = internalQuery({
     ) {
       return null;
     }
+    // A relationship that ends hides its content at once. That covers leaving, a block, a ban and a
+    // deleted account, so a link signed before any of them stops working here.
+    if (asset.couple_id !== undefined && (await getByUuid(ctx, "couples", asset.couple_id))?.status !== "active") {
+      return null;
+    }
     return { storage_id: asset.storage_id, mime_type: asset.mime_type ?? "application/octet-stream" };
   },
 });

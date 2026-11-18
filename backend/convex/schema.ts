@@ -203,6 +203,7 @@ export default defineSchema({
       "clear_pair_warning",
       "block_pair",
       "unblock_pair",
+      "dismiss",
     ),
     status: literals("started", "applied", "partially_applied", "failed"),
     target_kind: optString,

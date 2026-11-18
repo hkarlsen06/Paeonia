@@ -4,6 +4,7 @@ import { mutation, query } from "./_generated/server";
 import { getCurrentEntitledCoupleId, listActiveMembers } from "./lib/access";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
+import { consumeRateLimit } from "./lib/rateLimits";
 import { resolveCoupleDayAnchor } from "./lib/coupleDays";
 import type { WriterCtx } from "./lib/db";
 import { fail } from "./lib/errors";
@@ -252,6 +253,7 @@ export const set_game_presence = mutation({
     await setPresent(ctx, gameRoom(coupleId, args.p_kind), userId, args.p_present, GAME_PRESENCE_TIMEOUT_MS);
     await recordPlayed(ctx, coupleId, args.p_kind, args.p_present);
     if (args.p_present) {
+      await consumeRateLimit(ctx, "gamePresence", userId);
       // A close can arrive after midnight, so only an open counts the day.
       await recordPlayDay(ctx, coupleId, userId);
       await answerGameInvite(ctx, coupleId, args.p_kind, userId);

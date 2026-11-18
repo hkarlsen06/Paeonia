@@ -26,6 +26,8 @@ const ACTIONS = [
   "clear_pair_warning",
   "block_pair",
   "unblock_pair",
+  // The operator read the report and nothing needs doing. It changes no content.
+  "dismiss",
 ] as const;
 type ActionKind = (typeof ACTIONS)[number];
 type ModerationStatus = Doc<"profiles">["moderation_status"];
@@ -253,6 +255,35 @@ async function loadTarget(
   }
 }
 
+/** `reports_waiting` counts at most this many reports of each open status. */
+const REPORTS_WAITING_LIMIT = 200;
+
+/**
+ * How many reports wait for an operator, and since when. The watchdog on the server asks every few
+ * minutes and emails when the answer changes, so no report sits unread. A report keeps its copy
+ * of the reported content until `apply_report_moderation_action` resolves it, with `dismiss` when
+ * nothing needs doing, and for 180 days after that.
+ */
+export const reports_waiting = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    let count = 0;
+    let oldest: string | null = null;
+    let newest: string | null = null;
+    for (const status of ["submitted", "under_review"] as const) {
+      const waiting = () =>
+        ctx.db.query("content_reports").withIndex("by_status_created_at", (q) => q.eq("status", status));
+      count += (await waiting().take(REPORTS_WAITING_LIMIT)).length;
+      const first = (await waiting().first())?.created_at;
+      const last = (await waiting().order("desc").first())?.created_at;
+      if (first !== undefined && (oldest === null || first < oldest)) oldest = first;
+      if (last !== undefined && (newest === null || last > newest)) newest = last;
+    }
+    // The count stops at the limit, and `newest_created_at` still moves with every new report.
+    return { count, oldest_created_at: oldest, newest_created_at: newest };
+  },
+});
+
 /** Port of `internal.apply_report_moderation_action`. Returns the moderation action id. */
 export const apply_report_moderation_action = internalMutation({
   args: {
@@ -382,7 +413,12 @@ export const apply_report_moderation_action = internalMutation({
     await ctx.db.patch(
       report._id,
       withUpdatedAt({
-        status: actionKind === "restore" ? ("closed" as const) : ("action_taken" as const),
+        status:
+          actionKind === "restore"
+            ? ("closed" as const)
+            : actionKind === "dismiss"
+              ? ("rejected" as const)
+              : ("action_taken" as const),
         resolved_at: report.resolved_at ?? now,
       }),
     );

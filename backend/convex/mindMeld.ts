@@ -4,6 +4,7 @@ import { mutation, query } from "./_generated/server";
 import { canAccessCoupleContent, getCurrentEntitledCoupleId, listActiveMembers } from "./lib/access";
 import { assertNoPendingAccountDeletion } from "./lib/accountDeletion";
 import { requireUserId } from "./lib/auth";
+import { consumeRateLimit } from "./lib/rateLimits";
 import { clientOperationArgs, toClientOperation } from "./lib/clientOperationArgs";
 import { runClientOperation } from "./lib/clientOperations";
 import { getOrCreateCoupleDayAt } from "./lib/coupleDays";
@@ -298,6 +299,7 @@ export const restart_mind_meld = mutation({
     const coupleId = game.couple_id;
     await requirePartnerId(ctx, coupleId, userId);
     if (game.state === "playing") {
+      await consumeRateLimit(ctx, "mindMeldRestart", userId);
       const now = nowIso();
       await patchGame(ctx, game, {
         state: "ended",

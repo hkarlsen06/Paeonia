@@ -534,12 +534,22 @@ describe("delete_account action", () => {
       }),
     );
 
+    await first.as.mutation(api.identity.create_privacy_request, {
+      p_id: newUuid(),
+      p_kind: "correction",
+      p_requester_note: "my birthday is wrong",
+    });
+
     const response = await first.as.action(api.identity.delete_account, { appleAuthorizationCode: "auth-code" });
     expect(response).toMatchObject({
       authDeleteStatus: "completed",
       appleRevocation: "succeeded",
       requiresManualAppleRevocation: false,
     });
+    // The requests stay as a record, without the words the person wrote in them.
+    const requests = await t.run((ctx) => ctx.db.query("privacy_requests").collect());
+    expect(requests.map((request) => request.request_kind).sort()).toEqual(["correction", "deletion"]);
+    expect(requests.every((request) => request.requester_note === undefined)).toBe(true);
     expect(calls.map((call) => `${call.method} ${call.url}`)).toEqual([
       `GET https://api.clerk.com/v1/users/${first.subject}`,
       "POST https://appleid.apple.com/auth/token",

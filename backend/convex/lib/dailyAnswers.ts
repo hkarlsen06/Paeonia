@@ -12,7 +12,7 @@ import { enqueueDailyPartnerPush } from "./dailyPartnerPush";
 import { deleteReactionsOf } from "./reactions";
 import { tombstoneReportTargets } from "./reports";
 import { applyCoupleActivity } from "./streaks";
-import { nowIso } from "./time";
+import { addMs, nowIso } from "./time";
 import {
   ensureDailyQuestion,
   instanceDay,
@@ -389,6 +389,8 @@ export type ClientOperationArgs = {
 };
 
 const MAX_ANSWER_PAYLOAD_BYTES = 65_536;
+/** How long after it was written an answer still counts for the streak on its own day. */
+const OFFLINE_ANSWER_GRACE_MS = 24 * 3_600_000;
 
 /** The object check and size cap that run before an answer's client operation. */
 export function assertAnswerPayloadShape(payload: unknown): Record<string, unknown> {
@@ -552,8 +554,13 @@ export async function submitDailyAnswer(
 
       const parsed = await parseAnswerPayload(ctx, userId, instance, body);
       // assert_daily_question_answer_member: the author is an active member (checked above).
+      // An answer counts for the streak on the day it was written when it reaches the server within a
+      // day of that, which covers a phone that was offline overnight or on a flight. Later than that
+      // it counts today. Without the limit a phone clock set back fills any missed day, and a broken
+      // streak comes back without the restore.
       const now = nowIso();
-      const answeredAt = operation.localCreatedAt < now ? operation.localCreatedAt : now;
+      const writtenRecently = operation.localCreatedAt < now && operation.localCreatedAt >= addMs(now, -OFFLINE_ANSWER_GRACE_MS);
+      const answeredAt = writtenRecently ? operation.localCreatedAt : now;
       await insertDailyAnswer(ctx, { userId, instance, ...parsed, notifyPartner: true, answeredAt });
       return { answer_id: parsed.answerId };
     },

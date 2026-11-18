@@ -39,6 +39,15 @@ const LIMITS = {
   // new one after a reinstall or a restore, so a person uses a few a year. Without it an account
   // could add device rows without end, and every push to it would go to all of them.
   pushDeviceRegister: { kind: "token bucket", rate: 20, period: 24 * HOUR, capacity: 20 },
+  // A game screen's heartbeat. An open screen sends one every 30 seconds. Hopping between games
+  // moves the partner's Live Activity with an alert each time, so the hops need a ceiling.
+  gamePresence: { kind: "token bucket", rate: 600, period: HOUR, capacity: 120 },
+  // "Start over" in Mind Meld, which ends the game in play and makes a new one each time.
+  mindMeldRestart: { kind: "token bucket", rate: 60, period: HOUR, capacity: 30 },
+  // `sync_sign_in_methods` asks Clerk with the server's key on every call, and Clerk limits how
+  // often that key may ask. The app calls it after a link or unlink and on launch until it worked.
+  // Keyed by the Clerk user id.
+  signInMethodsSync: { kind: "token bucket", rate: 60, period: HOUR, capacity: 20 },
   // Starting a call. A retry of the same call and answering a ringing call count too.
   startCall: { kind: "token bucket", rate: 60, period: HOUR, capacity: 20 },
 } as const;

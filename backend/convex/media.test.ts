@@ -697,6 +697,17 @@ describe("get_media_signed_url and GET /media", () => {
     expect((await t.fetch(pathOf(row.signed_url))).status).toBe(404);
   });
 
+  test("a signed link stops working once the relationship ends", async () => {
+    const t = newTest();
+    const couple = await createCouple(t);
+    const up = await memoryWithPhoto(t, couple);
+    const [row] = await couple.second.as.mutation(api.media.get_media_signed_url, { p_media_asset_id: up.assetId });
+    expect((await t.fetch(pathOf(row.signed_url))).status).toBe(200);
+    await couple.first.as.mutation(api.relationship.leave_relationship, op());
+    expect((await t.fetch(pathOf(row.signed_url))).status).toBe(404);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
   test("rejects an expiry outside 60 to 3600 seconds", async () => {
     const t = newTest();
     const couple = await createCouple(t);
