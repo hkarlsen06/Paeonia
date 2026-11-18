@@ -66,7 +66,6 @@ struct WelcomeFlowView: View {
                     onSendEmailCode: onSendEmailCode,
                     onVerifyEmailCode: onVerifyEmailCode,
                     onSubmitInviteCode: onSubmitInviteCode,
-                    onAppear: model.signInAppeared,
                     loadDrawing: model.waitingDrawingImage
                 )
             }

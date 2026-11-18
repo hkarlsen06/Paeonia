@@ -36,7 +36,6 @@ struct WelcomeDrawingStep: View {
             guard previous == .sending, delivery == .waiting || delivery == .sent else {
                 return
             }
-            model.drawingSent()
             landedDrawing = drawingViewModel.widgetImage
             if landedDrawing == nil {
                 model.finishDrawing()

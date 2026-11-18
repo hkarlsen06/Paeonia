@@ -181,7 +181,6 @@ final class PairingJoinViewModel {
             "pairing invite is not available",
             "pairing invite is not pending",
             "pairing invite is expired",
-            "pairing is blocked for this pair",
             "one of the users already has an active couple",
         ].contains { message.contains($0) }
     }

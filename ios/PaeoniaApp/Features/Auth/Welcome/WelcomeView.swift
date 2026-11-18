@@ -54,7 +54,6 @@ struct WelcomeView: View {
         ) { drawing in
             doodle = WelcomeCarriedDoodle(drawing: drawing, canvasSide: doodleCanvasSide)
         }
-        .onAppear(perform: model.welcomeAppeared)
         // Checked again on return to the app, since the link may be copied after the
         // welcome screen first appeared.
         .task(id: scenePhase) {
@@ -216,7 +215,6 @@ struct WelcomeView: View {
     /// type the code.
     private var invitePasteButton: some View {
         PasteButton(payloadType: String.self) { strings in
-            model.chooseJoining()
             if let code = PairingInviteCode.joinLinkCode(in: strings.joined(separator: " ")) {
                 onSubmitInviteCode(code)
             } else {
@@ -229,7 +227,6 @@ struct WelcomeView: View {
     }
 
     private func openInviteSheet() {
-        model.chooseJoining()
         isInviteSheetPresented = true
     }
 }
@@ -237,10 +234,7 @@ struct WelcomeView: View {
 #if DEBUG
 #Preview {
     WelcomeView(
-        model: WelcomeFlowModel(
-            store: InMemoryWelcomeFlowStore(),
-            funnel: NoOpWelcomeFunnelRecorder()
-        ),
+        model: WelcomeFlowModel(store: InMemoryWelcomeFlowStore()),
         onSubmitInviteCode: { _ in }
     )
     .environment(PaeoniaBannerCenter())

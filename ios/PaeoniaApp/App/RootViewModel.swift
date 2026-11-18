@@ -160,13 +160,11 @@ final class RootViewModel {
         self.deviceOwnerStore = resolvedOwnerStore
         // Tests and scenarios never read the real phone's photos.
         self.savedProfilePhotos = savedProfilePhotos ?? (syncService == nil ? FileProfilePhotoImageCache.live() : nil)
-        // The same split for the signed-out flow: tests and scenarios keep its notes
-        // in memory and count nothing.
+        // The same split for the signed-out flow: tests and scenarios keep its notes in memory.
         self.welcomeFlow = welcomeFlow ?? (syncService == nil
             ? WelcomeFlowModel()
             : WelcomeFlowModel(
                 store: InMemoryWelcomeFlowStore(),
-                funnel: NoOpWelcomeFunnelRecorder(),
                 startDateQueue: FirstDayStartedOnQueue(pendingOperationStore: InMemoryPendingSyncOperationRepository())
             ))
         self.savedAccessGracePeriod = savedAccessGracePeriod

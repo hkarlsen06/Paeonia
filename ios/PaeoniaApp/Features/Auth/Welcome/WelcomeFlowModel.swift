@@ -43,7 +43,6 @@ final class WelcomeFlowModel {
     private(set) var step: WelcomeStep
 
     @ObservationIgnored private let store: any WelcomeFlowStoring
-    @ObservationIgnored private let funnel: any WelcomeFunnelRecording
     /// The first drawing's canvas and marker before sign-in.
     @ObservationIgnored private let canvas: any WidgetCanvasManaging
     @ObservationIgnored private let pendingUploads: WidgetPendingUploadStore
@@ -59,7 +58,6 @@ final class WelcomeFlowModel {
 
     init(
         store: any WelcomeFlowStoring = UserDefaultsWelcomeFlowStore(),
-        funnel: any WelcomeFunnelRecording = WelcomeFunnelRecorder.shared,
         canvas: any WidgetCanvasManaging = WelcomeDrawingStorage.canvas,
         pendingUploads: WidgetPendingUploadStore = WelcomeDrawingStorage.pendingUploads,
         widgetCanvas: any WidgetCanvasManaging = WidgetCanvasService.shared,
@@ -69,7 +67,6 @@ final class WelcomeFlowModel {
         drawingDrafts: any WidgetDrawingDraftStoring = FileWidgetDrawingDraftStore.shared
     ) {
         self.store = store
-        self.funnel = funnel
         self.canvas = canvas
         self.pendingUploads = pendingUploads
         self.widgetCanvas = widgetCanvas
@@ -84,14 +81,9 @@ final class WelcomeFlowModel {
 
     // MARK: Welcome
 
-    func welcomeAppeared() {
-        funnel.record(.welcomeShown)
-    }
-
     /// `doodle` is what the person drew on the welcome widget, if anything. It goes on
     /// top of a doodle still waiting from an earlier visit.
     func chooseStart(carrying doodle: WelcomeCarriedDoodle?) {
-        funnel.record(.startChosen)
         PaeoniaHaptics.selection()
         if let doodle {
             store.carriedDoodle = store.carriedDoodle?.adding(doodle) ?? doodle
@@ -99,13 +91,7 @@ final class WelcomeFlowModel {
         step = .startDate
     }
 
-    /// The invited choice was tapped. The code sheet or the paste button follows.
-    func chooseJoining() {
-        funnel.record(.joinerChosen)
-    }
-
     func chooseReturning() {
-        funnel.record(.returningChosen)
         store.startDate = nil
         forgetDrawing()
         step = .signIn(.returning)
@@ -122,12 +108,10 @@ final class WelcomeFlowModel {
 
     func saveStartDate(_ date: Date) {
         store.startDate = PairingStartDate(date: date)
-        funnel.record(.dateSaved)
     }
 
     func skipStartDate() {
         store.startDate = nil
-        funnel.record(.dateSkipped)
         finishStartDate()
     }
 
@@ -169,12 +153,7 @@ final class WelcomeFlowModel {
         return viewModel
     }
 
-    func drawingSent() {
-        funnel.record(.drawingSent)
-    }
-
     func skipDrawing() {
-        funnel.record(.drawingSkipped)
         finishDrawing()
     }
 
@@ -226,15 +205,6 @@ final class WelcomeFlowModel {
         case .signIn(.returning):
             step = .welcome
         }
-    }
-
-    func signInAppeared() {
-        funnel.record(.signInShown)
-    }
-
-    /// A sign-in went through.
-    func signedIn() {
-        funnel.record(.signedIn)
     }
 
     /// A session is about to be used, after a sign-in or at launch, and after another

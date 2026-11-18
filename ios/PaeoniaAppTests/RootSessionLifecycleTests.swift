@@ -110,7 +110,6 @@ struct RootSessionLifecycleTests {
         let pending = InMemoryPendingSyncOperationRepository()
         let welcome = WelcomeFlowModel(
             store: InMemoryWelcomeFlowStore(),
-            funnel: NoOpWelcomeFunnelRecorder(),
             startDateQueue: FirstDayStartedOnQueue(pendingOperationStore: pending)
         )
         welcome.saveStartDate(try #require(PairingStartDate(rawValue: "2024-02-29").date()))
@@ -145,7 +144,6 @@ struct RootSessionLifecycleTests {
         let pending = FailingFirstEnqueuePendingStore()
         let welcome = WelcomeFlowModel(
             store: InMemoryWelcomeFlowStore(),
-            funnel: NoOpWelcomeFunnelRecorder(),
             startDateQueue: FirstDayStartedOnQueue(pendingOperationStore: pending)
         )
         welcome.saveStartDate(try #require(PairingStartDate(rawValue: "2024-02-29").date()))
@@ -337,7 +335,6 @@ private struct PhoneWithAnotherAccount {
     func makeWelcomeFlow() -> WelcomeFlowModel {
         WelcomeFlowModel(
             store: InMemoryWelcomeFlowStore(),
-            funnel: NoOpWelcomeFunnelRecorder(),
             canvas: welcomeCanvas,
             pendingUploads: welcomePending,
             widgetCanvas: widgetCanvas,

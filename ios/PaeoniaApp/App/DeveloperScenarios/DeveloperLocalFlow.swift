@@ -204,7 +204,6 @@
         systemSideEffects: NoOpRootSystemSideEffects(),
         welcomeFlow: WelcomeFlowModel(
           store: InMemoryWelcomeFlowStore(),
-          funnel: NoOpWelcomeFunnelRecorder(),
           canvas: DeveloperWidgetCanvasService(),
           pendingUploads: welcomePendingUploads,
           widgetCanvas: widgetCanvasService,

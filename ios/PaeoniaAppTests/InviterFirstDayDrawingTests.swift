@@ -155,7 +155,6 @@ struct InviterFirstDayModelTests {
         let pendingStore = WidgetPendingUploadStore(defaults: defaults)
         let welcome = WelcomeFlowModel(
             store: InMemoryWelcomeFlowStore(),
-            funnel: NoOpWelcomeFunnelRecorder(),
             canvas: FirstDayCanvasFake(),
             pendingUploads: WidgetPendingUploadStore(defaults: defaults, key: WelcomeDrawingStorage.pendingUploadKey),
             widgetCanvas: canvas,

@@ -477,7 +477,6 @@
     init(entry: Entry) {
       let model = WelcomeFlowModel(
         store: InMemoryWelcomeFlowStore(),
-        funnel: NoOpWelcomeFunnelRecorder(),
         canvas: DeveloperWidgetCanvasService(),
         pendingUploads: WidgetPendingUploadStore(
           defaults: DeveloperInviterFixture.defaults,

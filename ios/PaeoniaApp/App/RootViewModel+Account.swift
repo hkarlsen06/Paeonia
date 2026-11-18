@@ -67,7 +67,6 @@ extension RootViewModel {
         await performAuthAction(failureNotice: failureNotice) {
             let session = try await signIn()
             PaeoniaHaptics.signedIn()
-            welcomeFlow.signedIn()
             await apply(AuthRoute(session: session))
             await startSyncIfNeeded()
         }

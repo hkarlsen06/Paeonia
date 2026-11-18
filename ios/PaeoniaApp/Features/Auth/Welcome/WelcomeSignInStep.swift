@@ -21,7 +21,6 @@ struct WelcomeSignInStep: View {
     let onVerifyEmailCode: (String) async -> EmailSignInError?
     /// Saves a replacement invite code.
     let onSubmitInviteCode: (String) -> Void
-    let onAppear: () -> Void
     /// The waiting first drawing as an image, for `.start(hasDrawing: true)`.
     let loadDrawing: () async -> UIImage?
 
@@ -48,7 +47,6 @@ struct WelcomeSignInStep: View {
             }
         }
         .closesOnSwipeRight(isEnabled: !isWorking, perform: onBack)
-        .onAppear(perform: onAppear)
         .task(id: mode) {
             guard mode == .start(hasDrawing: true), drawing == nil else { return }
             drawing = await loadDrawing()
@@ -471,7 +469,6 @@ private struct SafariView: UIViewControllerRepresentable {
             onSendEmailCode: { _ in nil },
             onVerifyEmailCode: { _ in nil },
             onSubmitInviteCode: { _ in },
-            onAppear: {},
             loadDrawing: { UIImage(resource: .placeholderSketch) }
         )
     }
