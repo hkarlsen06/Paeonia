@@ -60,6 +60,7 @@
       )
       .environment(\.profilePhotoImageProvider, DeveloperAvatarPhotoProvider())
       .environment(\.mediaAlternativeEditingService, environment.mediaAlternativeEditingService)
+      .environment(\.homeWidgetPreviewLoader, environment.homeDrawing?.loader ?? HomeWidgetPreviewLoader())
       .modifier(DeveloperLocalFlowCalls(center: environment.callCenter))
       .task {
         guard let partnerWritesAfter, let presence, let gameFlow = environment.gameConversationFlow else { return }
@@ -137,6 +138,7 @@
     let gameConversationFlow: DeveloperGameConversationFlow?
     let callCenter: CallCenter?
     let mediaAlternativeEditingService: MediaAlternativeEditingService
+    let homeDrawing: DeveloperHomeDrawing?
     private let homeLaunch: DeveloperHomeLaunchTiming?
     private let visibilityStore = InMemoryLocationVisibilityRepository()
     private let ownLocationStore = InMemoryOwnLocationSnapshotRepository()
@@ -148,6 +150,7 @@
          avatarStories: StoryRingState?,
          mapTiles: DeveloperHomeMapTiles, mail: DeveloperMailSeed, presence: PartnerPresenceModel?) {
       self.homeLaunch = homeLaunch
+      homeDrawing = homeLaunch?.drawing == nil ? nil : DeveloperHomeDrawing()
       let store = DeveloperLocalFlowStore(seed: seed, avatarScenario: avatarStories != nil)
       let authService = DeveloperLocalFlowAuthService(store: store)
       let accessService = DeveloperLocalFlowAccessService(store: store)
@@ -329,9 +332,29 @@
 
     func prepareHomeLaunch() async {
       guard let homeLaunch else { return }
+      async let map: Void = seedMap(homeLaunch)
+      async let drawing: Void = drawPartnerHeart(after: homeLaunch.drawing)
+      _ = await (map, drawing)
+    }
+
+    private func seedMap(_ homeLaunch: DeveloperHomeLaunchTiming) async {
       do {
         try await Task.sleep(for: homeLaunch.location)
+        if let later = homeLaunch.partnerLocationLater {
+          try await homeLaunch.seedMap(
+            visibility: visibilityStore, ownLocation: ownLocationStore, partnerLocated: false
+          )
+          try await Task.sleep(for: later)
+        }
         try await homeLaunch.seedMap(visibility: visibilityStore, ownLocation: ownLocationStore)
+      } catch { }
+    }
+
+    private func drawPartnerHeart(after delay: Duration?) async {
+      guard let delay, let homeDrawing else { return }
+      do {
+        try await Task.sleep(for: delay)
+        try await homeDrawing.partnerDrew()
       } catch { }
     }
 

@@ -15,6 +15,7 @@
       mailComposerTogetherUnchecked, mailComposerNoVisit, mailComposerVisitTooSoon, mailComposerBirthday,
       mailComposerChange, mailReader, mailReaderSealedSent, mailReaderGone, homeMailDraft, homeMailWaiting,
       homeLaunchDuringReveal, homeLaunchLocationFirst, homeLaunchCalendarFirst, homeLaunchOverlapping,
+      homeAfterRestore,
       pairingInviteReady, pairingJoin, pairingJoinPartner, pairingInviteExpired, pairingSafetyWarning,
       pairingInviteError, pairingJoinRestore, pairingJoinRestoreWaiting, pairingRestoreRequest,
       pairingCelebration, pairingCelebrationSettled, firstDayJoined, firstDayJoinedWaiting, firstDayInvited,
@@ -59,6 +60,12 @@
       "home-launch-overlapping", "Home launch, overlapping reads",
       "The map arrives while the question and calendar are animating", .launchAndAuth
     ) { _ in DeveloperLocalFlowHost(seed: .paired, homeLaunch: .overlapping) }
+
+    static let homeAfterRestore = DeveloperScenario(
+      "home-after-restore", "Home after bringing the couple back",
+      "Tap Bring it back. The partner's place, the streak and the drawing arrive after Home shows",
+      .launchAndAuth
+    ) { _ in DeveloperLocalFlowHost(seed: .restoreRequested, homeLaunch: .afterRestore) }
 
     static let launchLoading = DeveloperScenario(
       "launch-loading", "Launch loading", "Copy-free launch surface", .launchAndAuth

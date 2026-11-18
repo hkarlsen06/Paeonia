@@ -93,17 +93,16 @@ final class HomeWidgetPreviewModel {
         savedAt: nil
     )
 
-    private let loader: HomeWidgetPreviewLoader
-
-    init(loader: HomeWidgetPreviewLoader = HomeWidgetPreviewLoader()) {
-        self.loader = loader
-    }
-
     // The payload is a tiny JSON file plus a small PNG, so reading it directly
     // is cheap enough to do without hopping off the main actor.
-    func reload() {
+    func reload(using loader: HomeWidgetPreviewLoader) {
         content = loader.load()
     }
+}
+
+extension EnvironmentValues {
+    /// Where Home's drawing tile reads the widget's drawing. Scenarios give it a folder of their own.
+    @Entry var homeWidgetPreviewLoader = HomeWidgetPreviewLoader()
 }
 
 /// A compact, tappable rendering of the couple's Home Screen widget shown on the
@@ -117,6 +116,7 @@ struct HomeWidgetCard: View {
     /// Shows the partner's canvas while they draw on it. Nil without a couple.
     /// Built when the card first appears, since `init` runs on every Home update.
     @State private var live: WidgetLiveDrawing?
+    @Environment(\.homeWidgetPreviewLoader) private var loader
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -144,7 +144,7 @@ struct HomeWidgetCard: View {
                 .padding(PaeoniaSpacing.space4)
         }
         .task {
-            model.reload()
+            model.reload(using: loader)
             if live == nil, let coupleID {
                 live = WidgetLiveDrawing(coupleID: coupleID, role: .watching)
             }
@@ -157,12 +157,12 @@ struct HomeWidgetCard: View {
         // waiting for this card to reappear (e.g. after visiting the drawing
         // screen).
         .onReceive(NotificationCenter.default.publisher(for: .paeoniaWidgetCanvasDidUpdate)) { _ in
-            model.reload()
+            model.reload(using: loader)
         }
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .active:
-                model.reload()
+                model.reload(using: loader)
                 live?.start()
             case .background:
                 live?.stop()
