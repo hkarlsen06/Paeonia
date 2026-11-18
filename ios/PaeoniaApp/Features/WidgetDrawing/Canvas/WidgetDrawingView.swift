@@ -26,6 +26,8 @@ struct WidgetDrawingView: View {
     /// The width of the controls column beside the canvas, or nil while they sit below it.
     @State private var sideColumnWidth: CGFloat?
     @State private var sendButtonFrame: CGRect = .zero
+    /// The last send played a wave, whose own haptic was the send's.
+    @State private var sendWavePlayed = false
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(ReactionStore.self) var reactionStore: ReactionStore?
     @Environment(\.scenePhase) private var scenePhase
@@ -166,13 +168,13 @@ struct WidgetDrawingView: View {
         .onChange(of: viewModel.delivery) { _, delivery in
             switch delivery {
             case .sent:
-                PaeoniaHaptics.drawingSaved()
+                if !sendWavePlayed { PaeoniaHaptics.drawingSaved() }
             case .waiting:
-                PaeoniaHaptics.drawingSent()
+                if !sendWavePlayed { PaeoniaHaptics.drawingSent() }
             case .sending:
                 // Only a send that starts plays the wave. A drawing too big to send
                 // fails before this, and its error banner must not sit under a wave.
-                if showsSendWave { screenWave(from: sendButtonFrame, style: .widgetDrawingSend) }
+                sendWavePlayed = showsSendWave && screenWave(from: sendButtonFrame, style: .widgetDrawingSend)
             case .idle:
                 break
             }

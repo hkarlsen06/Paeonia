@@ -1,5 +1,4 @@
 import CoreHaptics
-import OSLog
 import UIKit
 
 /// The taps an iPhone gives when a phone call is answered and when the other side hangs up. The
@@ -18,35 +17,7 @@ enum CallHaptics {
         play(taps: [(0, 0.4), (0.4, 0.4), (0.8, 0.4)])
     }
 
-    private static var engine: CHHapticEngine?
-
     private static func play(taps: [(time: TimeInterval, sharpness: Float)]) {
-        guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
-        let events = taps.map { tap in
-            CHHapticEvent(
-                eventType: .hapticTransient,
-                parameters: [
-                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 1),
-                    CHHapticEventParameter(parameterID: .hapticSharpness, value: tap.sharpness),
-                ],
-                relativeTime: tap.time
-            )
-        }
-        do {
-            let engine = try engine ?? makeEngine()
-            try engine.start()
-            let pattern = try CHHapticPattern(events: events, parameters: [])
-            try engine.makePlayer(with: pattern).start(atTime: CHHapticTimeImmediate)
-        } catch {
-            CallAudio.log.error("call haptic did not play: \(error.localizedDescription, privacy: .public)")
-        }
-    }
-
-    private static func makeEngine() throws -> CHHapticEngine {
-        let engine = try CHHapticEngine()
-        engine.playsHapticsOnly = true
-        engine.isAutoShutdownEnabled = true
-        self.engine = engine
-        return engine
+        PaeoniaHapticPattern.play(taps.map { .tap(at: $0.time, sharpness: $0.sharpness) })
     }
 }

@@ -1,14 +1,17 @@
+import CoreHaptics
 import DistortionWavesKit
 import SwiftUI
 
 /// Plays a distortion wave over the whole window, from `source` (a frame in global
 /// coordinates). Read it with `@Environment(\.screenWave)`. It does nothing outside
 /// `PaeoniaScreenWaveHost`, and nothing under Reduce Motion or VoiceOver. The host sets
-/// the style's `cornerRadius` to the window's own.
+/// the style's `cornerRadius` to the window's own, and plays the wave's own haptic with it,
+/// so a caller that gets `true` plays no haptic of its own for the same moment.
 struct ScreenWaveAction {
-    fileprivate var play: (_ source: CGRect, _ style: DistortionWaveStyle) -> Void = { _, _ in }
+    fileprivate var play: (_ source: CGRect, _ style: DistortionWaveStyle) -> Bool = { _, _ in false }
 
-    func callAsFunction(from source: CGRect, style: DistortionWaveStyle) {
+    @discardableResult
+    func callAsFunction(from source: CGRect, style: DistortionWaveStyle) -> Bool {
         play(source, style)
     }
 }
@@ -69,8 +72,12 @@ struct PaeoniaScreenWaveHost: ViewModifier {
             picture(run.picture)
         }
         .id(run.id)
-        // The wave starts when this flips, so it mounts at rest first.
-        .onAppear { self.run?.isRevealed = true }
+        // The wave starts when this flips, so it mounts at rest first. The haptic starts
+        // with it, so its pull and release land on the wave's.
+        .onAppear {
+            self.run?.isRevealed = true
+            ScreenWaveHaptics.play(for: run.style)
+        }
         .transition(.opacity)
     }
 
@@ -81,9 +88,9 @@ struct PaeoniaScreenWaveHost: ViewModifier {
             .accessibilityHidden(true)
     }
 
-    private func play(from source: CGRect, style: DistortionWaveStyle) {
+    private func play(from source: CGRect, style: DistortionWaveStyle) -> Bool {
         guard !reduceMotion, !voiceOverEnabled, run == nil,
-              let picture = PaeoniaAppWindow.snapshot(of: frame) else { return }
+              let picture = PaeoniaAppWindow.snapshot(of: frame) else { return false }
         var style = style
         style.cornerRadius = PaeoniaAppWindow.cornerRadius
         let run = Run(picture: picture, source: source.offsetBy(dx: -frame.minX, dy: -frame.minY), style: style)
@@ -94,6 +101,7 @@ struct PaeoniaScreenWaveHost: ViewModifier {
             try? await Task.sleep(for: .seconds(style.duration + 1))
             finish(run.id)
         }
+        return true
     }
 
     private func finish(_ id: UUID) {
@@ -101,5 +109,34 @@ struct PaeoniaScreenWaveHost: ViewModifier {
         // The picture still shows the screen as it was at the start. A short fade hands
         // over to the live screen instead of a cut.
         withAnimation(.easeOut(duration: 0.2)) { run = nil }
+    }
+}
+
+/// The haptic of a screen wave, timed from its style: a soft buzz that tightens while the
+/// screen falls toward the source, a sharp tap as the front leaves it, and a buzz that fades
+/// as the swell travels out.
+private enum ScreenWaveHaptics {
+    static func play(for style: DistortionWaveStyle) {
+        let launch = style.anticipation
+        let swell = style.travel * 0.4
+        PaeoniaHapticPattern.play(
+            [
+                .buzz(at: 0, duration: launch, sharpness: 0.15),
+                .tap(at: launch, sharpness: 0.7),
+                .buzz(at: launch, duration: swell, sharpness: 0.3),
+            ],
+            curves: [
+                CHHapticParameterCurve(
+                    parameterID: .hapticIntensityControl,
+                    controlPoints: [
+                        .init(relativeTime: 0, value: 0.15),
+                        .init(relativeTime: launch, value: 0.8),
+                        .init(relativeTime: launch + 0.02, value: 0.55),
+                        .init(relativeTime: launch + swell, value: 0),
+                    ],
+                    relativeTime: 0
+                ),
+            ]
+        )
     }
 }
