@@ -118,7 +118,7 @@ struct QuestionTimeStep: View {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
-    /// The icon, the name and its moment, and the time. The parts stack at the
+    /// The icon, the name and the time. The parts stack at the
     /// largest text sizes.
     private func choiceLabel(_ choice: QuestionTimeChoice, isSelected: Bool) -> some View {
         let layout = dynamicTypeSize.isAccessibilitySize
@@ -132,20 +132,12 @@ struct QuestionTimeStep: View {
                 .frame(width: choiceIconWidth)
                 .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
-                Text(Self.title(for: choice))
-                    .font(PaeoniaTypography.bodyEmphasis)
-                    .foregroundStyle(.paeoniaTextPrimary)
-
-                if let subtitle = Self.subtitle(for: choice) {
-                    Text(subtitle)
-                        .font(PaeoniaTypography.caption)
-                        .foregroundStyle(.paeoniaTextSecondary)
-                }
-            }
-            .multilineTextAlignment(.leading)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            Text(Self.title(for: choice))
+                .font(PaeoniaTypography.bodyEmphasis)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             if let minutes = choice.presetMinutes ?? (isSelected ? model.customMinutes : nil) {
                 Text(Self.timeText(minutes))
@@ -232,15 +224,6 @@ struct QuestionTimeStep: View {
         case .lunch: .onboardingQuestionTimeLunchTitle
         case .evening: .onboardingQuestionTimeEveningTitle
         case .custom: .onboardingQuestionTimeCustomTitle
-        }
-    }
-
-    private static func subtitle(for choice: QuestionTimeChoice) -> LocalizedStringResource? {
-        switch choice {
-        case .morning: .onboardingQuestionTimeMorningSubtitle
-        case .lunch: .onboardingQuestionTimeLunchSubtitle
-        case .evening: .onboardingQuestionTimeEveningSubtitle
-        case .custom: nil
         }
     }
 }

@@ -92,13 +92,8 @@ struct HomeMailCard: View {
 
     private var header: some View {
         HStack(alignment: .firstTextBaseline, spacing: PaeoniaSpacing.space12) {
-            Label {
-                Text(.mailCardTitle)
-            } icon: {
-                Image(systemName: "envelope.fill")
-            }
-            .labelStyle(.titleAndIcon)
-            .paeoniaEyebrowStyle(foreground: .paeoniaAccentPrimary)
+            Text(.mailCardTitle)
+                .paeoniaEyebrowStyle(foreground: .paeoniaAccentPrimary)
             Spacer(minLength: PaeoniaSpacing.space8)
             mailboxButton
         }
@@ -111,15 +106,10 @@ struct HomeMailCard: View {
         let width = min(artWidth, 120)
         return layout {
             MailSealedEnvelope(width: width)
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
-                Text(title(waiting: waiting.count))
-                    .font(PaeoniaTypography.bodyEmphasis)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                Text(.mailCardWaitingMessage)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
-            }
-            .fixedSize(horizontal: false, vertical: true)
+            Text(title(waiting: waiting.count))
+                .font(PaeoniaTypography.bodyEmphasis)
+                .foregroundStyle(.paeoniaTextPrimary)
+                .fixedSize(horizontal: false, vertical: true)
             if !dynamicTypeSize.isAccessibilitySize {
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")

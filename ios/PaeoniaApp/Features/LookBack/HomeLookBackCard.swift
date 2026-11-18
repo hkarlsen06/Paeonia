@@ -47,13 +47,8 @@ struct HomeLookBackCard: View {
     }
 
     private var eyebrowLabel: some View {
-        Label {
-            Text(eyebrow)
-        } icon: {
-            Image(systemName: "clock.arrow.circlepath")
-        }
-        .labelStyle(.titleAndIcon)
-        .paeoniaEyebrowStyle(foreground: .paeoniaAccentPrimary)
+        Text(eyebrow)
+            .paeoniaEyebrowStyle(foreground: .paeoniaAccentPrimary)
     }
 
     private var eyebrow: LocalizedStringResource {

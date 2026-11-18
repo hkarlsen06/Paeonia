@@ -9746,13 +9746,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ answered. Tap to see it."
+            "value" : "%@ answered."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ har svart. Trykk for å se svaret."
+            "value" : "%@ har svart."
           }
         }
       }
@@ -25665,24 +25665,6 @@
         }
       }
     },
-    "mail.card.waitingMessage" : {
-      "comment" : "Line on the Mail card under the title when a letter from the partner waits to be opened",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tap to open it."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trykk for å åpne det."
-          }
-        }
-      }
-    },
     "mail.card.waitingOne" : {
       "comment" : "Title of the Mail card when one letter from the partner waits to be opened. %@ is the partner's name",
       "extractionState" : "manual",
@@ -27526,13 +27508,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sealed. Tap to open."
+            "value" : "Sealed"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Forseglet. Trykk for å åpne."
+            "value" : "Forseglet"
           }
         }
       }
@@ -32879,24 +32861,6 @@
         }
       }
     },
-    "onboarding.questionTime.evening.subtitle" : {
-      "comment" : "Small line under the Evening choice. A concrete moment from the day.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "When the day winds down"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Når dagen roer seg"
-          }
-        }
-      }
-    },
     "onboarding.questionTime.evening.title" : {
       "comment" : "Question reminder choice for the evening, at 20:00. The time shows next to it.",
       "extractionState" : "manual",
@@ -32911,24 +32875,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kveld"
-          }
-        }
-      }
-    },
-    "onboarding.questionTime.lunch.subtitle" : {
-      "comment" : "Small line under the Lunch choice. A concrete moment from the day.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "On your lunch break"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I lunsjpausen"
           }
         }
       }
@@ -32983,24 +32929,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Velg et tidspunkt som passer dagen din, så minner vi deg på det da. Vi sier også fra med en gang partneren din blir med."
-          }
-        }
-      }
-    },
-    "onboarding.questionTime.morning.subtitle" : {
-      "comment" : "Small line under the Morning choice. A concrete moment from the day.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "With your morning coffee"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Til morgenkaffen"
           }
         }
       }
