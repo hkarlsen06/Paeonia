@@ -119,6 +119,7 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 
 - [ ] Small iPhone layout pass.
 - [x] iPad layout pass, in portrait, landscape and split view. Done on 2026-11-17 on the iPad Air 11-inch simulator, with one scenario per screen in both orientations and the tabs in narrow, half-width and short windows.
+- [ ] Video call on a real iPhone Duo, unfolded and closed, held upright and on its side. Needs a device. The call must stand upright on both phones and use the camera beside the screen in use. The open question in [the calling plan](calling-plan.md#open-questions) says what the simulator showed.
 - [ ] Latest supported iOS version pass.
 - [ ] Minimum supported iOS version pass.
 - [ ] Complete the device-specific release gate in [the accessibility report](accessibility-report.md), including real VoiceOver and Voice Control journeys. A smoke check or automated audit does not close this gate.
