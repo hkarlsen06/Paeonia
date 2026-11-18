@@ -8,7 +8,8 @@ struct PairingJoinView: View {
     let viewModel: PairingJoinViewModel
     /// The saved partner code. Nil only for a moment while the screen leaves.
     let code: String?
-    let currentUserID: String?
+    /// This person. A former partner's screen shows their photo next to the partner's.
+    let session: AuthSession?
     /// The joiner has no subscription of their own, so this screen stands in for
     /// the paywall. It says the partner's subscription covers them and keeps the
     /// paywall's sign out and delete account links.
@@ -41,13 +42,9 @@ struct PairingJoinView: View {
             PaeoniaScreenScroll {
                 // Waiting for the inviter is a new step, so the screen fades to it whole
                 // instead of reflowing text in place.
-                PairingJoinInviterContent(
-                    preview: shownPreview,
-                    showsCoverage: replacesPaywall,
-                    isWaitingForPartner: showsWaiting
-                )
-                .id(showsWaiting)
-                .transition(.opacity)
+                content
+                    .id(showsWaiting)
+                    .transition(.opacity)
             }
 
             if shownPreview == nil {
@@ -107,6 +104,26 @@ struct PairingJoinView: View {
 
     // MARK: - Layout
 
+    /// A former partner whose shared things can still come back gets the restore
+    /// offer, and everyone else the plain join.
+    @ViewBuilder
+    private var content: some View {
+        if let shownPreview, isRestoreOffer {
+            PairingJoinRestoreContent(
+                preview: shownPreview,
+                session: session,
+                showsCoverage: replacesPaywall,
+                isWaitingForPartner: showsWaiting
+            )
+        } else {
+            PairingJoinInviterContent(preview: shownPreview, showsCoverage: replacesPaywall)
+        }
+    }
+
+    private var isRestoreOffer: Bool {
+        shownPreview?.canRestore == true || showsWaiting
+    }
+
     /// A quiet spinner while the code is checked, or a retry when the check could
     /// not finish. The bottom buttons stay, so the person can always use another
     /// code or go back.
@@ -135,43 +152,26 @@ struct PairingJoinView: View {
 
     private var actions: some View {
         VStack(spacing: PaeoniaSpacing.space4) {
-            joinButtons
+            if isRestoreOffer {
+                restoreButtons
+                moreOptionsMenu
+            } else {
+                joinButton(PairingJoinCopy.title(for: shownPreview), restore: false, id: "pairing.join.accept")
+                    .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: viewModel.isAccepting || didJoin))
+                    .disabled(!canJoin)
 
-            if !showsWaiting {
                 quietButton(.pairingJoinOtherCode) {
                     isEnteringCode = true
                 }
 
                 quietButton(.pairingJoinNoCode, action: onForgetCode)
-            }
 
-            if replacesPaywall {
-                accountActions
+                if replacesPaywall {
+                    accountActions
+                }
             }
         }
         .disabled(viewModel.isAccepting || didJoin)
-    }
-
-    /// One Join button, or the two restore choices when the two can bring back what
-    /// they had, or only "Start fresh instead" while the inviter decides.
-    @ViewBuilder
-    private var joinButtons: some View {
-        let isFreshLoading = (viewModel.isAccepting && !restoreChosen) || didJoin
-        if showsWaiting {
-            joinButton(.pairingRestoreWaitingStartFresh, restore: false, id: "pairing.join.restore.startFreshInstead")
-                .buttonStyle(PaeoniaSecondaryButtonStyle(isLoading: isFreshLoading))
-        } else if shownPreview?.canRestore == true {
-            joinButton(.pairingRestoreBringBack, restore: true, id: "pairing.join.restore.bringBack")
-                .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: viewModel.isAccepting && restoreChosen))
-                .disabled(!canJoin)
-            joinButton(.pairingRestoreStartFresh, restore: false, id: "pairing.join.restore.startFresh")
-                .buttonStyle(PaeoniaSecondaryButtonStyle(isLoading: isFreshLoading))
-                .disabled(!canJoin)
-        } else {
-            joinButton(PairingJoinCopy.title(for: shownPreview), restore: false, id: "pairing.join.accept")
-                .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: viewModel.isAccepting || didJoin))
-                .disabled(!canJoin)
-        }
     }
 
     private func joinButton(_ title: LocalizedStringResource, restore: Bool, id: String) -> some View {
@@ -179,6 +179,7 @@ struct PairingJoinView: View {
             join(restore: restore)
         } label: {
             Text(title)
+                .frame(maxWidth: .infinity)
         }
         .accessibilityIdentifier(id)
     }
@@ -196,40 +197,13 @@ struct PairingJoinView: View {
         .buttonStyle(PaeoniaQuietButtonStyle())
     }
 
-    /// The same quiet links the paywall and profile setup have.
-    private var accountActions: some View {
-        HStack(spacing: PaeoniaSpacing.space12) {
-            Button(action: onSignOut) {
-                accountActionLabel(.authSignOutButton)
-            }
-
-            Text(verbatim: "·")
-                .accessibilityHidden(true)
-
-            Button {
-                isConfirmingDelete = true
-            } label: {
-                accountActionLabel(.authDeleteAccountButton)
-            }
-        }
-        .buttonStyle(.plain)
-        .font(PaeoniaTypography.caption)
-        .foregroundStyle(.paeoniaTextTertiary)
-    }
-
-    private func accountActionLabel(_ title: LocalizedStringResource) -> some View {
-        Text(title)
-            .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
-            .contentShape(Rectangle())
-    }
-
     // MARK: - Actions
 
     /// A code that cannot work anymore is forgotten, which takes the person back to
     /// the paywall or the invite screen. The banner says why.
     private func checkCode() async {
         guard let code,
-              !(await viewModel.checkCode(code, currentUserID: currentUserID)),
+              !(await viewModel.checkCode(code, currentUserID: session?.id)),
               let error = viewModel.lastError,
               error.isFinal
         else {
@@ -266,5 +240,100 @@ struct PairingJoinView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Restore and account actions
+
+extension PairingJoinView {
+    /// "Bring it back" first and "Start fresh" quieter under it, or only "Start
+    /// fresh instead" while the inviter decides.
+    @ViewBuilder
+    private var restoreButtons: some View {
+        let isFreshLoading = (viewModel.isAccepting && !restoreChosen) || didJoin
+        if showsWaiting {
+            joinButton(.pairingRestoreWaitingStartFresh, restore: false, id: "pairing.join.restore.startFreshInstead")
+                .buttonStyle(PaeoniaSecondaryButtonStyle(isLoading: isFreshLoading))
+        } else {
+            joinButton(.pairingRestoreBringBack, restore: true, id: "pairing.join.restore.bringBack")
+                .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: viewModel.isAccepting && restoreChosen))
+                .disabled(!canJoin)
+            joinButton(.pairingRestoreStartFresh, restore: false, id: "pairing.join.restore.startFresh")
+                .buttonStyle(PaeoniaQuietButtonStyle(isLoading: isFreshLoading))
+                .disabled(!canJoin)
+        }
+    }
+
+    /// The restore offer shows only its two choices. This menu holds the other ways
+    /// out, which the plain join shows as links.
+    @ViewBuilder
+    private var moreOptionsMenu: some View {
+        if !showsWaiting || replacesPaywall {
+            Menu {
+                if !showsWaiting {
+                    Button {
+                        isEnteringCode = true
+                    } label: {
+                        Label { Text(.pairingJoinOtherCode) } icon: { Image(systemName: "number") }
+                    }
+
+                    Button(action: onForgetCode) {
+                        Label { Text(.pairingJoinNoCode) } icon: { Image(systemName: "person.badge.plus") }
+                    }
+                }
+
+                if replacesPaywall {
+                    Section {
+                        Button(action: onSignOut) {
+                            Label { Text(.authSignOutButton) } icon: {
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                            }
+                        }
+
+                        Button(role: .destructive) {
+                            isConfirmingDelete = true
+                        } label: {
+                            Label { Text(.authDeleteAccountButton) } icon: { Image(systemName: "trash") }
+                        }
+                    }
+                }
+            } label: {
+                Text(.pairingRestoreMoreOptions)
+                    .font(PaeoniaTypography.caption)
+                    .foregroundStyle(.paeoniaTextTertiary)
+                    .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+                    .contentShape(Rectangle())
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("pairing.join.restore.moreOptions")
+        }
+    }
+
+    /// The same quiet links the paywall and profile setup have.
+    private var accountActions: some View {
+        HStack(spacing: PaeoniaSpacing.space12) {
+            Button(action: onSignOut) {
+                accountActionLabel(.authSignOutButton)
+            }
+
+            Text(verbatim: "·")
+                .accessibilityHidden(true)
+
+            Button {
+                isConfirmingDelete = true
+            } label: {
+                accountActionLabel(.authDeleteAccountButton)
+            }
+        }
+        .buttonStyle(.plain)
+        .font(PaeoniaTypography.caption)
+        .foregroundStyle(.paeoniaTextTertiary)
+    }
+
+    private func accountActionLabel(_ title: LocalizedStringResource) -> some View {
+        Text(title)
+            .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+            .contentShape(Rectangle())
     }
 }

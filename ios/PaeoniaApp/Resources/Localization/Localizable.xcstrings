@@ -34373,6 +34373,60 @@
         }
       }
     },
+    "pairing.restore.comesBack.partner" : {
+      "comment" : "Heading over the list of things that come back on the join screen for a former partner. %@ is the partner's name. They must agree too.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comes back if %@ says yes"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kommer tilbake hvis %@ sier ja"
+          }
+        }
+      }
+    },
+    "pairing.restore.comesBack.partner.fallback" : {
+      "comment" : "Heading over the list of things that come back when the former partner's name is not available. They must agree too.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comes back if your partner says yes"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kommer tilbake hvis partneren din sier ja"
+          }
+        }
+      }
+    },
+    "pairing.restore.comesBack.you" : {
+      "comment" : "Heading over the list of things that come back, on the screen where the person answers a former partner's wish to get their shared things back.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comes back if you say yes"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kommer tilbake hvis du sier ja"
+          }
+        }
+      }
+    },
     "pairing.restore.gone" : {
       "comment" : "Line on both restore screens. Says what was deleted when the relationship ended and never comes back.",
       "extractionState" : "manual",
@@ -34391,56 +34445,182 @@
         }
       }
     },
-    "pairing.restore.offer.message" : {
-      "comment" : "Join screen line under the restore heading. %@ is the partner's name. They must agree too before anything comes back.",
+    "pairing.restore.item.answers" : {
+      "comment" : "Item in the list of things that come back when a couple gets back together: their answers to daily questions.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your answers, chats, memories, drawings, photos and voice messages come back if %@ says yes too."
+            "value" : "Answers"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Svar, samtaler, minner, tegninger, bilder og talemeldinger kommer tilbake hvis %@ også sier ja."
+            "value" : "Svar"
           }
         }
       }
     },
-    "pairing.restore.offer.message.fallback" : {
-      "comment" : "Join screen line under the restore heading when the partner's name is not available.",
+    "pairing.restore.item.chats" : {
+      "comment" : "Item in the list of things that come back when a couple gets back together: their chat messages.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your answers, chats, memories, drawings, photos and voice messages come back if your partner says yes too."
+            "value" : "Chats"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Svar, samtaler, minner, tegninger, bilder og talemeldinger kommer tilbake hvis partneren din også sier ja."
+            "value" : "Samtaler"
+          }
+        }
+      }
+    },
+    "pairing.restore.item.drawings" : {
+      "comment" : "Item in the list of things that come back when a couple gets back together: drawings they sent each other.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drawings"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tegninger"
+          }
+        }
+      }
+    },
+    "pairing.restore.item.memories" : {
+      "comment" : "Item in the list of things that come back when a couple gets back together: their saved memories.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Memories"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minner"
+          }
+        }
+      }
+    },
+    "pairing.restore.item.photos" : {
+      "comment" : "Item in the list of things that come back when a couple gets back together: photos they shared.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photos"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilder"
+          }
+        }
+      }
+    },
+    "pairing.restore.item.voiceMessages" : {
+      "comment" : "Item in the list of things that come back when a couple gets back together: voice messages.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice messages"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Talemeldinger"
+          }
+        }
+      }
+    },
+    "pairing.restore.moreOptions" : {
+      "comment" : "Small button at the bottom of the join screen for a former partner. Opens a menu with the less common choices: another code, inviting instead, logging out and deleting the account.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More options"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flere valg"
+          }
+        }
+      }
+    },
+    "pairing.restore.offer.message" : {
+      "comment" : "Line under the title of the join screen for a former partner. What the two shared before is still kept, and the buttons below let the person get it back.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What you shared before is still saved."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Det dere delte før, er fortsatt lagret."
           }
         }
       }
     },
     "pairing.restore.offer.title" : {
-      "comment" : "Heading on the join screen when the person and the code's owner were a couple before and their shared things can still come back.",
+      "comment" : "Title of the join screen when the person and the code's owner were a couple before and their shared things can still come back. %@ is the former partner's name.",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bring back what you had?"
+            "value" : "You and %@, together again"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hente tilbake det dere hadde?"
+            "value" : "Du og %@, sammen igjen"
+          }
+        }
+      }
+    },
+    "pairing.restore.offer.title.fallback" : {
+      "comment" : "Title of the join screen for a former partner when their name is not available.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You and your partner, together again"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du og partneren din, sammen igjen"
           }
         }
       }
@@ -34477,24 +34657,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Uansett blir du og partneren din koblet sammen."
-          }
-        }
-      }
-    },
-    "pairing.restore.request.message" : {
-      "comment" : "Line on the restore answer screen. Says what comes back if the person says yes.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "If you say yes, your answers, chats, memories, drawings, photos and voice messages come back."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sier du ja, kommer svar, samtaler, minner, tegninger, bilder og talemeldinger tilbake."
           }
         }
       }

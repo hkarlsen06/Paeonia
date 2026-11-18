@@ -48,6 +48,18 @@
       )
     }
 
+    /// `completeSession` with Alex's photo, for screens that show both partners' faces.
+    static var photoSession: AuthSession {
+      AuthSession(
+        id: currentUserID.uuidString,
+        provider: .development,
+        displayName: "Alex",
+        timeZoneID: "Europe/Oslo",
+        profilePhotoAssetID: DeveloperAvatarFixture.ownPhoto,
+        profileStatus: .complete
+      )
+    }
+
     static func memoryRecords() -> [MemoryRecord] {
       [
         memoryRecord(

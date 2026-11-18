@@ -5,6 +5,8 @@ import SwiftUI
 /// they answer, and either answer pairs the two.
 struct RelationshipRestoreRequestView: View {
     let request: RemoteRestoreRequest
+    /// This person, for their own photo next to the partner's.
+    let session: AuthSession?
     /// Called once the answer went through, so the root checks access again.
     let onAnswered: () -> Void
 
@@ -14,15 +16,15 @@ struct RelationshipRestoreRequestView: View {
     /// - Parameter model: A local flow's model. Nil uses the live server.
     init(
         request: RemoteRestoreRequest,
+        session: AuthSession?,
         model: RelationshipRestoreRequestModel? = nil,
         onAnswered: @escaping () -> Void
     ) {
         self.request = request
+        self.session = session
         _model = State(initialValue: model ?? RelationshipRestoreRequestModel())
         self.onAnswered = onAnswered
     }
-
-    private static let avatarSize: CGFloat = 132
 
     private var partnerName: String? {
         request.partnerName?.trimmedNonEmpty
@@ -31,37 +33,35 @@ struct RelationshipRestoreRequestView: View {
     var body: some View {
         PaeoniaScreenScroll {
             VStack(spacing: PaeoniaSpacing.space24) {
-                PaeoniaProfilePhotoAvatar(
-                    mediaAssetID: request.partnerProfilePhotoAssetID,
-                    name: partnerName ?? "",
-                    tint: .paeoniaPartnerTwo,
-                    size: Self.avatarSize
+                RelationshipRestoreCouple(
+                    ownName: session?.displayName ?? "",
+                    ownPhotoAssetID: session?.profilePhotoAssetID,
+                    partnerName: partnerName ?? "",
+                    partnerPhotoAssetID: request.partnerProfilePhotoAssetID
                 )
-                .accessibilityHidden(true)
                 .screenEntrance(order: 1)
 
-                Text(partnerName.map { .pairingRestoreRequestTitle($0) } ?? .pairingRestoreRequestTitleFallback)
-                    .font(PaeoniaTypography.title)
-                    .foregroundStyle(.paeoniaTextPrimary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityAddTraits(.isHeader)
-                    .screenEntrance(order: 2)
+                VStack(spacing: PaeoniaSpacing.space8) {
+                    Text(partnerName.map { .pairingRestoreRequestTitle($0) } ?? .pairingRestoreRequestTitleFallback)
+                        .font(PaeoniaTypography.heroTitle)
+                        .foregroundStyle(.paeoniaTextPrimary)
+                        .accessibilityAddTraits(.isHeader)
 
-                RelationshipRestoreSummary(title: nil, message: .pairingRestoreRequestMessage)
-                    .screenEntrance(order: 3)
+                    Text(partnerName.map { .pairingRestoreRequestEither($0) } ?? .pairingRestoreRequestEitherFallback)
+                        .font(PaeoniaTypography.body)
+                        .foregroundStyle(.paeoniaTextSecondary)
+                }
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .screenEntrance(order: 2)
 
-                Text(partnerName.map { .pairingRestoreRequestEither($0) } ?? .pairingRestoreRequestEitherFallback)
-                    .font(PaeoniaTypography.caption)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
+                RelationshipRestoreSummary(title: .pairingRestoreComesBackYou)
                     .screenEntrance(order: 3)
             }
             .frame(maxWidth: .infinity)
         }
         .paeoniaBottomBar(spacing: 0) {
-            VStack(spacing: PaeoniaSpacing.space8) {
+            VStack(spacing: PaeoniaSpacing.space4) {
                 Button {
                     answer(restore: true)
                 } label: {
@@ -74,8 +74,10 @@ struct RelationshipRestoreRequestView: View {
                     answer(restore: false)
                 } label: {
                     Text(.pairingRestoreStartFresh)
+                        .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.compactButtonHeight)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(PaeoniaSecondaryButtonStyle(isLoading: model.sendingAnswer == false))
+                .buttonStyle(PaeoniaQuietButtonStyle(isLoading: model.sendingAnswer == false))
                 .accessibilityIdentifier("pairing.restore.request.startFresh")
             }
             .disabled(model.sendingAnswer != nil)

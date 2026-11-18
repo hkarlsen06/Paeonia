@@ -163,6 +163,7 @@ extension RootView {
         if let request = viewModel.currentRestoreRequest {
             RelationshipRestoreRequestView(
                 request: request,
+                session: viewModel.currentSession,
                 model: featureDependencies.restoreRequestModel,
                 onAnswered: refreshPairing
             )
@@ -251,7 +252,7 @@ extension RootView {
         PairingJoinView(
             viewModel: pairingJoinViewModel,
             code: pendingJoinInviteCode,
-            currentUserID: viewModel.currentSession?.id,
+            session: viewModel.currentSession,
             replacesPaywall: viewModel.state == .limitedAuthenticated,
             onSubmitCode: submitJoinCode,
             onAccepted: inviteAccepted,

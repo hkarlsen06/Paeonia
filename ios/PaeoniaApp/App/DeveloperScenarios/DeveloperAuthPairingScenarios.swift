@@ -75,6 +75,7 @@
               partnerProfilePhotoAssetID: DeveloperAvatarFixture.partnerPhoto,
               requestedAt: DeveloperScenarioFixture.now
             ),
+            session: DeveloperScenarioFixture.photoSession,
             model: RelationshipRestoreRequestModel(
               service: DeveloperScenarioPairingService(mode: .ready),
               operationProvider: DeveloperScenarioOperationProvider()
@@ -162,7 +163,7 @@
         PairingJoinView(
           viewModel: viewModel,
           code: "LOVE26",
-          currentUserID: DeveloperScenarioFixture.currentUserID.uuidString,
+          session: DeveloperScenarioFixture.photoSession,
           replacesPaywall: true,
           onSubmitCode: { _ in true },
           onAccepted: {},
@@ -171,6 +172,15 @@
           onDeleteAccount: {}
         )
       }
+      .environment(\.profilePhotoImageProvider, DeveloperJoinPhotoProvider())
+    }
+  }
+
+  /// Alex's photo by its asset, and Robin's for the invite preview, which has no asset.
+  private nonisolated struct DeveloperJoinPhotoProvider: ProfilePhotoImageProviding {
+    // swiftlint:disable:next async_without_await
+    func profilePhotoData(for mediaAssetID: UUID?) async -> Data? {
+      DeveloperAvatarFixture.photoData(for: mediaAssetID ?? DeveloperAvatarFixture.partnerPhoto)
     }
   }
 
