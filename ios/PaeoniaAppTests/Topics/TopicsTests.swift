@@ -228,6 +228,7 @@ private actor StubTopicsGateway: TopicsGateway {
         skipCalls.append((questionID, skipped))
         if let skipError { throw skipError }
     }
+    func setPrivateTopicsConsent(_: Bool, notice _: String) {}
     nonisolated func topicUpdates(key _: String) -> AsyncStream<RemoteTopicDetail> { AsyncStream { $0.finish() } }
 }
 
@@ -255,7 +256,9 @@ private actor InMemoryTopicsCache: TopicsCaching {
 @MainActor
 struct TopicsViewModelTests {
     private func makeViewModel() async throws -> (TopicsViewModel, StubTopicsGateway) {
-        let overview = try decode(RemoteTopicsOverview.self, #"{"topics":[\#(summaryJSON())]}"#)
+        let overview = try decode(
+            RemoteTopicsOverview.self, #"{"topics":[\#(summaryJSON())],"private_topics_consented":false}"#
+        )
         let gateway = StubTopicsGateway(overview: overview, detail: try decode(RemoteTopicDetail.self, detailJSON()))
         let viewModel = TopicsViewModel(
             gateway: gateway,
@@ -284,7 +287,7 @@ struct TopicsViewModelTests {
         await viewModel.follow("travel_and_places")
         #expect(viewModel.items["travel_and_places"] != nil)
 
-        let empty = #"{"topics":[]}"#
+        let empty = #"{"topics":[],"private_topics_consented":false}"#
         await gateway.setOverview(try decode(RemoteTopicsOverview.self, empty))
         await viewModel.refreshOverview()
         #expect(viewModel.items["travel_and_places"] == nil)

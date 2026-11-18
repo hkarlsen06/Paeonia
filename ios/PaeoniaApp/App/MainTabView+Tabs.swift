@@ -330,6 +330,10 @@ extension MainTabView {
                         .id(destination.id)
                 }
         }
+        .sheet(item: $privateTopicAwaitingConsent) { privateTopicConsentSheet(for: $0) }
+        .onChange(of: topicsViewModel.hasPrivateTopicsConsent) {
+            closePrivateTopicsWithoutConsent()
+        }
     }
 
     private var questionsContent: some View {
@@ -370,7 +374,7 @@ extension MainTabView {
             onOpen: openTopics,
             shelfTopics: topicsViewModel.overview,
             newQuestionCount: topicsViewModel.newQuestionCount(for:),
-            onOpenTopic: { questionsPath.append(.topic($0)) },
+            onOpenTopic: openTopic,
             waitingQuestions: topicsViewModel.waitingQuestions,
             topicTitles: topicsViewModel.titlesByKey
         )
@@ -382,6 +386,8 @@ extension MainTabView {
                 .searchToolbarButton(action: openSearch)
                 .analyticsScreen("settings")
         }
+        // Privacy and safety has the switch for private topics.
+        .environment(topicsViewModel)
     }
 
     private var settingsView: some View {

@@ -402,7 +402,7 @@
       "In-app preferences while iOS notifications are off"
     )
     static let privacySafety = settingsScreen(
-      "privacy-safety", "Privacy & safety", "Data requests and safety destinations"
+      "privacy-safety", "Privacy & safety", "Data requests, the Flirt switch and safety destinations"
     )
     static let reportAndLeave = settingsScreen(
       "report-and-leave", "Report and leave", "Conduct report form without submitting remotely"

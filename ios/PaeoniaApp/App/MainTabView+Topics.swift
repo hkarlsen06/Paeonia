@@ -17,7 +17,7 @@ extension MainTabView {
         case .topics:
             TopicsShelfView(
                 viewModel: topicsViewModel,
-                onOpenTopic: { questionsPath.append(.topic($0)) }
+                onOpenTopic: openTopic
             )
         case let .topic(key):
             TopicScreen(
@@ -31,6 +31,36 @@ extension MainTabView {
             // Hidden before the chat is pushed, like the Questions tab does, so the
             // bar never shows over the chat's composer.
             .toolbarVisibility(dailyChatQuestion == nil ? .visible : .hidden, for: .tabBar)
+        }
+    }
+
+    /// Opens a topic. A private one (Flirt) asks first, until this person has said yes.
+    func openTopic(_ key: String) {
+        if topicsViewModel.needsPrivateTopicsConsent(toOpen: key) {
+            privateTopicAwaitingConsent = topicsViewModel.topic(key)
+        } else {
+            questionsPath.append(.topic(key))
+        }
+    }
+
+    /// The question asked before a private topic opens. "Not now" leaves it closed.
+    func privateTopicConsentSheet(for topic: TopicSummary) -> some View {
+        PrivateTopicConsentSheet(
+            topicKey: topic.id,
+            topicName: topic.title,
+            viewModel: topicsViewModel,
+            onConsented: {
+                privateTopicAwaitingConsent = nil
+                questionsPath.append(.topic(topic.id))
+            }
+        )
+    }
+
+    /// A private topic closes when the yes is taken back, here or on another phone.
+    func closePrivateTopicsWithoutConsent() {
+        questionsPath.removeAll { destination in
+            guard case let .topic(key) = destination else { return false }
+            return topicsViewModel.needsPrivateTopicsConsent(toOpen: key)
         }
     }
 

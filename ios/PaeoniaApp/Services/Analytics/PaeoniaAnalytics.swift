@@ -22,7 +22,7 @@ enum PaeoniaAnalytics {
     /// Server functions that are not counted. Some are called so often, or so
     /// mechanically, that counting them says nothing about what people use.
     /// The rest would tell PostHog about reports, a relationship ending, privacy
-    /// requests or account deletion.
+    /// requests, account deletion or a person's yes to private topics.
     nonisolated private static let uncountedFunctions: Set<String> = [
         "access:get_or_create_app_account_token",
         "access:verify_purchase",
@@ -49,6 +49,7 @@ enum PaeoniaAnalytics {
         "relationship:leave_relationship",
         "relationship:mark_relationship_ended_notice_seen",
         "reports:submit_leave_and_report",
+        "topics:set_private_topics_consent",
         "widget:create_widget_live_ticket",
         "widget:get_or_create_widget_canvas",
         "widget:register_widget_push_device",

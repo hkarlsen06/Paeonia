@@ -6,6 +6,9 @@ nonisolated protocol TopicsGateway: Sendable {
     func loadOverview() async throws -> RemoteTopicsOverview
     func loadTopic(key: String) async throws -> RemoteTopicDetail
     func setSkipped(questionID: UUID, skipped: Bool) async throws
+    /// Saves this person's yes to answering private topics, or takes it back, which
+    /// deletes their answers there. `notice` names the version of the question they saw.
+    func setPrivateTopicsConsent(_ consents: Bool, notice: String) async throws
     /// Follows one topic while its screen is open. Ends when the consuming task is cancelled.
     func topicUpdates(key: String) -> AsyncStream<RemoteTopicDetail>
 }
@@ -34,6 +37,13 @@ nonisolated struct LiveTopicsGateway: TopicsGateway {
         try await client.mutation(
             "topics:set_topic_question_skipped",
             args: TopicSkipRequest(questionID: questionID, skipped: skipped)
+        )
+    }
+
+    func setPrivateTopicsConsent(_ consents: Bool, notice: String) async throws {
+        try await client.mutation(
+            "topics:set_private_topics_consent",
+            args: PrivateTopicsConsentRequest(consents: consents, notice: notice)
         )
     }
 
@@ -69,5 +79,15 @@ nonisolated struct TopicSkipRequest: Encodable {
     enum CodingKeys: String, CodingKey {
         case questionID = "p_question_id"
         case skipped = "p_skipped"
+    }
+}
+
+nonisolated struct PrivateTopicsConsentRequest: Encodable {
+    let consents: Bool
+    let notice: String
+
+    enum CodingKeys: String, CodingKey {
+        case consents = "p_consents"
+        case notice = "p_notice"
     }
 }

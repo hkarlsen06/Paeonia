@@ -38459,6 +38459,114 @@
         }
       }
     },
+    "privacySafety.privateTopics.deleted.message" : {
+      "comment" : "Banner shown after a person turned off a private topic and their answers there were deleted. The placeholder is the topic's name, such as Flirt.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your %@ answers are deleted."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@-svarene dine er slettet."
+          }
+        }
+      }
+    },
+    "privacySafety.privateTopics.sectionTitle" : {
+      "comment" : "Section title on the privacy and safety screen above the switch for private topics such as Flirt, whose questions are more intimate than the rest of the app",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personal questions"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personlige spørsmål"
+          }
+        }
+      }
+    },
+    "privacySafety.privateTopics.toggleDescription" : {
+      "comment" : "Explains the switch for a private topic in Privacy and safety. The placeholder is the topic's name, such as Flirt, and appears twice.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your answers in %1$@ are more intimate than the rest of Paeonia, so Paeonia asks before it saves them. Turning this off deletes your %1$@ answers."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svarene dine i %1$@ er mer intime enn resten av Paeonia, så Paeonia spør før de lagres. Slår du dette av, slettes %1$@-svarene dine."
+          }
+        }
+      }
+    },
+    "privacySafety.privateTopics.turnOff.confirm" : {
+      "comment" : "Destructive button that turns off a private topic and deletes the person's answers there",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn off and delete"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slå av og slett"
+          }
+        }
+      }
+    },
+    "privacySafety.privateTopics.turnOff.message" : {
+      "comment" : "Message of the confirmation shown when a person turns off a private topic. It says what is deleted and that it cannot be undone. The placeholder is the topic's name, such as Flirt.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This deletes your %@ answers and your messages about them. You can't get them back."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dette sletter %@-svarene dine og meldingene dine om dem. Du kan ikke få dem tilbake."
+          }
+        }
+      }
+    },
+    "privacySafety.privateTopics.turnOff.title" : {
+      "comment" : "Title of the confirmation shown when a person turns off a private topic in Privacy and safety. The placeholder is the topic's name, such as Flirt.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn off %@?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slå av %@?"
+          }
+        }
+      }
+    },
     "privacySafety.report.description" : {
       "comment" : "Description of report-and-leave. The placeholder is the partner name.",
       "extractionState" : "manual",
@@ -49450,6 +49558,114 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prøv igjen når du er på nett igjen."
+          }
+        }
+      }
+    },
+    "topics.privateConsent.footnote" : {
+      "comment" : "Small text on the sheet shown before a private topic opens. It says where to take the yes back and what that does. The placeholder is the topic's name, such as Flirt, and appears twice. More is the name of the last tab, and Privacy and safety is the name of a screen there.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can turn %1$@ off any time in the More tab, under Privacy and safety. That deletes your %1$@ answers."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kan slå av %1$@ når som helst i Mer-fanen, under Personvern og trygghet. Da slettes %1$@-svarene dine."
+          }
+        }
+      }
+    },
+    "topics.privateConsent.message" : {
+      "comment" : "Body of the sheet that asks for a yes before a person opens the private topic Flirt for the first time. It says what the questions are about and what Paeonia does with the answers, and ends with the question the two buttons answer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These questions are about attraction, kissing and what you like about each other, so your answers are more intimate than the rest of Paeonia. Paeonia saves them so your partner can read them, and uses them for nothing else. Is that OK?"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spørsmålene handler om tiltrekning, kyssing og hva dere liker ved hverandre, så svarene dine er mer intime enn resten av Paeonia. Paeonia lagrer dem slik at partneren din kan lese dem, og bruker dem ikke til noe annet. Er det greit?"
+          }
+        }
+      }
+    },
+    "topics.privateConsent.notNow" : {
+      "comment" : "Button that closes the sheet shown before a private topic opens, without saying yes. The topic stays closed.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not now"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ikke nå"
+          }
+        }
+      }
+    },
+    "topics.privateConsent.title" : {
+      "comment" : "Title of the sheet that asks for a yes before a person opens a private topic for the first time. The placeholder is the topic's name, such as Flirt.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is a little more personal"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ er litt mer personlig"
+          }
+        }
+      }
+    },
+    "topics.privateConsent.yes" : {
+      "comment" : "Button that says yes on the sheet shown before a private topic opens for the first time, and then opens the topic. The placeholder is the topic's name, such as Flirt.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yes, open %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ja, åpne %@"
+          }
+        }
+      }
+    },
+    "topics.privateConsent.yesTurnOn" : {
+      "comment" : "Button that says yes on the same sheet when it opens from the switch in Privacy and safety, where no topic opens afterwards. The placeholder is the topic's name, such as Flirt.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yes, turn on %@"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ja, slå på %@"
           }
         }
       }

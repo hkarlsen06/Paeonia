@@ -273,7 +273,8 @@ struct DailySubmitAnswerPendingOperationHandler: PendingSyncOperationHandling {
     }
 
     /// Server rejections that a retry can never fix: a check failed (`23514`, such as
-    /// an answer made after its day ended), the operation was replayed with different
+    /// an answer made after its day ended, or an answer in a private topic after the
+    /// person took back their yes), the operation was replayed with different
     /// content (`23505`), or the question no longer exists (`22023`). Access errors
     /// (`42501`) keep retrying, because access can come back.
     nonisolated static func isPermanentRejection(_ error: PaeoniaConvexError) -> Bool {

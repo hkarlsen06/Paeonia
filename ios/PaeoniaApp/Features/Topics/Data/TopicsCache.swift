@@ -30,7 +30,7 @@ actor FileTopicsCache: TopicsCaching {
 
     /// Bump when a stored type gains a required field. A file with another version
     /// reads as empty.
-    private static let schemaVersion = 1
+    private static let schemaVersion = 2
 
     private let directoryURL: URL
     /// Read once per person and kept, so a burst of live writes doesn't reread disk.

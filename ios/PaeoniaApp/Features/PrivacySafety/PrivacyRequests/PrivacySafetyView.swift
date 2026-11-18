@@ -14,6 +14,8 @@ struct PrivacySafetyView: View {
     @State private var isShowingCorrectionRequest = false
     /// Missing in previews and tests, which then hide the usage switch.
     @Environment(UsageSharingModel.self) private var usageSharing: UsageSharingModel?
+    /// Missing outside the paired tabs, which then hide the private topics switch.
+    @Environment(TopicsViewModel.self) private var topics: TopicsViewModel?
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -42,6 +44,10 @@ struct PrivacySafetyView: View {
 
                 if let usageSharing, PaeoniaAnalytics.isAvailable, usageSharing.userID != nil {
                     usageSection(usageSharing)
+                }
+
+                if let topics, !topics.privateTopics.isEmpty {
+                    PrivateTopicsConsentSection(topics: topics)
                 }
 
                 if let partnerUserID {

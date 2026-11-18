@@ -67,22 +67,26 @@ struct TopicsShelfView: View {
 }
 
 extension TopicsViewModel.Notice {
+    var banner: PaeoniaBannerContent {
+        switch self {
+        case let .loadFailed(failure), let .skipFailed(failure):
+            failure.topicsBanner
+        }
+    }
+}
+
+extension PaeoniaFailure {
     /// Offline says to try again when online. Anything else says something went wrong,
     /// because the connection may be fine.
-    var banner: PaeoniaBannerContent {
-        let failure: PaeoniaFailure
+    var topicsBanner: PaeoniaBannerContent {
         switch self {
-        case let .loadFailed(value), let .skipFailed(value):
-            failure = value
-        }
-        switch failure {
         case .offline:
-            return .error(
+            .error(
                 title: String(localized: .commonOfflineTitle),
                 message: String(localized: .topicsNoticeOfflineMessage)
             )
         case .other:
-            return .error(
+            .error(
                 message: String(localized: .commonActionFailedMessage)
             )
         }

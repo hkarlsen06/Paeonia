@@ -188,6 +188,8 @@ struct MainTabView: View {
     @State var isCoupleChatSlidOver = false
     /// What the Questions tab has pushed: the Topics shelf and a topic.
     @State var questionsPath: [QuestionsDestination] = []
+    /// The private topic the person tapped before saying yes to private topics.
+    @State var privateTopicAwaitingConsent: TopicSummary?
     /// The Memories tab's stack, so the Home look-back card can open a memory in it.
     @State var memoriesPath: [UUID] = []
     /// The drawing history, opened from the Home look-back card.

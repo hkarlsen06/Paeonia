@@ -4,6 +4,8 @@
   @MainActor
   struct DeveloperSettingsScenarioView: View {
     let scenario: DeveloperScenario
+    /// Privacy and safety shows the Flirt switch from the topics, here with a yes given.
+    @State private var topics = DeveloperTopicsFixture.viewModel(consented: true)
 
     var body: some View {
       switch scenario {
@@ -22,6 +24,12 @@
             service: nil,
             dataExportService: nil,
             operationProvider: DeveloperScenarioOperationProvider()
+          )
+        }
+        .environment(topics)
+        .task {
+          await topics.configure(
+            currentUserID: DeveloperScenarioFixture.currentUserID, coupleID: DeveloperScenarioFixture.coupleID
           )
         }
       case .reportAndLeave:

@@ -13,6 +13,11 @@ final class TopicsViewModel {
         case skipFailed(PaeoniaFailure)
     }
 
+    /// Names the question and privacy policy version a person says yes to before
+    /// answering private topics. Change it when either changes in a way that needs a
+    /// new yes.
+    static let privateTopicsNoticeVersion = "2026-11-18"
+
     private let gateway: (any TopicsGateway)?
     private let cache: any TopicsCaching
     private let locale: Locale
@@ -24,6 +29,11 @@ final class TopicsViewModel {
     /// The overview has been read once, from the phone or the server.
     private(set) var hasLoadedOverview = false
     private(set) var overviewFailure: PaeoniaFailure?
+    /// This person said yes to answering private topics (Flirt). The server keeps the
+    /// yes and refuses an answer there without it, so it is the same on every phone.
+    private(set) var hasPrivateTopicsConsent = false
+    /// A yes, or taking it back, is on its way to the server.
+    private(set) var isSavingPrivateTopicsConsent = false
     /// Each opened topic's questions, by topic key.
     private(set) var items: [String: [TopicQuestionItem]] = [:]
     /// Topics whose first read failed with nothing on the phone to show, and why.
@@ -47,6 +57,7 @@ final class TopicsViewModel {
     /// Skips the server accepted. The next read of their topic decides, whatever it says.
     @ObservationIgnored private var acknowledgedSkips: Set<UUID> = []
     @ObservationIgnored private var details: [String: RemoteTopicDetail] = [:]
+    @ObservationIgnored private var remoteOverview: RemoteTopicsOverview?
 
     init(
         gateway: (any TopicsGateway)? = LiveTopicsGateway.live(),
@@ -77,6 +88,9 @@ final class TopicsViewModel {
         overview = []
         hasLoadedOverview = false
         overviewFailure = nil
+        hasPrivateTopicsConsent = false
+        isSavingPrivateTopicsConsent = false
+        remoteOverview = nil
         items = [:]
         failedTopics = [:]
         pendingSkips = [:]
@@ -286,6 +300,63 @@ extension TopicsViewModel {
         notice = nil
     }
 
+    // MARK: - Private topics
+
+    /// The private topics on the shelf (Flirt). Their answers are more intimate than
+    /// the rest of the app, so a person answers there only after saying yes.
+    var privateTopics: [TopicSummary] {
+        overview.filter(\.isPrivate)
+    }
+
+    /// The private topics' names as one phrase, such as "Flirt", for copy that names them.
+    var privateTopicsName: String {
+        ListFormatter.localizedString(byJoining: privateTopics.map(\.title))
+    }
+
+    /// Whether the app asks before it opens this topic.
+    func needsPrivateTopicsConsent(toOpen key: String) -> Bool {
+        topic(key)?.isPrivate == true && !hasPrivateTopicsConsent
+    }
+
+    /// Saves this person's yes to answering private topics, or takes it back. Taking
+    /// it back deletes their answers there and their messages about them on the
+    /// server, and this phone forgets its copies and drafts. Both need a connection,
+    /// so the phone never shows a choice the server does not have. Returns nil once
+    /// the server has it, or why it did not get there, and then nothing changed.
+    func setPrivateTopicsConsent(_ consents: Bool) async -> PaeoniaFailure? {
+        guard let gateway, let currentUserID, !isSavingPrivateTopicsConsent else { return .other }
+        isSavingPrivateTopicsConsent = true
+        defer { isSavingPrivateTopicsConsent = false }
+        do {
+            try await gateway.setPrivateTopicsConsent(consents, notice: Self.privateTopicsNoticeVersion)
+        } catch {
+            return PaeoniaFailure(error)
+        }
+        guard self.currentUserID == currentUserID else { return nil }
+        // The counts change when answers are deleted, so read them again. If that
+        // read fails, the saved copy still gets the new answer.
+        var updated = try? await gateway.loadOverview()
+        if updated == nil, let remoteOverview {
+            updated = RemoteTopicsOverview(topics: remoteOverview.topics, privateTopicsConsented: consents)
+        }
+        guard let updated, self.currentUserID == currentUserID else { return nil }
+        await cache.saveOverview(updated, ownerUserID: currentUserID)
+        apply(updated)
+        return nil
+    }
+
+    /// Takes the private topics' questions, answers and drafts off this phone. Opening
+    /// one again reads it from the server.
+    private func forgetPrivateTopics() {
+        for topic in privateTopics {
+            for item in items[topic.id] ?? [] where dailyChallenge?.answerDrafts[item.id] != nil {
+                dailyChallenge?.removeStagedMedia(for: item.id)
+                dailyChallenge?.clearDraft(for: item.id)
+            }
+            close(topic.id)
+        }
+    }
+
     // MARK: - Finished moment
 
     func finishCelebration() {
@@ -334,9 +405,16 @@ extension TopicsViewModel {
     }
 
     private func apply(_ remote: RemoteTopicsOverview) {
+        // Taken back here or on another phone.
+        let tookConsentBack = hasPrivateTopicsConsent && !remote.privateTopicsConsented
+        remoteOverview = remote
         overview = remote.topics.map { TopicSummary($0, locale: locale) }.sorted { $0.sortOrder < $1.sortOrder }
+        hasPrivateTopicsConsent = remote.privateTopicsConsented
         hasLoadedOverview = true
         overviewFailure = nil
+        if tookConsentBack {
+            forgetPrivateTopics()
+        }
         // A topic that left the shelf leaves the phone: its questions, answers and
         // saved copy.
         let closed = Set(details.keys).union(items.keys).union(followTasks.keys).subtracting(shelfTopicKeys)

@@ -1,8 +1,15 @@
 import Foundation
 
-/// `topics:get_topics_overview`: every topic, in shelf order.
+/// `topics:get_topics_overview`: every topic, in shelf order, and whether this person
+/// said yes to answering private topics.
 nonisolated struct RemoteTopicsOverview: Codable, Equatable, Sendable {
     let topics: [RemoteTopicSummary]
+    let privateTopicsConsented: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case topics
+        case privateTopicsConsented = "private_topics_consented"
+    }
 }
 
 nonisolated struct RemoteTopicSummary: Codable, Equatable, Sendable {
