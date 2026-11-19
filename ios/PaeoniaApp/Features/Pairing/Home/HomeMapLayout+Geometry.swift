@@ -15,6 +15,13 @@ struct HomeMapAvatarPoints: Equatable {
         return Self(own: keep(own), partner: keep(partner))
     }
 
+    func offsetBy(_ offset: CGSize) -> Self {
+        Self(
+            own: CGPoint(x: own.x + offset.width, y: own.y + offset.height),
+            partner: CGPoint(x: partner.x + offset.width, y: partner.y + offset.height)
+        )
+    }
+
     /// Where the avatars are while the person looks around, with these as their places
     /// on the map now. Each keeps the offset `spaced` gave it on the camera the person
     /// started from, where the two places sat around `middle`. That offset turns with the
@@ -156,6 +163,16 @@ struct HomeMapScreen {
     var shortestBand: CGFloat { topInset + additionalHeaderHeight + 212 + HomeMapMetrics.fadeHeight }
     /// The map view's own height: the tallest the band can be.
     var mapHeight: CGFloat { visibleBottom + HomeMapMetrics.fadeHeight }
+    /// How far the map view reaches past the screen's sides and top. While a zoom cover is
+    /// up, iOS shrinks the scroll view that holds the cover's source card to about 91%, so
+    /// without this the map's edges would show inside the screen. The scroll view hides it
+    /// at rest. The map's own points start this far up and to the left of the page's.
+    var mapBleed: CGSize {
+        CGSize(width: (width * 0.06).rounded(), height: ((visibleBottom + bottomInset) * 0.06).rounded())
+    }
+    var mapViewSize: CGSize { CGSize(width: width + 2 * mapBleed.width, height: mapHeight + mapBleed.height) }
+    /// Takes a point in the map view's points to the page's.
+    var pageOffset: CGSize { CGSize(width: -mapBleed.width, height: -mapBleed.height) }
 }
 
 struct HomeMapMetrics {

@@ -254,4 +254,12 @@ struct HomeMapProjection: Equatable {
     let introStart: HomeMapAvatarPoints
     /// The intro flies from the faint world of the preview, so the map is already showing.
     let introFromPreview: Bool
+
+    func offsetBy(_ offset: CGSize) -> Self {
+        let points = HomeMapAvatarPoints(own: own, partner: partner).offsetBy(offset)
+        return Self(
+            own: points.own, partner: points.partner, direction: direction, zoom: zoom,
+            introProgress: introProgress, introStart: introStart.offsetBy(offset), introFromPreview: introFromPreview
+        )
+    }
 }

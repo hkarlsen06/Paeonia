@@ -23,11 +23,16 @@ struct PaeoniaTabLight: View {
     /// How far down the light reaches, as a share of the screen height.
     static let reach: CGFloat = 0.5
     var strength = 0.22
+    /// Where the glows sit, and how far they reach as a share of the frame. A frame drawn
+    /// past the screen's edges moves them onto the screen's corners.
+    var leadingCorner = UnitPoint.topLeading
+    var trailingCorner = UnitPoint.topTrailing
+    var radiusFraction: CGFloat = 1
 
     var body: some View {
         ZStack {
-            glow(.paeoniaAccentPrimary, from: .topLeading)
-            glow(.paeoniaBackdropGlow, from: .topTrailing)
+            glow(.paeoniaAccentPrimary, from: leadingCorner)
+            glow(.paeoniaBackdropGlow, from: trailingCorner)
         }
     }
 
@@ -44,7 +49,7 @@ struct PaeoniaTabLight: View {
             ],
             center: corner,
             startRadiusFraction: 0,
-            endRadiusFraction: 1
+            endRadiusFraction: radiusFraction
         )
     }
 }

@@ -285,13 +285,18 @@ struct HomeMapLayout<Header: View, Sheet: View, Footer: View>: View {
         )
     }
 
+    /// The map view's framing, with the avatars' places in the page's points.
     func framing(_ couple: HomeMapCouple, _ metrics: HomeMapMetrics) -> HomeMapLibreView.Framing {
-        HomeMapLibreView.camera(
-            current: couple.currentCoordinate,
-            partner: couple.partnerCoordinate,
-            isNear: couple.isNear,
-            area: metrics.framedBox,
-            viewSize: CGSize(width: metrics.width, height: metrics.screen.mapHeight)
+        let screen = metrics.screen
+        let framing = HomeMapLibreView.camera(
+            current: couple.currentCoordinate, partner: couple.partnerCoordinate, isNear: couple.isNear,
+            area: metrics.framedBox.offsetBy(dx: screen.mapBleed.width, dy: screen.mapBleed.height),
+            viewSize: screen.mapViewSize
+        )
+        let points = HomeMapAvatarPoints(own: framing.own, partner: framing.partner).offsetBy(screen.pageOffset)
+        return HomeMapLibreView.Framing(
+            center: framing.center, zoom: framing.zoom, direction: framing.direction,
+            own: points.own, partner: points.partner
         )
     }
 
@@ -327,20 +332,23 @@ extension HomeMapLayout {
                 explorer: explorer,
                 tiles: mapTiles,
                 onProjection: { [camera] projection in
+                    let projection = projection.offsetBy(screen.pageOffset)
                     guard camera.projection != projection else { return }
                     camera.projection = projection
                 }
             )
             // Always as tall as the map can get, so the map view never resizes while
             // the map grows or shrinks. Only the fade moves.
-            .frame(height: screen.mapHeight)
+            .frame(width: screen.mapViewSize.width, height: screen.mapViewSize.height)
             .overlay(alignment: .top) { tabLight(screen) }
             .mask(alignment: .top) {
                 // Without the couple, the world fades out above the cards.
                 couple == nil
-                    ? fadeMask(bottom: cardsTop, fadeLength: cardsTop * 0.6)
-                    : fadeMask(bottom: metrics.bandHeight, fadeLength: metrics.fadeLength)
+                    ? fadeMask(bottom: cardsTop + screen.mapBleed.height, fadeLength: cardsTop * 0.6)
+                    : fadeMask(bottom: metrics.bandHeight + screen.mapBleed.height, fadeLength: metrics.fadeLength)
             }
+            .padding(.horizontal, -screen.mapBleed.width)
+            .padding(.top, -screen.mapBleed.height)
             .opacity(mapOpacity(couple))
             // The world preview only hints at the map to come.
             .accessibilityHidden(couple == nil)
@@ -356,7 +364,7 @@ extension HomeMapLayout {
             current: couple.currentCoordinate,
             partner: couple.partnerCoordinate,
             isNear: couple.isNear,
-            framedBox: metrics.framedBox
+            framedBox: metrics.framedBox.offsetBy(dx: metrics.screen.mapBleed.width, dy: metrics.screen.mapBleed.height)
         )
     }
 
@@ -417,15 +425,25 @@ extension HomeMapLayout {
 
     /// The other tabs' light from the top, drawn over the map so Home has it too. The map is
     /// darker than the plain background, so the light is stronger here to look the same. It
-    /// stays put while the map scrolls away, like the light behind the cards.
+    /// stays put while the map scrolls away, like the light behind the cards. It covers the
+    /// whole map view, past the screen's edges, so its frame grows by one scale both ways and
+    /// its glows stay on the screen's top corners at their usual size.
     private func tabLight(_ screen: HomeMapScreen) -> some View {
-        PaeoniaTabLight(strength: 0.35)
-            .frame(height: (screen.visibleBottom + screen.bottomInset) * PaeoniaTabLight.reach)
-            .visualEffect { content, proxy in
-                content.offset(y: max(0, -proxy.frame(in: .scrollView(axis: .vertical)).minY))
-            }
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
+        let bleed = screen.mapBleed
+        let height = (screen.visibleBottom + screen.bottomInset) * PaeoniaTabLight.reach
+        let frame = CGSize(width: screen.mapViewSize.width, height: height * screen.mapViewSize.width / screen.width)
+        return PaeoniaTabLight(
+            strength: 0.35,
+            leadingCorner: UnitPoint(x: bleed.width / frame.width, y: bleed.height / frame.height),
+            trailingCorner: UnitPoint(x: (bleed.width + screen.width) / frame.width, y: bleed.height / frame.height),
+            radiusFraction: screen.width / frame.width
+        )
+        .frame(width: frame.width, height: frame.height)
+        .visualEffect { content, proxy in
+            content.offset(y: max(0, -proxy.frame(in: .scrollView(axis: .vertical)).minY - bleed.height))
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     private var reservesMapSpace: Bool { mapState == .loading || couple != nil }

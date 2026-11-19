@@ -61,10 +61,14 @@ extension HomeMapLayout {
         return fitted(points, in: metrics)
     }
 
-    /// Where the map's intro takes the avatars from and to. Reduce Motion has no intro.
+    /// Where the map's intro takes the avatars from and to, in the map view's points.
+    /// Reduce Motion has no intro.
     func introSpots(_ couple: HomeMapCouple, _ metrics: HomeMapMetrics) -> HomeMapLibreView.IntroSpots? {
         guard !reduceMotion else { return nil }
-        return HomeMapLibreView.IntroSpots(waiting: waitingPoints(metrics), landing: landingPoints(couple, metrics))
+        return HomeMapLibreView.IntroSpots(
+            waiting: waitingPoints(metrics).offsetBy(metrics.screen.mapBleed),
+            landing: landingPoints(couple, metrics).offsetBy(metrics.screen.mapBleed)
+        )
     }
 
     /// Where the avatars sit once the map has framed the couple.
