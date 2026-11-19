@@ -2,7 +2,7 @@
 # Runs this worktree's backend/convex on a local Convex backend, so a branch can
 # be tested end to end on a simulator without deploying to api.paeonia.no.
 #
-#   scripts/local-backend [--reseed]
+#   scripts/local-backend [--reseed] [--host <address>]
 #
 # It runs `convex dev`, which pushes the functions again whenever a file in
 # backend/convex changes. Stop it with Ctrl-C or kill. The data stays in
@@ -26,14 +26,29 @@
 # again. Then it runs scripts/test-couple, so the test couple Shared and Panci
 # exist, paired and entitled. Reading the hosted deployment needs the admin key
 # (CONVEX_SELF_HOSTED_ADMIN_KEY, or read from one-s over ssh).
+#
+# --host is for a build on a real phone, such as the film's recordings on the
+# developer's iPhone (video/README.md). The backend listens on every address
+# either way, but convex dev gives it 127.0.0.1 as its origin, and it puts that
+# address in the upload and photo links it hands out, which a phone cannot open.
+# With --host, ios/local.xcconfig names <address>, an address of this Mac that
+# the phone reaches, such as its Wi-Fi address (ipconfig getifaddr en0). Once
+# convex dev has pushed the functions, the script runs the backend itself with
+# that address as its origin, and it then no longer pushes changes to
+# backend/convex.
 set -euo pipefail
 
+usage() { echo "usage: scripts/local-backend [--reseed] [--host <address>]" >&2; exit 64; }
 reseed=false
-case ${1:-} in
-  "") ;;
-  --reseed) reseed=true ;;
-  *) echo "usage: scripts/local-backend [--reseed]" >&2; exit 64 ;;
-esac
+host=127.0.0.1
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --reseed) reseed=true ;;
+    --host) [[ $# -gt 1 ]] || usage; host=$2; shift ;;
+    *) usage ;;
+  esac
+  shift
+done
 
 copy_vars=(INVITE_CODE_PEPPER PAEONIA_MEDIA_URL_SECRET PAEONIA_LIVE_RELAY_URL
   PAEONIA_LIVE_RELAY_SECRET POSTHOG_PERSONAL_API_KEY)
@@ -86,7 +101,7 @@ cat >"$root/ios/local.xcconfig" <<EOF
 // Written by scripts/local-backend. Debug builds of this worktree use its local
 // Convex backend and the development Clerk instance it trusts. Delete this file
 // to use api.paeonia.no and production Clerk again.
-PAEONIA_CONVEX_URL = http:/\$()/127.0.0.1:$port
+PAEONIA_CONVEX_URL = http:/\$()/$host:$port
 PAEONIA_CLERK_PUBLISHABLE_KEY = $dev_publishable_key
 EOF
 
@@ -145,13 +160,31 @@ printf '%s' "$dev_issuer" | npx convex env set CLERK_JWT_ISSUER_DOMAIN >/dev/nul
   { echo "Could not set the development Clerk instance on the local backend" >&2; exit 1; }
 wait_for pushed
 $reseed && touch "$copied"
+if [[ $host != 127.0.0.1 ]]; then
+  # The same backend and data that convex dev ran, with this Mac's address as the origin.
+  stop
+  work=$(mktemp -d)
+  state=.convex/local/default
+  config() { python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])' "$state/config.json" "$1"; }
+  for _ in $(seq 1 20); do
+    lsof -ti "tcp:$port" -sTCP:LISTEN >/dev/null || break
+    sleep 0.5
+  done
+  "$HOME/.cache/convex/binaries/$(config backendVersion)/convex-local-backend" --port "$port" \
+    --site-proxy-port "$site_port" --instance-name "$(config deploymentName)" \
+    --instance-secret "$(config instanceSecret)" --local-storage "$state/convex_local_storage" \
+    --convex-origin "http://$host:$port" --convex-site "http://$host:$site_port" \
+    "$state/convex_local_backend.sqlite3" >"$work/backend.log" 2>&1 &
+  dev_pid=$!
+  wait_for curl -fs -o /dev/null "http://127.0.0.1:$port/instance_name"
+fi
 "$root/scripts/test-couple"
 
 cat <<EOF
 
 Local backend for $root
-  Client API:   http://127.0.0.1:$port
-  HTTP actions: http://127.0.0.1:$site_port
+  Client API:   http://$host:$port
+  HTTP actions: http://$host:$site_port
 ios/local.xcconfig points Debug builds of this worktree here, with the
 development Clerk key. Build and install the app from this worktree, then sign
 in as the test couple with scripts/sim-sign-in.

@@ -237,7 +237,7 @@ class Convex:
 
     def __init__(self) -> None:
         config = ROOT / "ios/local.xcconfig"
-        port = re.search(r"127\.0\.0\.1:(\d+)", config.read_text()) if config.exists() else None
+        port = re.search(r"PAEONIA_CONVEX_URL = .*:(\d+)$", config.read_text(), re.M) if config.exists() else None
         if not port:
             raise SystemExit("No local backend for this worktree. Start scripts/local-backend first.")
         self.url = f"http://127.0.0.1:{port.group(1)}"

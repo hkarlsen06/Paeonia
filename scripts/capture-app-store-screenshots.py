@@ -100,6 +100,17 @@ the simulator when it changes it, because the status bar shows 9:41 only in
 English. The script records through agent-device, which keeps touches out of
 the video.
 
+With --device instead of --agent-device and a simulator, --record films the developer's
+iPhone from scripts/devices, which draws smoothly however busy the Mac is:
+
+    ... --record --device --screens 02-question,03-ludo,06-draw
+
+devicectl records the phone over its cable, and the taps go through scripts/devices
+iphone. Each screen launches Paeonia with launch arguments for the locale's language and
+PHONE_DEFAULTS, the phone reports Oslo until the script ends, and clean_status_bar() puts
+a 9:41 status bar over the phone's own. The phone runs a build of a worktree whose backend
+runs with scripts/local-backend --host, signed in as Hjalmar. video/README.md says how.
+
 02-question starts on Home and needs the seeding of `scripts/app-store-content
 --question-film`, which leaves today's question to Hjalmar. Before it records,
 it closes Home's Things to try together and When do you meet next, then opens
@@ -147,6 +158,7 @@ import plistlib
 import re
 import shlex
 import shutil
+import signal
 import struct
 import subprocess
 import tempfile
@@ -214,6 +226,9 @@ TYPE_DELAY_MS = 140
 REVEAL_SECONDS = 12
 # Seconds after the send tap with no snapshots. The reveal came to rest 3.6 to 5.2 s after the send in takes on this Mac.
 REVEAL_QUIET_SECONDS = 7
+# The QUESTION_CACHES a phone's take empties. On the phone, the conversation shows the earlier day at the
+# reveal only when the app keeps its copy of today's question, so that one stays.
+PHONE_QUESTION_CACHES = ("ThreadChatCache", "DailyAnswerMediaDrafts")
 # The brightness, of 255, above which a pixel is part of the answer's white letters. The pink cursor
 # (at most 170) and the grey placeholder stay under it, so the count of such pixels in the text field
 # grows with each letter and ignores the cursor's blink. At full size a letter adds 35 such pixels or
@@ -274,6 +289,17 @@ CELEBRATION_GAP = 30
 # spotlit element's accessibility label contains. The countdown card's label holds its title.
 SPOTLIGHTS = {"04-home": "countdown_title"}
 WIDGET_EXTENSION = "no.paeonia.app.widget"
+# scripts/devices drives the developer's phones. --device records on its iPhone.
+DEVICES = ROOT / "scripts/devices"
+# The status bar a phone's recordings get, as white glyphs on transparency at the phone's width, and the
+# boxes, as (x, y, width, height) in pixels, that cover the phone's own time, location arrow and back-to-app
+# link, its bars, Wi-Fi and battery, and its Dynamic Island, which a phone records as a black pill. The
+# strip's glyphs lie inside the first two. The film draws its own island over the third.
+STATUS_BAR = ROOT / "scripts/assets/app-store/status-bar-iphone.png"
+STATUS_BAR_ERASE = ((25, 40, 370, 125), (890, 62, 305, 72), (505, 34, 310, 128))
+# The defaults prepare() writes on a simulator, given to the app on a phone as launch arguments.
+PHONE_DEFAULTS = {"paeonia.games.ludo.hasZoomedBoard.v2": "YES", "games.drawAndGuess.holdHintShown": "YES",
+                  "paeonia-scenario-assistive-technology": "none"}
 # Hjalmar's seeded location, OSLO in scripts/app-store-content, which the simulator reports as its own.
 OSLO = (59.9133, 10.7389)
 
@@ -406,6 +432,47 @@ def prepare(udid, locale, family, home_screen):
     simctl("spawn", udid, "defaults", "write", BUNDLE_ID, "paeonia-scenario-assistive-technology", "none")
 
 
+def phone_udid():
+    """The UDID of the developer's iPhone, which scripts/devices drives."""
+    return re.search(r'^IPHONE_UDID="(.+)"$', DEVICES.read_text(), re.M).group(1)
+
+
+def phone_launch_arguments(locale):
+    """agent-device open flags that launch Paeonia afresh on the phone with the settings prepare() writes on a
+    simulator: the locale's language, which the app alone takes, and the Ludo and Draw & Guess hints and the
+    assistive technology override. A launch argument sets a user default for that one launch."""
+    languages, region = LANGUAGES[locale]
+    defaults = {"AppleLanguages": f"({languages})", "AppleLocale": region, **PHONE_DEFAULTS}
+    arguments = [part for key, value in defaults.items() for part in (f"-{key}", value)]
+    return ["--relaunch", *(f"--launch-args={argument}" for argument in arguments)]
+
+
+def blank_phone_caches(phone):
+    """Empties every file of QUESTION_CACHES in Paeonia's container on the phone, with Paeonia stopped.
+
+    devicectl can copy a file to the phone but not delete one. The app reads a cache file it can't decode
+    as no cache, so an empty file does what removing it does on a simulator."""
+    processes = run("xcrun", "devicectl", "device", "info", "processes", "--device", phone,
+                    capture_output=True).stdout
+    for line in processes.splitlines():
+        if re.search(r"/PaeoniaApp\.app/PaeoniaApp\s*$", line):
+            run("xcrun", "devicectl", "device", "process", "terminate", "--device", phone,
+                "--pid", line.split()[0], stdout=subprocess.DEVNULL)
+    container = ["--device", phone, "--domain-type", "appDataContainer", "--domain-identifier", BUNDLE_ID]
+    with tempfile.TemporaryDirectory() as folder:
+        empty = Path(folder) / "empty"
+        empty.touch()
+        for cache in PHONE_QUESTION_CACHES:
+            folder_on_phone = f"Library/Application Support/{cache}"
+            listing = json.loads(run("xcrun", "devicectl", "device", "info", "files", *container, "--subdirectory",
+                                     folder_on_phone, "--recurse", "--json-output", "-", "-q",
+                                     capture_output=True).stdout)
+            for item in listing["result"]["files"]:
+                if not item["resources"]["isDirectory"]:
+                    run("xcrun", "devicectl", "device", "copy", "to", *container, "--source", str(empty),
+                        "--destination", f"{folder_on_phone}/{item['relativePath']}", stdout=subprocess.DEVNULL)
+
+
 def use_large_icons(agent_device, locale, edit_mode):
     """Gives an iPhone Home Screen large app icons, which drop the labels under the widgets.
 
@@ -415,7 +482,7 @@ def use_large_icons(agent_device, locale, edit_mode):
     that closes the Customize sheet and ends it.
     """
     def device(*args, **kwargs):
-        return run(*agent_device[:1], *args, *agent_device[1:], **kwargs)
+        return run(*agent_device(*args), **kwargs)
 
     press, dismiss = edit_mode
     device("open", "com.apple.springboard", stdout=subprocess.DEVNULL)
@@ -490,7 +557,7 @@ def capture(udid, path, size):
 def snapshot_nodes(agent_device, interactive=True):
     """The accessibility tree as a list of nodes, the app first, with frames in points. The interactive
     tree can leave out a text field that has no focus."""
-    tree = run(*agent_device[:1], "snapshot", *(["-i"] if interactive else []), "--json", *agent_device[1:],
+    tree = run(*agent_device("snapshot", *(["-i"] if interactive else []), "--json"),
                capture_output=True).stdout
     return json.loads(tree)["data"]["nodes"]
 
@@ -512,8 +579,8 @@ def start_guess(agent_device, word):
         if not tiles:
             raise SystemExit(f"No letter tile {letter} on the Draw & Guess screen.")
         rect = tiles[0]["rect"]
-        run(*agent_device[:1], "press", str(round(rect["x"] + rect["width"] / 2)),
-            str(round(rect["y"] + rect["height"] / 2)), *agent_device[1:], stdout=subprocess.DEVNULL)
+        run(*agent_device("press", str(round(rect["x"] + rect["width"] / 2)),
+                          str(round(rect["y"] + rect["height"] / 2))), stdout=subprocess.DEVNULL)
         time.sleep(1.5)
 
 
@@ -532,16 +599,27 @@ def save_spotlight(agent_device, text, path, size):
 
 
 class Recording:
-    """A screen recording through agent-device and the actions sent during it, in seconds from its start."""
+    """A screen recording and the actions sent during it, in seconds from its start. It records a simulator
+    through agent-device, or with phone, the UDID of a phone, that phone over its cable with devicectl."""
 
-    def __init__(self, agent_device, path, screen):
-        self.agent_device, self.path, self.screen, self.actions = agent_device, path, screen, []
+    def __init__(self, agent_device, path, screen, phone=None):
+        self.agent_device, self.path, self.screen, self.phone, self.actions = agent_device, path, screen, phone, []
 
     def device(self, *args):
-        run(*self.agent_device[:1], *args, *self.agent_device[1:], stdout=subprocess.DEVNULL)
+        run(*self.agent_device(*args), stdout=subprocess.DEVNULL)
 
     def start(self):
-        self.device("record", "start", str(self.path), "--scope", "device", "--hide-touches")
+        if self.phone:
+            # devicectl records the phone's screen at the rate it draws, up to 60 fps, until it gets SIGINT.
+            # Its first line says the recording has started.
+            self.process = subprocess.Popen(["xcrun", "devicectl", "device", "capture", "screenrecording", "--device",
+                                             self.phone, "--destination", str(self.path)],
+                                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            line = self.process.stdout.readline()
+            if "Recording started" not in line:
+                raise SystemExit(f"devicectl did not start recording: {line.strip()}")
+        else:
+            self.device("record", "start", str(self.path), "--scope", "device", "--hide-touches")
         self.started = time.monotonic()
 
     def act(self, name, *command, point=None):
@@ -556,7 +634,13 @@ class Recording:
         self.act(name, *(("gesture", "pan", x, y, *map(str, gesture)) if gesture else ("press", x, y)), point=point)
 
     def stop(self):
-        self.device("record", "stop")
+        if self.phone:
+            self.process.send_signal(signal.SIGINT)
+            output = self.process.communicate()[0]
+            if self.process.returncode:
+                raise SystemExit(f"devicectl failed to save the recording: {output.strip()}")
+        else:
+            self.device("record", "stop")
 
 
 def ludo_game(subject):
@@ -654,7 +738,7 @@ def close_new_couple_cards(agent_device):
     shown = {node.get("identifier") for node in snapshot_nodes(agent_device)}
     for identifier in NEW_COUPLE_CARDS_CLOSE:
         if identifier in shown:
-            run(*agent_device[:1], "press", f'id="{identifier}"', *agent_device[1:], stdout=subprocess.DEVNULL)
+            run(*agent_device("press", f'id="{identifier}"'), stdout=subprocess.DEVNULL)
             time.sleep(1)
 
 
@@ -665,7 +749,7 @@ def warm_keyboard(agent_device):
         wait_for_node(agent_device, identifier, lambda node: node.get("identifier") == identifier)
         if identifier == FLOW_CLOSE:
             time.sleep(2)  # The keyboard has risen.
-        run(*agent_device[:1], "press", f'id="{identifier}"', *agent_device[1:], stdout=subprocess.DEVNULL)
+        run(*agent_device("press", f'id="{identifier}"'), stdout=subprocess.DEVNULL)
     wait_for_node(agent_device, "Home's question card", lambda node: node.get("identifier") == ANSWER_ACTION)
     wait_until_still(agent_device)
 
@@ -890,9 +974,34 @@ def find_events(screen, actions, video, full):
             "celebration settled": motion_end(full, taps[-1][0], CELEBRATION_GAP)}, taps, []
 
 
-def finish_recording(screen, recording, path):
+def clean_status_bar(video):
+    """A copy of a phone's recording with STATUS_BAR in place of the phone's own status bar and island, beside video.
+
+    A phone shows its real time, the location arrow while the app reads where it is, and other apps'
+    indicators. ffmpeg's delogo fills each box in STATUS_BAR_ERASE from the pixels around it, which is the
+    app's own background under the status bar, and the strip's white 9:41, bars, Wi-Fi and full battery go
+    on top. The strip comes from an iPhone 18 Pro Max simulator, whose status bar has the phone's layout."""
+    width = int(run("ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=width",
+                    "-of", "csv=p=0", str(video), capture_output=True).stdout.strip())
+    strip = int(run("ffprobe", "-v", "error", "-show_entries", "stream=width", "-of", "csv=p=0", str(STATUS_BAR),
+                    capture_output=True).stdout.strip())
+    if width != strip:
+        raise SystemExit(f"The phone's screen is {width} pixels wide and {STATUS_BAR.name} {strip}. Make a strip "
+                         "for this phone as video/README.md describes.")
+    erase = ",".join(f"delogo=x={x}:y={y}:w={w}:h={h}" for x, y, w, h in STATUS_BAR_ERASE)
+    clean = video.with_name("clean.mp4")
+    run("ffmpeg", "-v", "error", "-y", "-i", str(video), "-i", str(STATUS_BAR), "-filter_complex",
+        f"[0:v]{erase}[bare];[bare][1:v]overlay=0:0", "-fps_mode", "passthrough", "-c:v", "libx264",
+        "-preset", "fast", "-crf", "10", "-pix_fmt", "yuv420p", "-an", str(clean))
+    return clean
+
+
+def finish_recording(screen, recording, path, status_bar=False):
     """Cuts the raw recording to its actions, writes it at a constant 30 fps in H.264 with its events
-    file, and prints how many frames repeat inside each motion."""
+    file, and prints how many frames repeat inside each motion. With status_bar, a phone's recording
+    first gets the 9:41 status bar, so the clock and the location arrow count as no motion."""
+    if status_bar:
+        recording.path = clean_status_bar(recording.path)
     changes = frame_changes(recording.path)
     events, taps, swipes = find_events(screen, recording.actions, recording.path, changes)
     first = max(0, min(events.values()) - round(LEAD_SECONDS * RECORD_FPS))
@@ -926,7 +1035,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--locale", choices=LANGUAGES, required=True)
     parser.add_argument("--ids", type=Path, required=True, help="the JSON line scripts/app-store-content printed")
-    parser.add_argument("--agent-device", required=True, help="agent-device command prefix pinned to the simulator")
+    parser.add_argument("--agent-device", help="agent-device command prefix pinned to the simulator")
+    parser.add_argument("--device", action="store_true",
+                        help="with --record, record on the developer's iPhone through scripts/devices instead")
     parser.add_argument("--screens")
     parser.add_argument("--record", action="store_true", help="film the screens in RECORDINGS instead")
     parser.add_argument("--simulator", default="Paeonia Screenshots")
@@ -939,47 +1050,88 @@ def main():
         raise SystemExit(f"Unknown screens: {', '.join(sorted(unknown))}")
     screens = [screen for screen in available if screen in requested]
 
-    simulator = device(args.simulator)
-    udid = simulator["udid"]
-    name = "iPad" if "iPad" in simulator["deviceTypeIdentifier"] else "iPhone"
-    family = FAMILIES[name]
-    prepare(udid, args.locale, family, home_screen=not args.record)
+    phone = None
+    if args.device:
+        if not args.record:
+            raise SystemExit("--device only records. Pass --record.")
+        udid, phone, name = None, phone_udid(), "iPhone"
+        family = FAMILIES[name]
+        # Home's map and the distance to Elena come from where the phone is, so it reports Oslo like a simulator.
+        run("xcrun", "devicectl", "device", "simulate", "location", "coordinate", "--device", phone,
+            "--latitude", str(OSLO[0]), "--longitude", str(OSLO[1]), stdout=subprocess.DEVNULL)
+
+        def agent_device(*command):
+            return [str(DEVICES), "iphone", *command]
+    else:
+        if not args.agent_device:
+            raise SystemExit("Pass --agent-device, or --device to record on the iPhone.")
+        simulator = device(args.simulator)
+        udid = simulator["udid"]
+        name = "iPad" if "iPad" in simulator["deviceTypeIdentifier"] else "iPhone"
+        family = FAMILIES[name]
+        prepare(udid, args.locale, family, home_screen=not args.record)
+        prefix = shlex.split(args.agent_device)
+
+        def agent_device(*command):
+            return [prefix[0], *command, *prefix[1:]]
     folder = args.output / args.locale
     folder.mkdir(parents=True, exist_ok=True)
-    agent_device = shlex.split(args.agent_device)
+    try:
+        capture_screens(args, ids, screens, agent_device, udid, phone, name, family, folder)
+    finally:
+        if phone:
+            run("xcrun", "devicectl", "device", "simulate", "location", "clear", "--device", phone,
+                stdout=subprocess.DEVNULL)
+
+
+def capture_screens(args, ids, screens, agent_device, udid, phone, name, family, folder):
+    """Captures or records each screen on the simulator with this udid, or with --device on the phone."""
     if "01-widget" in screens and family.edit_mode:
         use_large_icons(agent_device, args.locale, family.edit_mode)
     for screen in screens:
         url, wait = {**SCREENS, **FILMS}[screen]
         # Every screen starts from a fresh launch. A deep link opens beneath a full-screen
         # cover, such as the reveal, so a cover left from an earlier screen or run would
-        # hide it. Terminating fails when the app is not running, which is fine.
-        subprocess.run(["xcrun", "simctl", "terminate", udid, BUNDLE_ID], stderr=subprocess.DEVNULL)
-        if args.record and screen == "02-question":
-            data = Path(simctl("get_app_container", udid, BUNDLE_ID, "data", capture_output=True).stdout.strip())
+        # hide it. Terminating fails when the app is not running, which is fine. On a phone,
+        # agent-device's open --relaunch stops the app.
+        if not phone:
+            subprocess.run(["xcrun", "simctl", "terminate", udid, BUNDLE_ID], stderr=subprocess.DEVNULL)
+        if args.record and screen == "02-question" and phone:
+            blank_phone_caches(phone)
+            # Opened once before Hjalmar answers, the phone's conversation keeps the earlier day for the reveal.
+            # Without that, it can leave the earlier day out when it moves to today, and the swipe meant for
+            # the earlier day then closes the conversation.
+            run(*agent_device("open", BUNDLE_ID, *phone_launch_arguments(args.locale)), stdout=subprocess.DEVNULL)
+            time.sleep(LAUNCH_SECONDS)
+            run(*agent_device("open", BUNDLE_ID, SCREENS["02-chat"][0].format(**ids)), stdout=subprocess.DEVNULL)
+            time.sleep(SCREENS["02-chat"][1])
+        elif args.record and screen == "02-question":
+            data = Path(simctl("get_app_container", udid, BUNDLE_ID, "data",
+                               capture_output=True).stdout.strip())
             for cache in QUESTION_CACHES:
                 shutil.rmtree(data / "Library/Application Support" / cache, ignore_errors=True)
         if url is not None:
             # Launched through agent-device, so the link below opens without "Open in Paeonia?".
-            run(*agent_device[:1], "open", BUNDLE_ID, *agent_device[1:], stdout=subprocess.DEVNULL)
+            run(*agent_device("open", BUNDLE_ID, *(phone_launch_arguments(args.locale) if phone else [])),
+                stdout=subprocess.DEVNULL)
             time.sleep(LAUNCH_SECONDS)
             if screen == "03-ludo":
                 show_partner_at_table(ids["partner_clerk_subject"])
             if args.record:
                 screen_size = tuple(snapshot_nodes(agent_device)[0]["rect"][key] for key in ("width", "height"))
-                recording = Recording(agent_device, Path(tempfile.mkdtemp()) / "raw.mp4", screen_size)
+                recording = Recording(agent_device, Path(tempfile.mkdtemp()) / "raw.mp4", screen_size, phone)
                 if screen == "06-draw":
                     recording.start()
                     recording.act("open link")
                 if screen == "02-question" and "film_answer" not in ids:
                     raise SystemExit("--ids has no film_answer. Seed with scripts/app-store-content --question-film.")
         if url:
-            run(*agent_device[:1], "open", BUNDLE_ID, re.sub(r"\{(\w+)\}", lambda m: ids[m.group(1)], url),
-                *agent_device[1:], stdout=subprocess.DEVNULL)
+            run(*agent_device("open", BUNDLE_ID, re.sub(r"\{(\w+)\}", lambda m: ids[m.group(1)], url)),
+                stdout=subprocess.DEVNULL)
             time.sleep(1)
-            tree = run(*agent_device[:1], "snapshot", "-i", *agent_device[1:], capture_output=True).stdout
+            tree = run(*agent_device("snapshot", "-i"), capture_output=True).stdout
             if "[alert]" in tree:
-                run(*agent_device[:1], "click", f'label="{OPEN_BUTTON[args.locale]}"', *agent_device[1:],
+                run(*agent_device("click", f'label="{OPEN_BUTTON[args.locale]}"'),
                     stdout=subprocess.DEVNULL)
         if args.record:
             path = folder / f"{name}-{screen}.mp4"
@@ -996,7 +1148,7 @@ def main():
             else:
                 film_draw(recording, ids["guess_word"], snapshot_nodes(agent_device))
             recording.stop()
-            finish_recording(screen, recording, path)
+            finish_recording(screen, recording, path, status_bar=bool(phone))
             print(f"Recorded {args.locale}/{path.name} from {recording.path}", flush=True)
             continue
         time.sleep(wait)
@@ -1004,7 +1156,7 @@ def main():
             # The second press goes to the first page, where the widgets are. Apps installed
             # since the layout, such as agent-device's runner, land on a later page.
             for _ in range(2):
-                run(*agent_device[:1], "home", *agent_device[1:], stdout=subprocess.DEVNULL)
+                run(*agent_device("home"), stdout=subprocess.DEVNULL)
                 time.sleep(3)
             time.sleep(3)
         if screen == "06-draw":
