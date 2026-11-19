@@ -4,6 +4,7 @@ protocol AccessRouteServicing: Actor {
     func resolveAccess(hasPendingInvite: Bool) async throws -> AccessRouteResolution
     func markRelationshipEndedNoticeSeen(coupleID: UUID) async throws
     func markFirstDayFinished(coupleID: UUID) async throws
+    func markReunionCelebrationSeen(coupleID: UUID) async throws
 }
 
 actor RemoteAccessRouteService: AccessRouteServicing {
@@ -36,6 +37,10 @@ actor RemoteAccessRouteService: AccessRouteServicing {
 
     func markFirstDayFinished(coupleID: UUID) async throws {
         try await gateway.markFirstDayFinished(coupleID: coupleID)
+    }
+
+    func markReunionCelebrationSeen(coupleID: UUID) async throws {
+        try await gateway.markReunionCelebrationSeen(coupleID: coupleID)
     }
 }
 

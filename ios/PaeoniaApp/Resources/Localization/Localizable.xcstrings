@@ -33743,6 +33743,42 @@
         }
       }
     },
+    "pairing.celebration.reunionAnnouncement" : {
+      "comment" : "Spoken by VoiceOver when the pairing celebration settles after the two brought back their relationship. %@ is the partner's display name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You and %@ are back together"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du og %@ er sammen igjen"
+          }
+        }
+      }
+    },
+    "pairing.celebration.reunionButton" : {
+      "comment" : "Button that dismisses the pairing celebration after the two brought back their relationship. It opens Home, where everything they shared before is back.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick up where you left off"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fortsett der dere slapp"
+          }
+        }
+      }
+    },
     "pairing.celebration.skipAnimationAction" : {
       "comment" : "VoiceOver action on the pairing celebration that ends the animation early.",
       "extractionState" : "manual",

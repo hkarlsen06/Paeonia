@@ -112,6 +112,25 @@ nonisolated struct AccessRouteResolution: Equatable, Sendable {
     var hasFinishedFirstDay: Bool {
         snapshot.relationshipState?.firstDayFinishedAt != nil
     }
+
+    /// The couple came back through a restore and this person has not seen the
+    /// celebration for it yet. Nil otherwise.
+    var dueReunionCelebration: ReunionCelebration? {
+        guard route == .paired,
+              let state = snapshot.relationshipState,
+              let dueAt = state.reunionCelebrationDueAt
+        else {
+            return nil
+        }
+        return ReunionCelebration(coupleID: state.coupleID, dueAt: dueAt)
+    }
+}
+
+/// One restore of a couple that this person still has to see celebrated. A later
+/// restore of the same couple has a new `dueAt`, so it is celebrated again.
+nonisolated struct ReunionCelebration: Hashable, Sendable {
+    let coupleID: UUID
+    let dueAt: Date
 }
 
 nonisolated struct AccessRouteResolver: Sendable {

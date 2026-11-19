@@ -4,6 +4,7 @@ protocol AccessGateway: Actor {
     func loadAccessSnapshot() async throws -> RemoteAccessSnapshot
     func markRelationshipEndedNoticeSeen(coupleID: UUID) async throws
     func markFirstDayFinished(coupleID: UUID) async throws
+    func markReunionCelebrationSeen(coupleID: UUID) async throws
 }
 
 actor LiveAccessGateway: AccessGateway {
@@ -41,6 +42,15 @@ actor LiveAccessGateway: AccessGateway {
 
         try await client.mutation(
             "relationship:mark_first_day_finished",
+            args: RelationshipCoupleRequest(coupleID: coupleID)
+        )
+    }
+
+    func markReunionCelebrationSeen(coupleID: UUID) async throws {
+        try await PaeoniaSignedIn.require(isSignedIn)
+
+        try await client.mutation(
+            "relationship:mark_reunion_celebration_seen",
             args: RelationshipCoupleRequest(coupleID: coupleID)
         )
     }

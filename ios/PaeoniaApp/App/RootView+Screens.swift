@@ -317,8 +317,10 @@ extension RootView {
     }
 
     /// Who the first day sequence is for, while the celebration or the sequence is up.
+    /// A reunion has no first day sequence.
     private var postPairingContext: PostPairingContext? {
-        guard viewModel.isPairingCelebrationPresented || viewModel.isFirstDayPresented,
+        guard (viewModel.isPairingCelebrationPresented && !viewModel.isReunionCelebration)
+            || viewModel.isFirstDayPresented,
               let pairID = viewModel.currentPairID,
               let currentUserID = viewModel.currentSession.flatMap({ UUID(uuidString: $0.id) }),
               let partnerUserID = viewModel.currentPartnerUserID,
@@ -415,8 +417,12 @@ extension RootView {
             partnerDisplayName: viewModel.currentPartnerDisplayName,
             partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
             playsIntro: viewModel.pendingPairingCelebration,
-            // The prefetched gift turns the last button into the way to it.
-            dismissTitle: postPairingFlow.gift == nil
+            isReunion: viewModel.isReunionCelebration,
+            // The prefetched gift turns the last button into the way to it. A reunion
+            // goes back to Home.
+            dismissTitle: viewModel.isReunionCelebration
+                ? .pairingCelebrationReunionButton
+                : postPairingFlow.gift == nil
                 ? .pairingCelebrationGetStartedButton
                 : .onboardingFirstDayGiftButton(partnerNameForCopy),
             onIntroComplete: {

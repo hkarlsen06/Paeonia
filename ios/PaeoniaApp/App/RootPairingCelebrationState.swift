@@ -2,7 +2,8 @@ import Foundation
 
 /// Decides when the one-time pairing celebration, and the first day sequence
 /// that follows it, cover the paired screen. `RootViewModel` owns one and feeds
-/// it every committed access resolution.
+/// it every committed access resolution. After a restore brings a couple back,
+/// the same celebration plays once more as a reunion, without the first day.
 struct RootPairingCelebrationState {
     private let store: any PairingCelebrationStoring
 
@@ -15,6 +16,9 @@ struct RootPairingCelebrationState {
     /// celebration is dismissed and ends when the sequence finishes. An app kill
     /// in between brings it back on the next launch.
     private(set) var isFirstDayPresented = false
+    /// The presented celebration is for a couple that came back through a restore.
+    /// Dismissing it leads to Home, not to the first day sequence.
+    private(set) var isReunion = false
     /// The user dismissed the celebration before the pair id was known. The
     /// next paired resolution records it as seen instead of showing it again.
     private var marksSeenWhenPairIDArrives = false
@@ -29,6 +33,7 @@ struct RootPairingCelebrationState {
         playsIntro = true
         isPresented = true
         isFirstDayPresented = false
+        isReunion = false
         marksSeenWhenPairIDArrives = false
     }
 
@@ -36,8 +41,15 @@ struct RootPairingCelebrationState {
         playsIntro = false
     }
 
-    /// Ends the celebration and starts the first day sequence.
+    /// Ends the celebration and starts the first day sequence. A reunion ends on Home.
     mutating func dismiss(currentResolution: AccessRouteResolution?) {
+        if isReunion {
+            if let reunion = currentResolution?.dueReunionCelebration {
+                store.markReunionCelebrationSeen(reunion)
+            }
+            clear()
+            return
+        }
         playsIntro = false
         isPresented = false
         isFirstDayPresented = true
@@ -64,6 +76,7 @@ struct RootPairingCelebrationState {
         playsIntro = false
         isPresented = false
         isFirstDayPresented = false
+        isReunion = false
         marksSeenWhenPairIDArrives = false
     }
 
@@ -73,8 +86,21 @@ struct RootPairingCelebrationState {
     /// its intro, whether the couple just linked or the app opened into a pair this
     /// phone has not celebrated yet, and a pair whose first day sequence was cut
     /// short shows the sequence again.
+    ///
+    /// A couple that came back through a restore shows the celebration with its
+    /// intro until this person dismisses it on any phone. The server keeps it due
+    /// until then, so signing out or a new phone never shows it twice.
     mutating func update(for resolution: AccessRouteResolution) {
-        guard resolution.route == .paired, !resolution.hasFinishedFirstDay else {
+        guard resolution.route == .paired else {
+            clear()
+            return
+        }
+
+        if updateReunion(for: resolution) {
+            return
+        }
+
+        guard !resolution.hasFinishedFirstDay else {
             clear()
             return
         }
@@ -101,6 +127,26 @@ struct RootPairingCelebrationState {
         }
     }
 
+    /// Shows the reunion celebration while it is due and this phone has not
+    /// dismissed it, and ends it once it is no longer due. True while it shows.
+    private mutating func updateReunion(for resolution: AccessRouteResolution) -> Bool {
+        guard let reunion = resolution.dueReunionCelebration,
+              !store.hasSeenReunionCelebration(reunion)
+        else {
+            if isReunion {
+                clear()
+            }
+            return false
+        }
+        if !(isPresented && isReunion) {
+            clear()
+            playsIntro = true
+            isPresented = true
+            isReunion = true
+        }
+        return true
+    }
+
     /// This phone finished the pair's first day sequence and the server has not
     /// recorded it yet, for example because the phone was offline when it ended.
     func needsFirstDayRecorded(for resolution: AccessRouteResolution) -> Bool {
@@ -111,6 +157,17 @@ struct RootPairingCelebrationState {
             return false
         }
         return store.postPairingProgress(forPairID: pairID)?.isFinished == true
+    }
+
+    /// This phone dismissed the reunion celebration and the server has not recorded
+    /// it yet. The reunion to record, or nil.
+    func reunionToRecord(for resolution: AccessRouteResolution) -> ReunionCelebration? {
+        guard let reunion = resolution.dueReunionCelebration,
+              store.hasSeenReunionCelebration(reunion)
+        else {
+            return nil
+        }
+        return reunion
     }
 
     /// Records the celebration as seen and starts the pair's first day progress.

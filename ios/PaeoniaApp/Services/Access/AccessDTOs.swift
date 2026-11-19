@@ -127,6 +127,9 @@ nonisolated struct RemoteRelationshipState: Codable, Equatable, Sendable {
     /// When this person finished the celebration and the first day sequence in this
     /// couple. Nil while they have not, so the app shows them.
     var firstDayFinishedAt: Date?
+    /// Set when a restore brought this couple back and this person has not seen the
+    /// reunion celebration yet, on any phone.
+    var reunionCelebrationDueAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case coupleID = "couple_id"
@@ -145,6 +148,7 @@ nonisolated struct RemoteRelationshipState: Codable, Equatable, Sendable {
         case deleteAfter = "delete_after"
         case endedNoticeSeenAt = "ended_notice_seen_at"
         case firstDayFinishedAt = "first_day_finished_at"
+        case reunionCelebrationDueAt = "reunion_celebration_due_at"
     }
 
     /// What this person calls their partner. The one way to get a partner's name for display.
@@ -177,7 +181,8 @@ nonisolated struct RemoteRelationshipState: Codable, Equatable, Sendable {
             endedAt: endedAt,
             deleteAfter: deleteAfter,
             endedNoticeSeenAt: endedNoticeSeenAt,
-            firstDayFinishedAt: firstDayFinishedAt
+            firstDayFinishedAt: firstDayFinishedAt,
+            reunionCelebrationDueAt: reunionCelebrationDueAt
         )
     }
 }

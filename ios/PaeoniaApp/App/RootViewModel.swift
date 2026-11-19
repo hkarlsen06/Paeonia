@@ -119,6 +119,11 @@ final class RootViewModel {
         celebration.isFirstDayPresented
     }
 
+    /// The presented celebration is for a couple that came back through a restore.
+    var isReunionCelebration: Bool {
+        celebration.isReunion
+    }
+
     init(
         syncService: (any PaeoniaSyncing)? = nil,
         authService: (any AuthServicing)? = nil,
@@ -252,6 +257,7 @@ final class RootViewModel {
 
     func dismissPairingCelebration() {
         celebration.dismiss(currentResolution: route.accessResolution)
+        recordSeenReunionIfNeeded()
     }
 
     func refreshAfterInviteAccepted() async {
@@ -312,6 +318,7 @@ final class RootViewModel {
         route = .access(session, resolution)
         presentPendingWidgetDrawingIfNeeded(for: resolution.route)
         recordFinishedFirstDayIfNeeded()
+        recordSeenReunionIfNeeded()
     }
 
     private func showAcceptedInviteCelebration(for session: AuthSession) {
@@ -383,6 +390,21 @@ extension RootViewModel {
         }
         Task {
             try? await accessRouteService.markFirstDayFinished(coupleID: coupleID)
+        }
+    }
+
+    /// Tells the server this person saw the reunion celebration, so signing out
+    /// or another phone never plays it again. A failed call is sent again with
+    /// the next access check.
+    private func recordSeenReunionIfNeeded() {
+        guard let resolution = route.accessResolution,
+              let reunion = celebration.reunionToRecord(for: resolution),
+              let accessRouteService
+        else {
+            return
+        }
+        Task {
+            try? await accessRouteService.markReunionCelebrationSeen(coupleID: reunion.coupleID)
         }
     }
 }

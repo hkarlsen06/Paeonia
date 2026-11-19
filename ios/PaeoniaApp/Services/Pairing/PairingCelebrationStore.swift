@@ -2,10 +2,13 @@ import Foundation
 
 /// What this phone remembers about each pair's first moments: whether the
 /// celebration played, how far the first day sequence after it got, and the
-/// "Things to try together" card Home shows after that.
+/// "Things to try together" card Home shows after that. It also remembers the
+/// celebration it played after a restore, until the server has recorded it.
 protocol PairingCelebrationStoring: AnyObject {
     func hasSeenCelebration(forPairID pairID: UUID) -> Bool
     func markCelebrationSeen(forPairID pairID: UUID)
+    func hasSeenReunionCelebration(_ reunion: ReunionCelebration) -> Bool
+    func markReunionCelebrationSeen(_ reunion: ReunionCelebration)
     /// Nil until the celebration was dismissed for this pair on this phone.
     func postPairingProgress(forPairID pairID: UUID) -> PostPairingProgress?
     func savePostPairingProgress(_ progress: PostPairingProgress, forPairID pairID: UUID)
@@ -20,6 +23,7 @@ final class UserDefaultsPairingCelebrationStore: PairingCelebrationStoring {
     private let keyPrefix = "paeonia.pairing.celebration.seen."
     private let progressKeyPrefix = "paeonia.pairing.firstDay."
     private let firstStepsKeyPrefix = "paeonia.pairing.firstSteps."
+    private let reunionKeyPrefix = "paeonia.pairing.reunion.seen."
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -31,6 +35,14 @@ final class UserDefaultsPairingCelebrationStore: PairingCelebrationStoring {
 
     func markCelebrationSeen(forPairID pairID: UUID) {
         defaults.set(true, forKey: key(for: pairID))
+    }
+
+    func hasSeenReunionCelebration(_ reunion: ReunionCelebration) -> Bool {
+        defaults.object(forKey: reunionKey(for: reunion.coupleID)) as? Double == reunion.dueAt.timeIntervalSince1970
+    }
+
+    func markReunionCelebrationSeen(_ reunion: ReunionCelebration) {
+        defaults.set(reunion.dueAt.timeIntervalSince1970, forKey: reunionKey(for: reunion.coupleID))
     }
 
     func postPairingProgress(forPairID pairID: UUID) -> PostPairingProgress? {
@@ -54,13 +66,18 @@ final class UserDefaultsPairingCelebrationStore: PairingCelebrationStoring {
 
     func clearAll() {
         for key in defaults.dictionaryRepresentation().keys
-        where key.hasPrefix(keyPrefix) || key.hasPrefix(progressKeyPrefix) || key.hasPrefix(firstStepsKeyPrefix) {
+        where key.hasPrefix(keyPrefix) || key.hasPrefix(progressKeyPrefix) || key.hasPrefix(firstStepsKeyPrefix)
+            || key.hasPrefix(reunionKeyPrefix) {
             defaults.removeObject(forKey: key)
         }
     }
 
     private func key(for pairID: UUID) -> String {
         "\(keyPrefix)\(pairID.uuidString)"
+    }
+
+    private func reunionKey(for coupleID: UUID) -> String {
+        "\(reunionKeyPrefix)\(coupleID.uuidString)"
     }
 
     private func progressKey(for pairID: UUID) -> String {

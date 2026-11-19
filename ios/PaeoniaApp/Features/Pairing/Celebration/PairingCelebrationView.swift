@@ -28,6 +28,8 @@ struct PairingCelebrationView: View {
     let partnerDisplayName: String?
     let partnerProfilePhotoAssetID: UUID?
     let playsIntro: Bool
+    /// The two came back together through a restore, so VoiceOver says so.
+    let isReunion: Bool
     /// The last button. It names the partner's gift when one is waiting.
     let dismissTitle: LocalizedStringResource
     let onIntroComplete: () -> Void
@@ -40,6 +42,7 @@ struct PairingCelebrationView: View {
         partnerDisplayName: String? = nil,
         partnerProfilePhotoAssetID: UUID? = nil,
         playsIntro: Bool,
+        isReunion: Bool = false,
         dismissTitle: LocalizedStringResource = .pairingCelebrationGetStartedButton,
         profilePhotoProvider: (any ProfilePhotoImageProviding)? = nil,
         onIntroComplete: @escaping () -> Void = {},
@@ -50,6 +53,7 @@ struct PairingCelebrationView: View {
         self.partnerDisplayName = partnerDisplayName
         self.partnerProfilePhotoAssetID = partnerProfilePhotoAssetID
         self.playsIntro = playsIntro
+        self.isReunion = isReunion
         self.dismissTitle = dismissTitle
         self.onIntroComplete = onIntroComplete
         self.onDismiss = onDismiss
@@ -135,7 +139,9 @@ struct PairingCelebrationView: View {
     }
 
     private var connectedText: String {
-        String(localized: .pairingCelebrationConnectedAnnouncement(partnerName))
+        isReunion
+            ? String(localized: .pairingCelebrationReunionAnnouncement(partnerName))
+            : String(localized: .pairingCelebrationConnectedAnnouncement(partnerName))
     }
 
     /// Everything except the button. VoiceOver reads it as one element, and a tap

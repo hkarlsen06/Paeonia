@@ -9,6 +9,8 @@
     private var restoreRequest: RemoteRestoreRequest?
     /// The couple came back, so both finished its first day long ago.
     private var restored = false
+    /// The couple came back and this person has not dismissed the celebration for it yet.
+    private var reunionCelebrationDue = false
     private let avatarScenario: Bool
     private var avatarDecoration: AvatarDecoration
 
@@ -118,8 +120,11 @@
       restoreRequest = nil
       isPaired = true
       restored = restore
+      reunionCelebrationDue = restore
       return RelationshipRestoreAnswer(coupleID: DeveloperScenarioFixture.coupleID, restored: restore)
     }
+
+    func markReunionCelebrationSeen() { reunionCelebrationDue = false }
 
     func resolveAccess(hasPendingInvite: Bool) -> AccessRouteResolution {
       if hasPendingInvite, isEntitled, !isPaired {
@@ -191,6 +196,7 @@
         endedNoticeSeenAt: nil
       )
       state.firstDayFinishedAt = restored ? DeveloperScenarioFixture.now : nil
+      state.reunionCelebrationDueAt = reunionCelebrationDue ? DeveloperScenarioFixture.now : nil
       return state
     }
 
@@ -266,6 +272,9 @@
     }
     func markRelationshipEndedNoticeSeen(coupleID _: UUID) async throws {}
     func markFirstDayFinished(coupleID _: UUID) async throws {}
+    func markReunionCelebrationSeen(coupleID _: UUID) async throws {
+      await store.markReunionCelebrationSeen()
+    }
   }
 
   actor DeveloperLocalFlowPairingService: PairingServicing, RelationshipRestoreAnswering {
@@ -354,36 +363,6 @@
         nonce: "developer-nonce",
         givenName: "Alex"
       )
-    }
-  }
-
-  @MainActor
-  final class DeveloperLocalFlowCelebrationStore: PairingCelebrationStoring {
-    private var seenPairIDs = Set<UUID>()
-
-    /// With `firstSteps`, the pair starts in the tabs, past the celebration and the first
-    /// day, with that saved "Things to try together" card. The local flow has no games or
-    /// topics to read, so the card shows only when `firstSteps` has those rows ticked.
-    init(firstSteps: HomeFirstStepsProgress? = nil) {
-      guard let firstSteps else { return }
-      seenPairIDs.insert(DeveloperLocalFlowIDs.pairID)
-      progressByPairID[DeveloperLocalFlowIDs.pairID] = PostPairingProgress(isFinished: true)
-      firstStepsByPairID[DeveloperLocalFlowIDs.pairID] = firstSteps
-    }
-
-    func hasSeenCelebration(forPairID pairID: UUID) -> Bool { seenPairIDs.contains(pairID) }
-    func markCelebrationSeen(forPairID pairID: UUID) { seenPairIDs.insert(pairID) }
-    private var progressByPairID: [UUID: PostPairingProgress] = [:]
-    func postPairingProgress(forPairID pairID: UUID) -> PostPairingProgress? { progressByPairID[pairID] }
-    func savePostPairingProgress(_ progress: PostPairingProgress, forPairID pairID: UUID) {
-      progressByPairID[pairID] = progress
-    }
-    private var firstStepsByPairID: [UUID: HomeFirstStepsProgress] = [:]
-    func homeFirstSteps(forPairID pairID: UUID) -> HomeFirstStepsProgress {
-      firstStepsByPairID[pairID] ?? HomeFirstStepsProgress()
-    }
-    func saveHomeFirstSteps(_ progress: HomeFirstStepsProgress, forPairID pairID: UUID) {
-      firstStepsByPairID[pairID] = progress
     }
   }
 
