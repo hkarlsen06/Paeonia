@@ -1,43 +1,89 @@
 import SwiftUI
 
 /// The partner's avatar as one glass capsule, the way the Dynamic Island holds a notification. On its
-/// own it is the round face in its own glass, which grows out of a call with its photo. A notice or
-/// the buttons widen it toward the middle of the screen into one capsule of glass, and the face stays
-/// where it was at the `faceEdge` end.
+/// own the capsule is as wide as the face, so it is a circle. A notice or the buttons stretch that
+/// same glass toward the middle of the screen, and the face stays where it was at the `faceEdge` end.
+/// The glass is the ring pill's background (`CallMorphPart.background`), so a call grows out of it.
 struct PresenceIsland<Content: View, Face: View>: View {
     let faceEdge: HorizontalEdge
     let showsContent: Bool
     @ViewBuilder let content: Content
-    /// Draws its own glass only while `showsContent` is false.
     @ViewBuilder let face: Face
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 0) {
             if faceEdge == .leading { face }
-            if showsContent { content }
+            if showsContent {
+                content
+                    .transition(reduceMotion ? .opacity : contentTransition)
+            }
             if faceEdge == .trailing { face }
         }
         .background {
-            // One glass for the whole capsule. Glass laid over glass looks muddy, so the face's own
-            // gives way while this one is there.
-            if showsContent {
-                Capsule()
-                    .fill(.clear)
-                    .glassEffect(.regular.interactive(), in: Capsule())
-                    .transition(.opacity)
-            }
+            Color.clear
+                .glassEffect(.regular.interactive(), in: Capsule())
+                .callMorph(.background)
         }
         .shadow(color: .black.opacity(0.3), radius: 12, y: 4)
+    }
+
+    private var contentTransition: AnyTransition {
+        AnyTransition(IslandReveal(faceEdge: faceEdge))
+    }
+}
+
+/// Uncovers the content from the face's side at the pace the glass stretches over it, so no text
+/// or button shows outside the glass on the way.
+private struct IslandReveal: Transition {
+    let faceEdge: HorizontalEdge
+
+    func body(content: Content, phase: TransitionPhase) -> some View {
+        content
+            .opacity(phase.isIdentity ? 1 : 0)
+            .mask {
+                IslandRevealShape(
+                    progress: phase.isIdentity ? 1 : 0, faceEdge: faceEdge,
+                    height: PresenceAvatar.outerSize.height)
+            }
+    }
+}
+
+/// The part of the content the glass covers `progress` of the way, with the glass's round end on
+/// the side away from the face. Fully open it reaches past the content, so a badge that pokes out
+/// of a button stays whole.
+nonisolated private struct IslandRevealShape: Shape {
+    var progress: CGFloat
+    let faceEdge: HorizontalEdge
+    /// The glass's height.
+    let height: CGFloat
+
+    var animatableData: CGFloat {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        guard progress < 1 else { return Path(rect.insetBy(dx: 0, dy: -rect.height)) }
+        let width = rect.width * max(progress, 0)
+        let shown = CGRect(
+            x: faceEdge == .leading ? rect.minX : rect.maxX - width, y: rect.midY - height / 2,
+            width: width, height: height)
+        let radius = min(height, width) / 2
+        let end = faceEdge == .leading
+            ? UnevenRoundedRectangle(bottomTrailingRadius: radius, topTrailingRadius: radius)
+            : UnevenRoundedRectangle(topLeadingRadius: radius, bottomLeadingRadius: radius)
+        return end.path(in: shown)
     }
 }
 
 /// The partner's face with a small badge for where they are: the game's picture or a chat bubble.
-/// Its photo is the one the ring pill and the call screen grow out of (`CallMorphPart`).
+/// Its photo is the one the ring pill and the call screen grow out of (`CallMorphPart`). The glass
+/// around it is `PresenceIsland`'s.
 struct PresenceAvatar: View {
     let participants: DailyChallengeParticipants
     let place: PresencePlace
-    /// Off while the capsule's glass is behind the face.
-    var hasOwnGlass = true
 
     static let size: CGFloat = 44
     /// The face with the glass around it, which is what sits at the edge.
@@ -52,9 +98,8 @@ struct PresenceAvatar: View {
         )
         .padding(PaeoniaSpacing.space4)
         .overlay(alignment: .bottomTrailing) { PresencePlaceBadge(place: place) }
-        .glassEffect(hasOwnGlass ? .regular.interactive() : .identity, in: Circle())
-        // The photo's own frame, which the call's photo matches. The glass and the badge reach
-        // past it and scale with it, so the whole avatar grows out of the call and back into it.
+        // The photo's own frame, which the call's photo matches. The badge reaches past it and
+        // scales with it, so it grows out of the call and back into it with the photo.
         .frame(width: Self.size, height: Self.size)
         .callMorph(.photo, size: Self.size)
         .padding(PaeoniaSpacing.space4)

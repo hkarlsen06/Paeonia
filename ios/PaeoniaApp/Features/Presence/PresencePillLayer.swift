@@ -84,9 +84,8 @@ struct PresencePillLayer: View {
         let content = islandContent(status)
         return PresenceIsland(faceEdge: spot.edge, showsContent: content != .none) {
             islandContent(content)
-                .transition(.opacity)
         } face: {
-            face(status, hasOwnGlass: content == .none, in: placement)
+            face(status, in: placement)
         }
         .overlay(alignment: spot.isLeading ? .topLeading : .topTrailing) {
             // Message carries the count while the buttons show.
@@ -160,10 +159,8 @@ struct PresencePillLayer: View {
         }
     }
 
-    private func face(
-        _ status: PresencePillStatus, hasOwnGlass: Bool, in placement: CallBubblePlacement
-    ) -> some View {
-        PresenceAvatar(participants: overlay.participants, place: status.place, hasOwnGlass: hasOwnGlass)
+    private func face(_ status: PresencePillStatus, in placement: CallBubblePlacement) -> some View {
+        PresenceAvatar(participants: overlay.participants, place: status.place)
             .contentShape(Circle())
             .onTapGesture { model.toggleToolbar() }
             .gesture(drag(in: placement))
