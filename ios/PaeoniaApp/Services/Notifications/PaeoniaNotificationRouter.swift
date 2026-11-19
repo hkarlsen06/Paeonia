@@ -26,6 +26,9 @@ final class PaeoniaNotificationRouter {
 
     private(set) var pendingDeepLink: PaeoniaDeepLink?
     private(set) var pendingForegroundNotice: PaeoniaForegroundNotice?
+    /// What the paired app has in front of the person. `MainTabView` sets it.
+    @ObservationIgnored
+    var screen = ForegroundScreen.elsewhere
     /// Takes a notice from the partner before it becomes a banner, and says whether it did. The
     /// paired app's partner avatar sets it while it is mounted. The owner lets one that goes away
     /// remove only its own, not one that mounted after it.
@@ -42,7 +45,10 @@ final class PaeoniaNotificationRouter {
         pendingDeepLink = nil
     }
 
+    /// Shows `notice` in the partner's picture or as a banner, unless the screen in front already
+    /// shows where it leads.
     func presentForegroundNotice(_ notice: PaeoniaForegroundNotice) {
+        if let deepLink = notice.deepLink, screen.showsLive(deepLink) { return }
         if notice.isPartnersDoing, partnerNoticeTaker?.take(notice) == true { return }
         pendingForegroundNotice = notice
     }

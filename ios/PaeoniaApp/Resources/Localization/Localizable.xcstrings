@@ -9289,6 +9289,24 @@
         }
       }
     },
+    "dailyChallenge.home.partnerAnswered.title" : {
+      "comment" : "Us tab daily card title while today's question waits for the user's answer and the partner has already answered it. Replaces the title 'Today's question' on one line beside the envelope, so keep it short. The argument is the partner's name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ answered"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ har svart"
+          }
+        }
+      }
+    },
     "dailyChallenge.kind.choice" : {
       "comment" : "Kind-picker pill: answer by picking a person",
       "extractionState" : "manual",

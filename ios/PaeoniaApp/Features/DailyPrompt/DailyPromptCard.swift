@@ -113,6 +113,11 @@ struct DailyPromptCard: View {
                 .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.94, anchor: .top)))
             }
         }
+        // The partner's answer arrives while the question waits on screen, so its title and seal change in
+        // view. The short row has its own envelope moment for it.
+        .animation(
+            reduceMotion || art.shape != .hero ? nil : .easeInOut(duration: 0.35), value: shown.hasPartnerAnsweredToday
+        )
         .onChange(of: state, initial: true) { _, new in observe(new) }
         .onChange(of: flowIsPresented) { scheduleMomentIfSeen() }
         .onChange(of: scenePhase) { scheduleMomentIfSeen() }

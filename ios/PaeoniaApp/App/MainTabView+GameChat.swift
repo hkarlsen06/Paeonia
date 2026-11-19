@@ -289,7 +289,8 @@ extension MainTabView {
     }
 
     /// The live summary feed supplies authorized previews even when APNs is unavailable. While the
-    /// partner's avatar is on screen, the message shows in it instead of in a banner.
+    /// partner's avatar is on screen, the message shows in it instead of in a banner. A private topic's
+    /// message says only that a message came, as its push does.
     func announcePartnerMessage(
         previous: [ThreadChatSubject: ThreadChatSummary], current: [ThreadChatSubject: ThreadChatSummary]
     ) {
@@ -299,13 +300,15 @@ extension MainTabView {
             return summary.lastMessageSenderUserID == partnerID
                 && previous[summary.subject]?.lastMessageID != messageID
                 && date >= messageNoticeStartedAt
-                && summary.isPrivateTopic != true
                 // A call rang in the open app, which said how it ended.
                 && summary.lastMessageCall == nil
                 && visibleChatSubject != summary.subject
         }.sorted { ($0.lastMessageAt ?? .distantPast) < ($1.lastMessageAt ?? .distantPast) }
         for summary in arrivals {
-            guard let preview = summary.lastMessagePreview, let messageID = summary.lastMessageID else { continue }
+            guard let messageID = summary.lastMessageID,
+                  let preview = summary.isPrivateTopic == true
+                    ? String(localized: .notificationsHiddenPreviewMessage) : summary.lastMessagePreview
+            else { continue }
             let notice = PresenceMessageNotice(messageID: messageID, chat: summary.subject, preview: preview)
             if presenceModel.receive(.message(notice)) { continue }
             var title = reactionPartnerName

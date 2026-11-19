@@ -273,8 +273,8 @@ struct MainTabView: View {
     var firstStepsModel: HomeFirstStepsModel { models.firstSteps }
 
     var body: some View {
-        runningPresence(on: openingTodaysQuestion(on: presentingSearch(
-            on: presentingDailyFlows(on: followingFirstSteps(on: tabContent)))))
+        tellingRouterTheScreen(on: runningPresence(on: openingTodaysQuestion(on: presentingSearch(
+            on: presentingDailyFlows(on: followingFirstSteps(on: tabContent))))))
             // Outside the covers and sheets, so the Home drawing, the story viewer and every game
             // screen can show and take reactions.
             .environment(reactionStore)

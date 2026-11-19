@@ -101,12 +101,12 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
     /// Reminders the app sends about the partner, which name them but are not something they did.
     nonisolated private static let remindersAboutThePartner: Set<String> = ["date_reminder", "streak_reminder"]
 
-    nonisolated private static let typesShownLiveInApp: Set<String> = [
+    /// Pushes the open app already shows on every screen, so a notice would say it twice. A push about
+    /// something one screen shows, such as the partner's answer, waits for `ForegroundScreen` instead.
+    nonisolated private static let typesShownOnEveryScreen: Set<String> = [
+        // The chat feed shows the partner's message in their picture or a banner, outside its own chat
+        // (`MainTabView.announcePartnerMessage`).
         "thread_message_sent",
-        "partner_answered",
-        // The Topics card on the Questions tab shows what's waiting.
-        "topics_waiting",
-        "daily_challenge_completed",
         // The open app plays the pairing celebration the moment the partner joins.
         "partner_joined",
         // The open app shows the question to bring a relationship back, and the answer pairs it at once.
@@ -135,43 +135,54 @@ final class PaeoniaAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
     /// how the system should present it. Developer scenarios call it with a push they make up.
     @discardableResult
     nonisolated static func presentInForeground(_ content: UNNotificationContent) -> UNNotificationPresentationOptions {
-        let userInfo = content.userInfo
-        // Communication notifications can lose custom fields when rewritten.
-        // Their thread identifier survives, so it also identifies drawings and chat.
-        let isWidgetUpdate = (userInfo["type"] as? String) == "widget_updated"
-            || (userInfo["route"] as? String) == "widget"
-            || content.threadIdentifier == "widget"
-        let type = (userInfo["type"] as? String)
-            ?? (content.threadIdentifier.hasPrefix("chat:") ? "thread_message_sent" : "")
-        let isGameActivity = type.hasPrefix("game_")
-            || (type == "reaction_added" && userInfo["game_kind"] is String)
-
-        // Keep this independent of notification type, including future types.
-        // Badge-only pushes still update the icon without interrupting the person.
-        let presentation: UNNotificationPresentationOptions = type == "badge_update" ? [.badge] : []
-
-        if isGameActivity {
+        let type = pushType(of: content)
+        if isGameActivity(type, content.userInfo) {
             Task { @MainActor in
                 LiveFeedDemand.shared.touch([.gameTurns])
             }
         }
-        guard type != "badge_update", !isGameActivity, !typesShownLiveInApp.contains(type) else {
-            return presentation
+        if let notice = foregroundNotice(for: content) {
+            Task { @MainActor in
+                PaeoniaNotificationRouter.shared.presentForegroundNotice(notice)
+            }
+        }
+        // Keep this independent of notification type, including future types.
+        // Badge-only pushes still update the icon without interrupting the person.
+        return type == "badge_update" ? [.badge] : []
+    }
+
+    /// The in-app notice for a push that arrived while the app is open, or nil when the app shows it
+    /// another way. The router still holds it back on a screen that shows it live.
+    nonisolated static func foregroundNotice(for content: UNNotificationContent) -> PaeoniaForegroundNotice? {
+        let userInfo = content.userInfo
+        let type = pushType(of: content)
+        guard type != "badge_update", !isGameActivity(type, userInfo), !typesShownOnEveryScreen.contains(type) else {
+            return nil
         }
         let title = content.title
         let body = content.body
-        guard !title.isEmpty || !body.isEmpty else { return presentation }
+        guard !title.isEmpty || !body.isEmpty else { return nil }
+        // Communication notifications can lose custom fields when rewritten.
+        // Their thread identifier survives, so it also identifies drawings and chat.
+        let isWidgetUpdate = type == "widget_updated"
+            || (userInfo["route"] as? String) == "widget"
+            || content.threadIdentifier == "widget"
         let deepLink = isWidgetUpdate ? .widgetDrawing : PaeoniaDeepLink(notificationUserInfo: userInfo)
         let showsPartnerAvatar = isWidgetUpdate || userInfo["actor_user_id"] is String
-        let notice = PaeoniaForegroundNotice(
+        return PaeoniaForegroundNotice(
             title: title.isEmpty ? nil : title, message: body, deepLink: deepLink,
             showsPartnerAvatar: showsPartnerAvatar,
             isPartnersDoing: showsPartnerAvatar && !remindersAboutThePartner.contains(type)
         )
-        Task { @MainActor in
-            PaeoniaNotificationRouter.shared.presentForegroundNotice(notice)
-        }
-        return presentation
+    }
+
+    nonisolated private static func pushType(of content: UNNotificationContent) -> String {
+        (content.userInfo["type"] as? String)
+            ?? (content.threadIdentifier.hasPrefix("chat:") ? "thread_message_sent" : "")
+    }
+
+    nonisolated private static func isGameActivity(_ type: String, _ userInfo: [AnyHashable: Any]) -> Bool {
+        type.hasPrefix("game_") || (type == "reaction_added" && userInfo["game_kind"] is String)
     }
 
     /// Tapping a notification routes through the typed SwiftUI deep-link relay.

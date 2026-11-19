@@ -16,7 +16,8 @@ struct DailyPromptCardCopy {
         case .loading, .noChallenge:
             .dailyChallengeHomeNoChallengeTitle
         case .active:
-            .dailyChallengeHomeActiveTitle
+            state.hasPartnerAnsweredToday
+                ? .dailyChallengeHomePartnerAnsweredTitle(partnerName) : .dailyChallengeHomeActiveTitle
         case .complete:
             .dailyChallengeHomeCompleteTitle
         }
