@@ -42,7 +42,7 @@ export const marketingEn = {
       },
       {
         src: 'draw-guess-solved',
-        alt: 'Draw & Guess after a correct guess. Elena drew their cabin, and both partners got points.',
+        alt: 'Draw & Guess after a correct guess. Elena drew a snail, and both partners got points.',
       },
       {
         src: 'connect-four',
@@ -130,11 +130,11 @@ export const marketingEn = {
         screens: [
           {
             src: 'questions',
-            alt: 'Today\'s questions. Both partners have answered, and Elena\'s answers are new.',
+            alt: 'The Chats tab. Both partners have answered today\'s question, and Elena\'s answer is new.',
           },
           {
             src: 'question-chat',
-            alt: 'A chat about where to go for a weekend. Both partners answered Copenhagen and are planning the trip.',
+            alt: 'A chat about the first meal to share when you meet. Elena answered homemade pizza, you answered pancakes, and you agree on both.',
           },
         ],
       },

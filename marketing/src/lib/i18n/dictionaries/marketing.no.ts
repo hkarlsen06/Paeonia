@@ -42,7 +42,7 @@ export const marketingNo = {
       },
       {
         src: 'draw-guess-solved',
-        alt: 'Tegn og gjett etter et riktig svar. Elena tegnet hytta deres, og begge fikk poeng.',
+        alt: 'Tegn og gjett etter et riktig svar. Elena tegnet en snegle, og begge fikk poeng.',
       },
       {
         src: 'connect-four',
@@ -130,11 +130,11 @@ export const marketingNo = {
         screens: [
           {
             src: 'questions',
-            alt: 'Dagens spørsmål. Begge har svart, og svarene fra Elena er nye.',
+            alt: 'Samtaler-fanen. Begge har svart på dagens spørsmål, og svaret fra Elena er nytt.',
           },
           {
             src: 'question-chat',
-            alt: 'En chat om hvor dere skal på helgetur. Begge svarte København og planlegger turen.',
+            alt: 'En chat om det første måltidet dere skal dele når dere møtes. Elena svarte hjemmelaget pizza, du svarte pannekaker, og dere blir enige om begge.',
           },
         ],
       },
