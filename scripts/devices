@@ -153,8 +153,10 @@ cmd_install() {
   # Clerk instance, so installing it signs the partner on that device out.
   local backend
   backend="$(/usr/libexec/PlistBuddy -c "Print PaeoniaConvexURL" "$app/Info.plist" 2>/dev/null || true)"
-  if [[ "$backend" != "$PRODUCTION_BACKEND" ]]; then
-    echo "devices: this build talks to ${backend:-no backend}, not $PRODUCTION_BACKEND. The devices are signed in to production, so installing it would sign them out. Delete ios/local.xcconfig and build again, or test on a simulator." >&2
+  # PAEONIA_DEVICES_ALLOW_LOCAL_BACKEND=1 allows it when the developer agreed to it
+  # for this task. Whoever installs it reinstalls a production build afterwards.
+  if [[ "$backend" != "$PRODUCTION_BACKEND" && "${PAEONIA_DEVICES_ALLOW_LOCAL_BACKEND:-}" != 1 ]]; then
+    echo "devices: this build talks to ${backend:-no backend}, not $PRODUCTION_BACKEND. The devices are signed in to production, so installing it would sign them out. Delete ios/local.xcconfig and build again, or test on a simulator. If the developer agreed to it for this task, set PAEONIA_DEVICES_ALLOW_LOCAL_BACKEND=1, and reinstall a production build when you are done." >&2
     exit 1
   fi
   for device in "${targets[@]}"; do
