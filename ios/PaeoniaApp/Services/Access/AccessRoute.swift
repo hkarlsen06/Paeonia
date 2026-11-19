@@ -103,10 +103,6 @@ nonisolated struct AccessRouteResolution: Equatable, Sendable {
         snapshot.relationshipState?.acceptedInvite ?? false
     }
 
-    var pairingCelebrationPairID: UUID? {
-        snapshot.relationshipState?.pairID
-    }
-
     /// The server recorded that this person finished the celebration and the first
     /// day sequence in this couple, on any phone.
     var hasFinishedFirstDay: Bool {

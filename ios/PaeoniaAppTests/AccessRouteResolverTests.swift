@@ -308,7 +308,6 @@ private extension RemoteRelationshipState {
     ) -> RemoteRelationshipState {
         RemoteRelationshipState(
             coupleID: UUID(),
-            pairID: UUID(),
             relationshipStatus: relationshipStatus,
             memberStatus: memberStatus,
             acceptedInvite: false,

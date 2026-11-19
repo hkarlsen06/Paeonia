@@ -106,7 +106,6 @@ nonisolated struct RemoteCoupleEntitlement: Codable, Equatable, Sendable {
 
 nonisolated struct RemoteRelationshipState: Codable, Equatable, Sendable {
     let coupleID: UUID
-    let pairID: UUID
     let relationshipStatus: RemoteRelationshipStatus
     let memberStatus: RemoteRelationshipMemberStatus
     /// This person joined with the partner's invite code.
@@ -133,7 +132,6 @@ nonisolated struct RemoteRelationshipState: Codable, Equatable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case coupleID = "couple_id"
-        case pairID = "pair_id"
         case relationshipStatus = "relationship_status"
         case memberStatus = "member_status"
         case acceptedInvite = "accepted_invite"
@@ -167,7 +165,6 @@ nonisolated struct RemoteRelationshipState: Codable, Equatable, Sendable {
     func replacingStartedOn(_ startedOn: String?) -> Self {
         Self(
             coupleID: coupleID,
-            pairID: pairID,
             relationshipStatus: relationshipStatus,
             memberStatus: memberStatus,
             acceptedInvite: acceptedInvite,

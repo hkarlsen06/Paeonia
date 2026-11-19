@@ -16,13 +16,13 @@ nonisolated enum PostPairingStep: String, Codable, CaseIterable, Sendable {
     case answerInvite
 }
 
-/// How far one person got through the first day sequence of one pair, saved on
+/// How far one person got through the first day sequence of one couple, saved on
 /// this phone so an app kill resumes where it stopped.
 nonisolated struct PostPairingProgress: Codable, Equatable, Sendable {
     /// Steps the person moved past. A gift counts as soon as it is opened, so it
     /// never plays twice.
     var finishedSteps: Set<PostPairingStep> = []
-    /// The sequence is over and never shows again for this pair.
+    /// The sequence is over and never shows again for this couple.
     var isFinished = false
 }
 

@@ -304,7 +304,7 @@ extension RootView {
         .onChange(of: viewModel.currentPartnerDisplayName) { _, _ in
             partnerNameChanged()
         }
-        // Signed out or unpaired. Signing back in to the same pair starts over.
+        // Signed out or unpaired. Signing back in to the same couple starts over.
         .onDisappear {
             postPairingFlow.reset()
         }
@@ -321,7 +321,6 @@ extension RootView {
     private var postPairingContext: PostPairingContext? {
         guard (viewModel.isPairingCelebrationPresented && !viewModel.isReunionCelebration)
             || viewModel.isFirstDayPresented,
-              let pairID = viewModel.currentPairID,
               let currentUserID = viewModel.currentSession.flatMap({ UUID(uuidString: $0.id) }),
               let partnerUserID = viewModel.currentPartnerUserID,
               let coupleID = viewModel.currentActiveCoupleID
@@ -329,7 +328,6 @@ extension RootView {
             return nil
         }
         return PostPairingContext(
-            pairID: pairID,
             currentUserID: currentUserID,
             partnerUserID: partnerUserID,
             coupleID: coupleID
@@ -374,7 +372,6 @@ extension RootView {
             partnerUserID: viewModel.currentPartnerUserID,
             partnerName: viewModel.currentPartnerName,
             partnerProfilePhotoAssetID: viewModel.currentPartnerProfilePhotoAssetID,
-            pairID: viewModel.currentPairID,
             coupleID: viewModel.currentActiveCoupleID,
             relationshipStartedOn: viewModel.currentRelationshipStartedOn,
             ownAccess: viewModel.currentOwnAccess,

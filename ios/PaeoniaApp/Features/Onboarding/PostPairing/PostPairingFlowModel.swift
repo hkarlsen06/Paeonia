@@ -5,7 +5,6 @@ import UIKit
 /// Who the first day sequence loads for. The names and the start date are only
 /// shown, so they reach the views without restarting the loads.
 nonisolated struct PostPairingContext: Equatable, Sendable {
-    let pairID: UUID
     let currentUserID: UUID
     let partnerUserID: UUID
     let coupleID: UUID
@@ -23,7 +22,7 @@ enum PostPairingOutcome: Equatable {
 /// `prepare` starts loading while the celebration still plays: the partner's widget
 /// drawing, the question time setting, and today's question. `start` then decides
 /// the steps from what loaded (`PostPairingPlan`) and from this phone's progress for
-/// the pair, so a step the person already moved past never comes back. A load that
+/// the couple, so a step the person already moved past never comes back. A load that
 /// fails or takes too long only skips its own step.
 @Observable
 final class PostPairingFlowModel {
@@ -124,7 +123,7 @@ final class PostPairingFlowModel {
     }
 
     /// Forgets everything, for when the paired screen goes away (sign-out or
-    /// unpair). The same pair can then start over.
+    /// unpair). The same couple can then start over.
     func reset() {
         loadTask?.cancel()
         loadTask = nil
@@ -229,7 +228,7 @@ final class PostPairingFlowModel {
         }
         hasStarted = true
 
-        let progress = store.postPairingProgress(forPairID: context.pairID) ?? PostPairingProgress()
+        let progress = store.postPairingProgress(forCoupleID: context.coupleID) ?? PostPairingProgress()
         facts.startedOn = startedOn
         facts.acceptedInvite = acceptedInvite
         queue = PostPairingPlan.steps(for: facts, finished: progress.finishedSteps)
@@ -251,7 +250,7 @@ final class PostPairingFlowModel {
     /// Shows the next planned step. A step finished since the plan was made, such as
     /// the widget asked for after a drawing back, is passed over.
     private func advance() {
-        let finished = context.flatMap { store.postPairingProgress(forPairID: $0.pairID) }?.finishedSteps ?? []
+        let finished = context.flatMap { store.postPairingProgress(forCoupleID: $0.coupleID) }?.finishedSteps ?? []
         queue.removeAll(where: finished.contains)
         guard !queue.isEmpty else {
             finish()
@@ -314,14 +313,14 @@ final class PostPairingFlowModel {
         }
     }
 
-    /// Saves that the person moved past `step` for this pair.
+    /// Saves that the person moved past `step` for this couple.
     private func complete(_ step: PostPairingStep) {
         guard let context else {
             return
         }
-        var progress = store.postPairingProgress(forPairID: context.pairID) ?? PostPairingProgress()
+        var progress = store.postPairingProgress(forCoupleID: context.coupleID) ?? PostPairingProgress()
         progress.finishedSteps.insert(step)
-        store.savePostPairingProgress(progress, forPairID: context.pairID)
+        store.savePostPairingProgress(progress, forCoupleID: context.coupleID)
     }
 
     func clearGiftFailure() {

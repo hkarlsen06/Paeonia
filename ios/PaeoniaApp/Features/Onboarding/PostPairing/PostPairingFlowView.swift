@@ -62,7 +62,7 @@ struct PostPairingFlowView: View {
         // The navigation stack sizes its content in a few passes after it appears. A
         // step shown before the last one would animate from that small size, so the
         // first step waits until the content is as wide as this view.
-        .task(id: StartKey(pairID: model.context?.pairID, hasFullWidth: hasFullWidth)) {
+        .task(id: StartKey(coupleID: model.context?.coupleID, hasFullWidth: hasFullWidth)) {
             guard hasFullWidth else {
                 return
             }
@@ -104,7 +104,7 @@ struct PostPairingFlowView: View {
     }
 
     private struct StartKey: Equatable {
-        let pairID: UUID?
+        let coupleID: UUID?
         let hasFullWidth: Bool
     }
 

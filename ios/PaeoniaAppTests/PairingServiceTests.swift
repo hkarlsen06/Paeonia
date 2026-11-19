@@ -139,20 +139,22 @@ struct PairingInviteCodeTests {
         let suiteName = "PaeoniaAppTests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
-        let firstPairID = UUID()
-        let secondPairID = UUID()
+        let firstCoupleID = UUID()
+        let secondCoupleID = UUID()
         let unrelatedKey = "paeonia.pairing.unrelated"
         let store = UserDefaultsPairingCelebrationStore(defaults: defaults)
-        store.markCelebrationSeen(forPairID: firstPairID)
-        store.markCelebrationSeen(forPairID: secondPairID)
-        store.saveHomeFirstSteps(HomeFirstStepsProgress(doneSteps: [.memory], isClosed: true), forPairID: firstPairID)
+        store.markCelebrationSeen(forCoupleID: firstCoupleID)
+        store.markCelebrationSeen(forCoupleID: secondCoupleID)
+        store.saveHomeFirstSteps(
+            HomeFirstStepsProgress(doneSteps: [.memory], isClosed: true), forCoupleID: firstCoupleID
+        )
         defaults.set(true, forKey: unrelatedKey)
 
         store.clearAll()
 
-        #expect(!store.hasSeenCelebration(forPairID: firstPairID))
-        #expect(!store.hasSeenCelebration(forPairID: secondPairID))
-        #expect(store.homeFirstSteps(forPairID: firstPairID) == HomeFirstStepsProgress())
+        #expect(!store.hasSeenCelebration(forCoupleID: firstCoupleID))
+        #expect(!store.hasSeenCelebration(forCoupleID: secondCoupleID))
+        #expect(store.homeFirstSteps(forCoupleID: firstCoupleID) == HomeFirstStepsProgress())
         #expect(defaults.bool(forKey: unrelatedKey))
     }
 }

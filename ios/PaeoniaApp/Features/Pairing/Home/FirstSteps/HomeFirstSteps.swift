@@ -15,12 +15,12 @@ nonisolated enum HomeFirstStep: String, Codable, CaseIterable, Sendable {
     case topic
 }
 
-/// What this phone remembers about one pair's card. A row stays ticked once it was seen
+/// What this phone remembers about one couple's card. A row stays ticked once it was seen
 /// done, so deleting the memory or skipping the topic question later does not untick it.
 nonisolated struct HomeFirstStepsProgress: Codable, Equatable, Sendable {
     var doneSteps: Set<HomeFirstStep> = []
     /// The person closed the card, or the moment for finishing every row played. It
-    /// never shows again for this pair.
+    /// never shows again for this couple.
     var isClosed = false
 }
 
@@ -38,7 +38,7 @@ nonisolated struct HomeFirstSteps: Equatable, Sendable {
         doneSteps.contains(step)
     }
 
-    /// The card for a pair, or nil when Home hides it: no saved progress (the first day is
+    /// The card for a couple, or nil when Home hides it: no saved progress (the first day is
     /// not over), closed, or a row whose state has not loaded yet. A card with every row
     /// done still shows, so its finish moment can play.
     /// `observed` holds a row once the app has loaded what it needs to know, true when done.

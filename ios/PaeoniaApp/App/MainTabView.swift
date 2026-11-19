@@ -11,10 +11,9 @@ struct MainTabIdentity: Equatable {
     /// What this person calls their partner. Show `partnerDisplayName`, never the partner's own name.
     var partnerName: PartnerName?
     var partnerProfilePhotoAssetID: UUID?
-    /// The pair this phone celebrated, which keys Home's "Things to try together" card.
-    var pairID: UUID?
-    /// The active couple, needed to create new memories. Cosmetic for the rest of the
-    /// tabs, so it must not be part of any load-bearing `.task(id:)` key.
+    /// The active couple, needed to create new memories. It also keys Home's "Things to
+    /// try together" card, which belongs to one couple. Cosmetic for the rest of the
+    /// tabs, so it must not be part of their load-bearing `.task(id:)` keys.
     var coupleID: UUID?
     /// The day the relationship started (`yyyy-MM-dd`), used by the Us tab milestone
     /// countdown. Display-only, so it never keys a load.

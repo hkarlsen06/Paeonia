@@ -116,7 +116,6 @@ struct SubscriptionDetailsTests {
             coupleEntitlement: couple,
             relationshipState: RemoteRelationshipState(
                 coupleID: UUID(),
-                pairID: UUID(),
                 relationshipStatus: .active,
                 memberStatus: .active,
                 acceptedInvite: false,

@@ -128,7 +128,6 @@ struct RelationshipStartedOnDataServiceTests {
     private func relationshipState(startedOn: String?) throws -> RemoteRelationshipState {
         RemoteRelationshipState(
             coupleID: try #require(UUID(uuidString: "44444444-4444-4444-4444-444444444444")),
-            pairID: try #require(UUID(uuidString: "55555555-5555-5555-5555-555555555555")),
             relationshipStatus: .active,
             memberStatus: .active,
             acceptedInvite: false,

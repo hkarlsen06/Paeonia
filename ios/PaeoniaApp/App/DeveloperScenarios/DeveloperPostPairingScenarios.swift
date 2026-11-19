@@ -45,7 +45,6 @@
     @State private var outcome: PostPairingOutcome?
 
     private static let context = PostPairingContext(
-      pairID: UUID(uuidString: "abababab-0000-4000-8000-000000000001") ?? UUID(),
       currentUserID: DeveloperScenarioFixture.currentUserID,
       partnerUserID: DeveloperScenarioFixture.partnerUserID,
       coupleID: UUID(uuidString: "abababab-0000-4000-8000-000000000002") ?? UUID()
@@ -151,8 +150,8 @@
 
     /// What the root does on dismiss: the progress starts.
     private func dismissCelebration() {
-      store.markCelebrationSeen(forPairID: Self.context.pairID)
-      store.savePostPairingProgress(PostPairingProgress(), forPairID: Self.context.pairID)
+      store.markCelebrationSeen(forCoupleID: Self.context.coupleID)
+      store.savePostPairingProgress(PostPairingProgress(), forCoupleID: Self.context.coupleID)
       isCelebrating = false
     }
 

@@ -182,7 +182,6 @@ private final class AccessFeedEnv: @unchecked Sendable {
 }
 
 extension RemoteAccessSnapshot {
-    private static let pairID = UUID()
     private static let partnerUserID = UUID()
 
     static func paired(
@@ -219,7 +218,6 @@ extension RemoteAccessSnapshot {
             ),
             relationshipState: RemoteRelationshipState(
                 coupleID: coupleID,
-                pairID: pairID,
                 relationshipStatus: status,
                 memberStatus: memberStatus,
                 acceptedInvite: false,

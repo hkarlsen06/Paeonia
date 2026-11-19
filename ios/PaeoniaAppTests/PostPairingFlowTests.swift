@@ -79,22 +79,22 @@ struct PostPairingPlanTests {
 
 @MainActor
 struct PostPairingCelebrationStateTests {
-    private let pairID = UUID()
+    private let coupleID = UUID()
 
     @Test func acceptedInviteStartsFirstDay() throws {
         let store = TestPairingCelebrationStore()
         var state = RootPairingCelebrationState(store: store)
 
         state.presentAcceptedInvite()
-        state.dismiss(currentResolution: .paired(pairID: pairID))
+        state.dismiss(currentResolution: .paired(coupleID: coupleID))
 
         #expect(!state.isPresented)
         #expect(state.isFirstDayPresented)
-        let progress = try #require(store.postPairingProgress(forPairID: pairID))
+        let progress = try #require(store.postPairingProgress(forCoupleID: coupleID))
         #expect(!progress.isFinished)
     }
 
-    @Test func dismissedBeforeThePairIsKnownStartsProgressWhenItArrives() {
+    @Test func dismissedBeforeTheCoupleIsKnownStartsProgressWhenItArrives() {
         let store = TestPairingCelebrationStore()
         var state = RootPairingCelebrationState(store: store)
 
@@ -102,36 +102,36 @@ struct PostPairingCelebrationStateTests {
         state.dismiss(currentResolution: nil)
         #expect(state.isFirstDayPresented)
 
-        state.update(for: .paired(pairID: pairID))
+        state.update(for: .paired(coupleID: coupleID))
 
         #expect(state.isFirstDayPresented)
-        #expect(store.hasSeenCelebration(forPairID: pairID))
-        #expect(store.postPairingProgress(forPairID: pairID) != nil)
+        #expect(store.hasSeenCelebration(forCoupleID: coupleID))
+        #expect(store.postPairingProgress(forCoupleID: coupleID) != nil)
     }
 
     @Test func unfinishedFirstDayResumesOnTheNextLaunch() {
-        let store = TestPairingCelebrationStore(seenPairIDs: [pairID])
-        store.savePostPairingProgress(PostPairingProgress(), forPairID: pairID)
+        let store = TestPairingCelebrationStore(seenCoupleIDs: [coupleID])
+        store.savePostPairingProgress(PostPairingProgress(), forCoupleID: coupleID)
         var state = RootPairingCelebrationState(store: store)
 
-        state.update(for: .paired(pairID: pairID))
+        state.update(for: .paired(coupleID: coupleID))
 
         #expect(!state.isPresented)
         #expect(state.isFirstDayPresented)
     }
 
     @Test func finishedFirstDayNeverShowsAgain() throws {
-        let store = TestPairingCelebrationStore(seenPairIDs: [pairID])
-        store.savePostPairingProgress(PostPairingProgress(), forPairID: pairID)
+        let store = TestPairingCelebrationStore(seenCoupleIDs: [coupleID])
+        store.savePostPairingProgress(PostPairingProgress(), forCoupleID: coupleID)
         var state = RootPairingCelebrationState(store: store)
-        state.update(for: .paired(pairID: pairID))
+        state.update(for: .paired(coupleID: coupleID))
 
-        state.finishFirstDay(currentResolution: .paired(pairID: pairID))
+        state.finishFirstDay(currentResolution: .paired(coupleID: coupleID))
         #expect(!state.isFirstDayPresented)
-        #expect(try #require(store.postPairingProgress(forPairID: pairID)).isFinished)
+        #expect(try #require(store.postPairingProgress(forCoupleID: coupleID)).isFinished)
 
         var relaunched = RootPairingCelebrationState(store: store)
-        relaunched.update(for: .paired(pairID: pairID))
+        relaunched.update(for: .paired(coupleID: coupleID))
         #expect(!relaunched.isFirstDayPresented)
     }
 
@@ -139,27 +139,27 @@ struct PostPairingCelebrationStateTests {
     @Test func firstDayFinishedOnTheServerShowsNothingOnAPhoneWithoutRecords() {
         var state = RootPairingCelebrationState(store: TestPairingCelebrationStore())
 
-        state.update(for: .paired(pairID: pairID, firstDayFinishedAt: Date(timeIntervalSince1970: 1_900_000_000)))
+        state.update(for: .paired(coupleID: coupleID, firstDayFinishedAt: Date(timeIntervalSince1970: 1_900_000_000)))
 
         #expect(!state.isPresented)
         #expect(!state.isFirstDayPresented)
     }
 
     @Test func firstDayFinishedOnlyOnThisPhoneStillNeedsTheServer() {
-        let store = TestPairingCelebrationStore(seenPairIDs: [pairID])
-        store.savePostPairingProgress(PostPairingProgress(isFinished: true), forPairID: pairID)
+        let store = TestPairingCelebrationStore(seenCoupleIDs: [coupleID])
+        store.savePostPairingProgress(PostPairingProgress(isFinished: true), forCoupleID: coupleID)
         let state = RootPairingCelebrationState(store: store)
 
-        #expect(state.needsFirstDayRecorded(for: .paired(pairID: pairID)))
+        #expect(state.needsFirstDayRecorded(for: .paired(coupleID: coupleID)))
         #expect(!state.needsFirstDayRecorded(
-            for: .paired(pairID: pairID, firstDayFinishedAt: Date(timeIntervalSince1970: 1_900_000_000))
+            for: .paired(coupleID: coupleID, firstDayFinishedAt: Date(timeIntervalSince1970: 1_900_000_000))
         ))
     }
 
-    @Test func pairCelebratedWithoutFirstDayProgressShowsNothing() {
-        var state = RootPairingCelebrationState(store: TestPairingCelebrationStore(seenPairIDs: [pairID]))
+    @Test func coupleCelebratedWithoutFirstDayProgressShowsNothing() {
+        var state = RootPairingCelebrationState(store: TestPairingCelebrationStore(seenCoupleIDs: [coupleID]))
 
-        state.update(for: .paired(pairID: pairID))
+        state.update(for: .paired(coupleID: coupleID))
 
         #expect(!state.isPresented)
         #expect(!state.isFirstDayPresented)
@@ -169,7 +169,6 @@ struct PostPairingCelebrationStateTests {
 @MainActor
 struct PostPairingFlowModelTests {
     private let context = PostPairingContext(
-        pairID: UUID(),
         currentUserID: UUID(),
         partnerUserID: UUID(),
         coupleID: UUID()
@@ -190,7 +189,7 @@ struct PostPairingFlowModelTests {
 
     @Test func joinedPartnerStartsWithTheGift() async {
         let store = TestPairingCelebrationStore()
-        store.savePostPairingProgress(PostPairingProgress(), forPairID: context.pairID)
+        store.savePostPairingProgress(PostPairingProgress(), forCoupleID: context.coupleID)
         let model = makeModel(store: store, loader: PostPairingFakeLoader(gift: .ready(.sample)))
 
         model.prepare(context)
@@ -214,13 +213,13 @@ struct PostPairingFlowModelTests {
 
     @Test func anOpenedGiftIsSavedAndSkippedAfterARestart() async throws {
         let store = TestPairingCelebrationStore()
-        store.savePostPairingProgress(PostPairingProgress(), forPairID: context.pairID)
+        store.savePostPairingProgress(PostPairingProgress(), forCoupleID: context.coupleID)
         let model = makeModel(store: store, loader: PostPairingFakeLoader(gift: .ready(.sample)))
         model.prepare(context)
         await model.start(startedOn: "2024-03-03", acceptedInvite: true)
 
         model.giftOpened()
-        #expect(try #require(store.postPairingProgress(forPairID: context.pairID)).finishedSteps == [.gift])
+        #expect(try #require(store.postPairingProgress(forCoupleID: context.coupleID)).finishedSteps == [.gift])
 
         let restarted = makeModel(store: store, loader: PostPairingFakeLoader(gift: .ready(.sample)))
         restarted.prepare(context)
@@ -230,7 +229,7 @@ struct PostPairingFlowModelTests {
 
     @Test func aGiftThatIsTooSlowIsSkipped() async {
         let store = TestPairingCelebrationStore()
-        store.savePostPairingProgress(PostPairingProgress(), forPairID: context.pairID)
+        store.savePostPairingProgress(PostPairingProgress(), forCoupleID: context.coupleID)
         let model = makeModel(
             store: store,
             loader: PostPairingFakeLoader(gift: .ready(.sample), giftDelay: .seconds(2)),
@@ -245,7 +244,7 @@ struct PostPairingFlowModelTests {
 
     @Test func aSlowGiftDoesNotSkipTheStepsThatLoaded() async {
         let store = TestPairingCelebrationStore()
-        store.savePostPairingProgress(PostPairingProgress(), forPairID: context.pairID)
+        store.savePostPairingProgress(PostPairingProgress(), forCoupleID: context.coupleID)
         let model = makeModel(
             store: store,
             loader: PostPairingFakeLoader(
@@ -269,7 +268,7 @@ struct PostPairingFlowModelTests {
 
     @Test func inviterWithNothingLeftEndsOnHomeAtOnce() async {
         let store = TestPairingCelebrationStore()
-        store.savePostPairingProgress(PostPairingProgress(), forPairID: context.pairID)
+        store.savePostPairingProgress(PostPairingProgress(), forCoupleID: context.coupleID)
         let model = makeModel(store: store, loader: PostPairingFakeLoader(questionTimeIsOn: true))
 
         model.prepare(context)
@@ -281,7 +280,7 @@ struct PostPairingFlowModelTests {
 
     @Test func steppingThroughEndsOnTheAnswerFlow() async throws {
         let store = TestPairingCelebrationStore()
-        store.savePostPairingProgress(PostPairingProgress(), forPairID: context.pairID)
+        store.savePostPairingProgress(PostPairingProgress(), forCoupleID: context.coupleID)
         let model = makeModel(
             store: store,
             loader: PostPairingFakeLoader(questionTimeIsOn: false, partnerAnswersWaiting: true)
@@ -297,7 +296,7 @@ struct PostPairingFlowModelTests {
         model.answerInviteFinished(answerNow: true)
 
         #expect(model.outcome == .answerQuestions)
-        let progress = try #require(store.postPairingProgress(forPairID: context.pairID))
+        let progress = try #require(store.postPairingProgress(forCoupleID: context.coupleID))
         #expect(progress.finishedSteps == [.date, .questionTime, .answerInvite])
     }
 
@@ -346,7 +345,7 @@ struct PostPairingFlowModelTests {
     /// follows a send doesn't skip a second step.
     @Test func sendingTheDrawingMovesOnOnce() async {
         let store = TestPairingCelebrationStore()
-        store.savePostPairingProgress(PostPairingProgress(), forPairID: context.pairID)
+        store.savePostPairingProgress(PostPairingProgress(), forCoupleID: context.coupleID)
         let model = PostPairingFlowModel(
             store: store,
             loader: PostPairingFakeLoader(gift: .ready(.sample)),
@@ -373,15 +372,14 @@ struct PostPairingFlowModelTests {
 // MARK: - Fakes
 
 private extension AccessRouteResolution {
-    static func paired(pairID: UUID, firstDayFinishedAt: Date? = nil) -> AccessRouteResolution {
+    static func paired(coupleID: UUID, firstDayFinishedAt: Date? = nil) -> AccessRouteResolution {
         AccessRouteResolution(
             route: .paired,
             snapshot: AccessRouteSnapshot(
                 userEntitlement: nil,
                 coupleEntitlement: nil,
                 relationshipState: RemoteRelationshipState(
-                    coupleID: UUID(),
-                    pairID: pairID,
+                    coupleID: coupleID,
                     relationshipStatus: .active,
                     memberStatus: .active,
                     acceptedInvite: false,

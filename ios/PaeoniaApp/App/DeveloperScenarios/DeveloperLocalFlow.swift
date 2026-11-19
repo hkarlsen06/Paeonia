@@ -216,8 +216,10 @@
         accessRouteService: accessService,
         accessSnapshotStore: accessSnapshotStore,
         inviteStore: inviteStore,
+        // A former partner asking to come back means this phone already went through
+        // the old couple's first day.
         pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(
-          firstSteps: homeLaunch != nil ? HomeFirstStepsProgress(isClosed: true)
+          firstSteps: homeLaunch != nil || seed == .restoreRequested ? HomeFirstStepsProgress(isClosed: true)
             : seed == .paired ? HomeFirstStepsProgress(doneSteps: [.game, .topic]) : nil
         ),
         systemSideEffects: NoOpRootSystemSideEffects(),

@@ -3,7 +3,7 @@ import SwiftUI
 /// Keys the card's load. The card shows only once the games and topics have loaded,
 /// which wait for the cold-launch intro, so its own reads wait for it too.
 private struct FirstStepsLoadKey: Hashable {
-    var pairID: UUID?
+    var coupleID: UUID?
     var userID: UUID?
     var introComplete: Bool
 }
@@ -16,12 +16,12 @@ extension MainTabView {
         HomeFirstSteps.card(progress: firstStepsModel.progress, observed: observedFirstSteps)
     }
 
-    /// Loads the pair's saved card and ticks each row for good the first time it is seen done.
+    /// Loads the couple's saved card and ticks each row for good the first time it is seen done.
     func followingFirstSteps(on content: some View) -> some View {
         content
             .task(id: firstStepsLoadKey) {
                 guard firstStepsLoadKey.introComplete else { return }
-                await firstStepsModel.load(pairID: identity.pairID, ownerUserID: identity.currentUserID)
+                await firstStepsModel.load(coupleID: identity.coupleID, ownerUserID: identity.currentUserID)
             }
             .onChange(of: observedDoneFirstSteps, initial: true) { _, doneSteps in
                 firstStepsModel.record(doneSteps)
@@ -57,7 +57,7 @@ extension MainTabView {
 
     private var firstStepsLoadKey: FirstStepsLoadKey {
         FirstStepsLoadKey(
-            pairID: identity.pairID,
+            coupleID: identity.coupleID,
             userID: identity.currentUserID,
             introComplete: launchIntroComplete
         )

@@ -5,6 +5,7 @@
     private var session: AuthSession?
     private var isEntitled: Bool
     private var isPaired: Bool
+    private var coupleID = DeveloperScenarioFixture.coupleID
     private var acceptedInvite = false
     private var restoreRequest: RemoteRestoreRequest?
     /// The couple came back, so both finished its first day long ago.
@@ -121,7 +122,9 @@
       isPaired = true
       restored = restore
       reunionCelebrationDue = restore
-      return RelationshipRestoreAnswer(coupleID: DeveloperScenarioFixture.coupleID, restored: restore)
+      // Starting fresh makes a new couple. Bringing it back reopens the old one.
+      if !restore { coupleID = DeveloperLocalFlowIDs.freshStartCoupleID }
+      return RelationshipRestoreAnswer(coupleID: coupleID, restored: restore)
     }
 
     func markReunionCelebrationSeen() { reunionCelebrationDue = false }
@@ -164,7 +167,7 @@
     private var coupleEntitlement: RemoteCoupleEntitlement? {
       guard isPaired, isEntitled else { return nil }
       return RemoteCoupleEntitlement(
-        coupleID: DeveloperScenarioFixture.coupleID,
+        coupleID: coupleID,
         isEntitled: true,
         coveringUserID: DeveloperScenarioFixture.currentUserID,
         source: "storekit",
@@ -179,8 +182,7 @@
     private var relationship: RemoteRelationshipState? {
       guard isPaired else { return nil }
       var state = RemoteRelationshipState(
-        coupleID: DeveloperScenarioFixture.coupleID,
-        pairID: DeveloperLocalFlowIDs.pairID,
+        coupleID: coupleID,
         relationshipStatus: .active,
         memberStatus: .active,
         acceptedInvite: acceptedInvite,
@@ -218,6 +220,7 @@
 
   nonisolated enum DeveloperLocalFlowIDs {
     static let pairID = UUID(uuidString: "66666666-6666-6666-6666-666666666666") ?? UUID()
+    static let freshStartCoupleID = UUID(uuidString: "77777777-7777-7777-7777-777777777777") ?? UUID()
   }
 
   // Protocol doubles intentionally keep async requirements even when a local

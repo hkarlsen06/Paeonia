@@ -181,13 +181,13 @@ struct PaeoniaAppTests {
     }
 
     @MainActor
-    @Test func acceptedInviteDismissedBeforeSnapshotMarksSeenWhenPairIDArrives() async throws {
-        let pairID = try #require(UUID(uuidString: "B14D1155-6F4E-4631-8429-12C023D028CB"))
+    @Test func acceptedInviteDismissedBeforeSnapshotMarksSeenWhenCoupleIDArrives() async throws {
+        let coupleID = try #require(UUID(uuidString: "B14D1155-6F4E-4631-8429-12C023D028CB"))
         let pairingCelebrationStore = TestPairingCelebrationStore()
         let accessRouteService = BlockingAccessRouteService(
             routes: [.limitedAuthenticated, .paired],
             blockedCallIndex: 2,
-            pairID: pairID
+            coupleID: coupleID
         )
         let viewModel = RootViewModel(
             syncService: TestPaeoniaSyncService(),
@@ -205,24 +205,24 @@ struct PaeoniaAppTests {
         await accessRouteService.waitForBlockedResolveToStart()
         viewModel.dismissPairingCelebration()
         #expect(viewModel.isPairingCelebrationPresented == false)
-        #expect(pairingCelebrationStore.hasSeenCelebration(forPairID: pairID) == false)
+        #expect(pairingCelebrationStore.hasSeenCelebration(forCoupleID: coupleID) == false)
 
         await accessRouteService.releaseBlockedResolve()
         await refreshTask.value
 
         #expect(viewModel.state == .paired)
         #expect(viewModel.isPairingCelebrationPresented == false)
-        #expect(pairingCelebrationStore.hasSeenCelebration(forPairID: pairID) == true)
+        #expect(pairingCelebrationStore.hasSeenCelebration(forCoupleID: coupleID) == true)
     }
 
     @MainActor
     @Test func seenPairingCelebrationDoesNotPresentFreshLinkAgain() async throws {
-        let pairID = try #require(UUID(uuidString: "E88951E9-41DC-4961-A92D-DC2D5856F558"))
-        let pairingCelebrationStore = TestPairingCelebrationStore(seenPairIDs: [pairID])
+        let coupleID = try #require(UUID(uuidString: "E88951E9-41DC-4961-A92D-DC2D5856F558"))
+        let pairingCelebrationStore = TestPairingCelebrationStore(seenCoupleIDs: [coupleID])
         let accessRouteService = BlockingAccessRouteService(
             routes: [.invitePending, .paired],
             blockedCallIndex: 0,
-            pairID: pairID
+            coupleID: coupleID
         )
         let viewModel = RootViewModel(
             syncService: TestPaeoniaSyncService(),
@@ -672,17 +672,17 @@ private actor FailingAccessRouteService: AccessRouteServicing {
 private actor BlockingAccessRouteService: AccessRouteServicing {
     private let routes: [AccessRoute]
     private let blockedCallIndex: Int
-    private let pairID: UUID?
+    private let coupleID: UUID?
     private var blockedResolveStarted = false
     private var blockedResolveStartedContinuation: CheckedContinuation<Void, Never>?
     private var blockedResolveReleaseContinuation: CheckedContinuation<Void, Never>?
     private(set) var resolveCallCount = 0
 
-    init(routes: [AccessRoute], blockedCallIndex: Int, pairID: UUID? = nil) {
+    init(routes: [AccessRoute], blockedCallIndex: Int, coupleID: UUID? = nil) {
         precondition(!routes.isEmpty)
         self.routes = routes
         self.blockedCallIndex = blockedCallIndex
-        self.pairID = pairID
+        self.coupleID = coupleID
     }
 
     func waitForBlockedResolveToStart() async {
@@ -715,7 +715,7 @@ private actor BlockingAccessRouteService: AccessRouteServicing {
         }
 
         let routeIndex = min(callIndex - 1, routes.count - 1)
-        return .test(route: routes[routeIndex], pairID: pairID)
+        return .test(route: routes[routeIndex], coupleID: coupleID)
     }
 
     func markRelationshipEndedNoticeSeen(coupleID _: UUID) async throws {}
@@ -765,7 +765,6 @@ private actor RelationshipEndedAccessRouteService: AccessRouteServicing {
                 coupleEntitlement: nil,
                 relationshipState: RemoteRelationshipState(
                     coupleID: coupleID,
-                    pairID: UUID(),
                     relationshipStatus: .ended,
                     memberStatus: noticeSeen ? .endedNoticeSeen : .endedNoticePending,
                     acceptedInvite: false,
@@ -810,7 +809,6 @@ extension AccessSyncSnapshot {
             coupleEntitlement: nil,
             relationshipState: RemoteRelationshipState(
                 coupleID: coupleID,
-                pairID: UUID(),
                 relationshipStatus: .ended,
                 memberStatus: .endedNoticePending,
                 acceptedInvite: false,
@@ -852,7 +850,7 @@ private extension AccessRouteResolution {
         route: AccessRoute,
         partnerDisplayName: String? = nil,
         partnerProfilePhotoAssetID: UUID? = nil,
-        pairID: UUID? = nil
+        coupleID: UUID? = nil
     ) -> AccessRouteResolution {
         AccessRouteResolution(
             route: route,
@@ -863,7 +861,7 @@ private extension AccessRouteResolution {
                     route: route,
                     partnerDisplayName: partnerDisplayName,
                     partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-                    pairID: pairID
+                    coupleID: coupleID
                 ),
                 hasPendingInvite: route == .invitePending
             )
@@ -874,22 +872,22 @@ private extension AccessRouteResolution {
         route: AccessRoute,
         partnerDisplayName: String?,
         partnerProfilePhotoAssetID: UUID?,
-        pairID: UUID?
+        coupleID: UUID?
     ) -> RemoteRelationshipState? {
         if let partnerDisplayName {
             return .test(
+                coupleID: coupleID ?? UUID(),
                 partnerDisplayName: partnerDisplayName,
-                partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-                pairID: pairID
+                partnerProfilePhotoAssetID: partnerProfilePhotoAssetID
             )
         }
 
         switch route {
         case .paired, .pairedPaywalled, .relationshipEndedNotice:
             return .test(
+                coupleID: coupleID ?? UUID(),
                 partnerDisplayName: "Partner",
-                partnerProfilePhotoAssetID: partnerProfilePhotoAssetID,
-                pairID: pairID
+                partnerProfilePhotoAssetID: partnerProfilePhotoAssetID
             )
         case .limitedAuthenticated, .unpaired, .invitePending, .accountClosed:
             return nil
@@ -932,12 +930,10 @@ private extension RemoteRelationshipState {
     static func test(
         coupleID: UUID = UUID(),
         partnerDisplayName: String,
-        partnerProfilePhotoAssetID: UUID? = nil,
-        pairID: UUID? = nil
+        partnerProfilePhotoAssetID: UUID? = nil
     ) -> RemoteRelationshipState {
         RemoteRelationshipState(
             coupleID: coupleID,
-            pairID: pairID ?? UUID(),
             relationshipStatus: .active,
             memberStatus: .active,
             acceptedInvite: false,
@@ -954,18 +950,18 @@ private extension RemoteRelationshipState {
 
 @MainActor
 final class TestPairingCelebrationStore: PairingCelebrationStoring {
-    private var seenPairIDs: Set<UUID>
+    private var seenCoupleIDs: Set<UUID>
 
-    init(seenPairIDs: Set<UUID> = []) {
-        self.seenPairIDs = seenPairIDs
+    init(seenCoupleIDs: Set<UUID> = []) {
+        self.seenCoupleIDs = seenCoupleIDs
     }
 
-    func hasSeenCelebration(forPairID pairID: UUID) -> Bool {
-        seenPairIDs.contains(pairID)
+    func hasSeenCelebration(forCoupleID coupleID: UUID) -> Bool {
+        seenCoupleIDs.contains(coupleID)
     }
 
-    func markCelebrationSeen(forPairID pairID: UUID) {
-        seenPairIDs.insert(pairID)
+    func markCelebrationSeen(forCoupleID coupleID: UUID) {
+        seenCoupleIDs.insert(coupleID)
     }
 
     private var seenReunions: Set<ReunionCelebration> = []
@@ -978,24 +974,24 @@ final class TestPairingCelebrationStore: PairingCelebrationStoring {
         seenReunions.insert(reunion)
     }
 
-    private(set) var progressByPairID: [UUID: PostPairingProgress] = [:]
+    private(set) var progressByCoupleID: [UUID: PostPairingProgress] = [:]
 
-    func postPairingProgress(forPairID pairID: UUID) -> PostPairingProgress? {
-        progressByPairID[pairID]
+    func postPairingProgress(forCoupleID coupleID: UUID) -> PostPairingProgress? {
+        progressByCoupleID[coupleID]
     }
 
-    func savePostPairingProgress(_ progress: PostPairingProgress, forPairID pairID: UUID) {
-        progressByPairID[pairID] = progress
+    func savePostPairingProgress(_ progress: PostPairingProgress, forCoupleID coupleID: UUID) {
+        progressByCoupleID[coupleID] = progress
     }
 
-    private var firstStepsByPairID: [UUID: HomeFirstStepsProgress] = [:]
+    private var firstStepsByCoupleID: [UUID: HomeFirstStepsProgress] = [:]
 
-    func homeFirstSteps(forPairID pairID: UUID) -> HomeFirstStepsProgress {
-        firstStepsByPairID[pairID] ?? HomeFirstStepsProgress()
+    func homeFirstSteps(forCoupleID coupleID: UUID) -> HomeFirstStepsProgress {
+        firstStepsByCoupleID[coupleID] ?? HomeFirstStepsProgress()
     }
 
-    func saveHomeFirstSteps(_ progress: HomeFirstStepsProgress, forPairID pairID: UUID) {
-        firstStepsByPairID[pairID] = progress
+    func saveHomeFirstSteps(_ progress: HomeFirstStepsProgress, forCoupleID coupleID: UUID) {
+        firstStepsByCoupleID[coupleID] = progress
     }
 }
 

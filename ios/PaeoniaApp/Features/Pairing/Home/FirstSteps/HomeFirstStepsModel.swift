@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// The saved state of Home's "Things to try together" card for the current pair, and
+/// The saved state of Home's "Things to try together" card for the current couple, and
 /// whether this person has saved a memory. `MainTabView` builds the card from this and
 /// from the other tabs' view models (`MainTabView+FirstSteps.swift`).
 ///
@@ -9,28 +9,28 @@ import Observation
 /// phone itself, and only while the card still waits for a memory.
 @Observable
 final class HomeFirstStepsModel {
-    /// Nil while there is no pair, or its first day sequence has not finished on this phone.
+    /// Nil while there is no couple, or its first day sequence has not finished on this phone.
     private(set) var progress: HomeFirstStepsProgress?
     /// This person saved a memory that is on this phone. Nil until read.
     private(set) var hasOwnMemory: Bool?
 
     @ObservationIgnored private let store: any PairingCelebrationStoring
     @ObservationIgnored private let memoryService: any MemoryDataServicing
-    @ObservationIgnored private var pairID: UUID?
+    @ObservationIgnored private var coupleID: UUID?
 
     init(store: any PairingCelebrationStoring, memoryService: any MemoryDataServicing) {
         self.store = store
         self.memoryService = memoryService
     }
 
-    /// Reads the pair's saved card, then follows this person's memories until one is saved.
+    /// Reads the couple's saved card, then follows this person's memories until one is saved.
     /// Runs until the calling task is cancelled.
-    func load(pairID: UUID?, ownerUserID: UUID?) async {
-        self.pairID = pairID
+    func load(coupleID: UUID?, ownerUserID: UUID?) async {
+        self.coupleID = coupleID
         progress = nil
         hasOwnMemory = nil
-        guard let pairID, store.postPairingProgress(forPairID: pairID)?.isFinished == true else { return }
-        let saved = store.homeFirstSteps(forPairID: pairID)
+        guard let coupleID, store.postPairingProgress(forCoupleID: coupleID)?.isFinished == true else { return }
+        let saved = store.homeFirstSteps(forCoupleID: coupleID)
         progress = saved
         guard !saved.isClosed, !saved.doneSteps.contains(.memory), let ownerUserID else { return }
 
@@ -46,20 +46,20 @@ final class HomeFirstStepsModel {
 
     /// Ticks the rows seen done, for good.
     func record(_ doneSteps: Set<HomeFirstStep>) {
-        guard let pairID, var progress, !doneSteps.isSubset(of: progress.doneSteps) else { return }
+        guard let coupleID, var progress, !doneSteps.isSubset(of: progress.doneSteps) else { return }
         progress.doneSteps.formUnion(doneSteps)
-        save(progress, pairID: pairID)
+        save(progress, coupleID: coupleID)
     }
 
     func close() {
-        guard let pairID, var progress else { return }
+        guard let coupleID, var progress else { return }
         progress.isClosed = true
-        save(progress, pairID: pairID)
+        save(progress, coupleID: coupleID)
     }
 
-    private func save(_ progress: HomeFirstStepsProgress, pairID: UUID) {
+    private func save(_ progress: HomeFirstStepsProgress, coupleID: UUID) {
         self.progress = progress
-        store.saveHomeFirstSteps(progress, forPairID: pairID)
+        store.saveHomeFirstSteps(progress, forCoupleID: coupleID)
     }
 
     private func readOwnMemory(ownerUserID: UUID) async {

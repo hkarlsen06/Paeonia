@@ -1,19 +1,19 @@
 import Foundation
 
-/// What this phone remembers about each pair's first moments: whether the
+/// What this phone remembers about each couple's first moments: whether the
 /// celebration played, how far the first day sequence after it got, and the
 /// "Things to try together" card Home shows after that. It also remembers the
 /// celebration it played after a restore, until the server has recorded it.
 protocol PairingCelebrationStoring: AnyObject {
-    func hasSeenCelebration(forPairID pairID: UUID) -> Bool
-    func markCelebrationSeen(forPairID pairID: UUID)
+    func hasSeenCelebration(forCoupleID coupleID: UUID) -> Bool
+    func markCelebrationSeen(forCoupleID coupleID: UUID)
     func hasSeenReunionCelebration(_ reunion: ReunionCelebration) -> Bool
     func markReunionCelebrationSeen(_ reunion: ReunionCelebration)
-    /// Nil until the celebration was dismissed for this pair on this phone.
-    func postPairingProgress(forPairID pairID: UUID) -> PostPairingProgress?
-    func savePostPairingProgress(_ progress: PostPairingProgress, forPairID pairID: UUID)
-    func homeFirstSteps(forPairID pairID: UUID) -> HomeFirstStepsProgress
-    func saveHomeFirstSteps(_ progress: HomeFirstStepsProgress, forPairID pairID: UUID)
+    /// Nil until the celebration was dismissed for this couple on this phone.
+    func postPairingProgress(forCoupleID coupleID: UUID) -> PostPairingProgress?
+    func savePostPairingProgress(_ progress: PostPairingProgress, forCoupleID coupleID: UUID)
+    func homeFirstSteps(forCoupleID coupleID: UUID) -> HomeFirstStepsProgress
+    func saveHomeFirstSteps(_ progress: HomeFirstStepsProgress, forCoupleID coupleID: UUID)
 }
 
 final class UserDefaultsPairingCelebrationStore: PairingCelebrationStoring {
@@ -29,12 +29,12 @@ final class UserDefaultsPairingCelebrationStore: PairingCelebrationStoring {
         self.defaults = defaults
     }
 
-    func hasSeenCelebration(forPairID pairID: UUID) -> Bool {
-        defaults.bool(forKey: key(for: pairID))
+    func hasSeenCelebration(forCoupleID coupleID: UUID) -> Bool {
+        defaults.bool(forKey: key(for: coupleID))
     }
 
-    func markCelebrationSeen(forPairID pairID: UUID) {
-        defaults.set(true, forKey: key(for: pairID))
+    func markCelebrationSeen(forCoupleID coupleID: UUID) {
+        defaults.set(true, forKey: key(for: coupleID))
     }
 
     func hasSeenReunionCelebration(_ reunion: ReunionCelebration) -> Bool {
@@ -45,23 +45,23 @@ final class UserDefaultsPairingCelebrationStore: PairingCelebrationStoring {
         defaults.set(reunion.dueAt.timeIntervalSince1970, forKey: reunionKey(for: reunion.coupleID))
     }
 
-    func postPairingProgress(forPairID pairID: UUID) -> PostPairingProgress? {
-        defaults.data(forKey: progressKey(for: pairID))
+    func postPairingProgress(forCoupleID coupleID: UUID) -> PostPairingProgress? {
+        defaults.data(forKey: progressKey(for: coupleID))
             .flatMap { try? JSONDecoder().decode(PostPairingProgress.self, from: $0) }
     }
 
-    func savePostPairingProgress(_ progress: PostPairingProgress, forPairID pairID: UUID) {
-        defaults.set(try? JSONEncoder().encode(progress), forKey: progressKey(for: pairID))
+    func savePostPairingProgress(_ progress: PostPairingProgress, forCoupleID coupleID: UUID) {
+        defaults.set(try? JSONEncoder().encode(progress), forKey: progressKey(for: coupleID))
     }
 
-    func homeFirstSteps(forPairID pairID: UUID) -> HomeFirstStepsProgress {
-        defaults.data(forKey: firstStepsKey(for: pairID))
+    func homeFirstSteps(forCoupleID coupleID: UUID) -> HomeFirstStepsProgress {
+        defaults.data(forKey: firstStepsKey(for: coupleID))
             .flatMap { try? JSONDecoder().decode(HomeFirstStepsProgress.self, from: $0) }
             ?? HomeFirstStepsProgress()
     }
 
-    func saveHomeFirstSteps(_ progress: HomeFirstStepsProgress, forPairID pairID: UUID) {
-        defaults.set(try? JSONEncoder().encode(progress), forKey: firstStepsKey(for: pairID))
+    func saveHomeFirstSteps(_ progress: HomeFirstStepsProgress, forCoupleID coupleID: UUID) {
+        defaults.set(try? JSONEncoder().encode(progress), forKey: firstStepsKey(for: coupleID))
     }
 
     func clearAll() {
@@ -72,19 +72,19 @@ final class UserDefaultsPairingCelebrationStore: PairingCelebrationStoring {
         }
     }
 
-    private func key(for pairID: UUID) -> String {
-        "\(keyPrefix)\(pairID.uuidString)"
+    private func key(for coupleID: UUID) -> String {
+        "\(keyPrefix)\(coupleID.uuidString)"
     }
 
     private func reunionKey(for coupleID: UUID) -> String {
         "\(reunionKeyPrefix)\(coupleID.uuidString)"
     }
 
-    private func progressKey(for pairID: UUID) -> String {
-        "\(progressKeyPrefix)\(pairID.uuidString)"
+    private func progressKey(for coupleID: UUID) -> String {
+        "\(progressKeyPrefix)\(coupleID.uuidString)"
     }
 
-    private func firstStepsKey(for pairID: UUID) -> String {
-        "\(firstStepsKeyPrefix)\(pairID.uuidString)"
+    private func firstStepsKey(for coupleID: UUID) -> String {
+        "\(firstStepsKeyPrefix)\(coupleID.uuidString)"
     }
 }

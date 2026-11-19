@@ -238,7 +238,6 @@
             currentDisplayName: "Alex",
             partnerUserID: DeveloperScenarioFixture.partnerUserID,
             partnerName: PartnerName(accountName: "Robin", nickname: nil),
-            pairID: scenario.firstStepsProgress == nil ? nil : DeveloperLocalFlowIDs.pairID,
             coupleID: DeveloperScenarioFixture.coupleID,
             relationshipStartedOn: DeveloperRecapFixture.startedOn(for: scenario) ?? "2025-09-14",
             accessNotice: scenario.accessNotice

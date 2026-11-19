@@ -134,7 +134,7 @@ struct DeletedMediaEvictionOrderTests {
             userEntitlement: nil,
             coupleEntitlement: nil,
             relationshipState: RemoteRelationshipState(
-                coupleID: owner, pairID: owner, relationshipStatus: .active, memberStatus: .active,
+                coupleID: owner, relationshipStatus: .active, memberStatus: .active,
                 acceptedInvite: false, partnerUserID: owner, partnerAccountName: "Panci",
                 partnerProfilePhotoAssetID: partnerPhoto, startedOn: "2026-06-24",
                 endedAt: nil, deleteAfter: nil, endedNoticeSeenAt: nil

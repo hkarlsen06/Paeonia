@@ -52,10 +52,6 @@ extension RootViewModel {
         route.accessResolution?.acceptedInvite ?? false
     }
 
-    var currentPairID: UUID? {
-        route.accessResolution?.pairingCelebrationPairID
-    }
-
     var currentProfilePhotoAssetID: UUID? {
         currentSession?.profilePhotoAssetID
     }

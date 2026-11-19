@@ -19,9 +19,9 @@ struct RootPairingCelebrationState {
     /// The presented celebration is for a couple that came back through a restore.
     /// Dismissing it leads to Home, not to the first day sequence.
     private(set) var isReunion = false
-    /// The user dismissed the celebration before the pair id was known. The
+    /// The user dismissed the celebration before the couple id was known. The
     /// next paired resolution records it as seen instead of showing it again.
-    private var marksSeenWhenPairIDArrives = false
+    private var marksSeenWhenCoupleIDArrives = false
 
     init(store: any PairingCelebrationStoring) {
         self.store = store
@@ -34,7 +34,7 @@ struct RootPairingCelebrationState {
         isPresented = true
         isFirstDayPresented = false
         isReunion = false
-        marksSeenWhenPairIDArrives = false
+        marksSeenWhenCoupleIDArrives = false
     }
 
     mutating func consumeIntro() {
@@ -54,22 +54,22 @@ struct RootPairingCelebrationState {
         isPresented = false
         isFirstDayPresented = true
         if let currentResolution, markSeen(currentResolution) {
-            marksSeenWhenPairIDArrives = false
+            marksSeenWhenCoupleIDArrives = false
         } else {
-            marksSeenWhenPairIDArrives = true
+            marksSeenWhenCoupleIDArrives = true
         }
     }
 
     /// Ends the first day sequence for good.
     mutating func finishFirstDay(currentResolution: AccessRouteResolution?) {
         isFirstDayPresented = false
-        guard let pairID = currentResolution?.pairingCelebrationPairID,
-              var progress = store.postPairingProgress(forPairID: pairID)
+        guard let coupleID = currentResolution?.activeCoupleID,
+              var progress = store.postPairingProgress(forCoupleID: coupleID)
         else {
             return
         }
         progress.isFinished = true
-        store.savePostPairingProgress(progress, forPairID: pairID)
+        store.savePostPairingProgress(progress, forCoupleID: coupleID)
     }
 
     mutating func clear() {
@@ -77,15 +77,16 @@ struct RootPairingCelebrationState {
         isPresented = false
         isFirstDayPresented = false
         isReunion = false
-        marksSeenWhenPairIDArrives = false
+        marksSeenWhenCoupleIDArrives = false
     }
 
     /// Applies a committed access resolution. A person the server says finished
     /// the first day sequence in this couple sees neither, so signing back in or a
-    /// new phone lands on Home. Otherwise an unseen pair shows the celebration with
-    /// its intro, whether the couple just linked or the app opened into a pair this
-    /// phone has not celebrated yet, and a pair whose first day sequence was cut
-    /// short shows the sequence again.
+    /// new phone lands on Home. Otherwise a couple this phone has not celebrated shows
+    /// the celebration with its intro, whether it just linked or the app opened into
+    /// it, and a couple whose first day sequence was cut short shows the sequence
+    /// again. The phone keys all of it by couple, so two people who end a relationship
+    /// and start fresh together get a new celebration and a new first day.
     ///
     /// A couple that came back through a restore shows the celebration with its
     /// intro until this person dismisses it on any phone. The server keeps it due
@@ -105,9 +106,9 @@ struct RootPairingCelebrationState {
             return
         }
 
-        if marksSeenWhenPairIDArrives {
+        if marksSeenWhenCoupleIDArrives {
             if markSeen(resolution) {
-                marksSeenWhenPairIDArrives = false
+                marksSeenWhenCoupleIDArrives = false
             }
             playsIntro = false
             isPresented = false
@@ -118,11 +119,11 @@ struct RootPairingCelebrationState {
             return
         }
 
-        let pairID = resolution.pairingCelebrationPairID
-        let hasSeen = pairID.map(store.hasSeenCelebration(forPairID:)) ?? false
+        let coupleID = resolution.activeCoupleID
+        let hasSeen = coupleID.map(store.hasSeenCelebration(forCoupleID:)) ?? false
         playsIntro = !hasSeen
         isPresented = !hasSeen
-        if let pairID, hasSeen, let progress = store.postPairingProgress(forPairID: pairID) {
+        if let coupleID, hasSeen, let progress = store.postPairingProgress(forCoupleID: coupleID) {
             isFirstDayPresented = !progress.isFinished
         }
     }
@@ -147,16 +148,16 @@ struct RootPairingCelebrationState {
         return true
     }
 
-    /// This phone finished the pair's first day sequence and the server has not
+    /// This phone finished the couple's first day sequence and the server has not
     /// recorded it yet, for example because the phone was offline when it ended.
     func needsFirstDayRecorded(for resolution: AccessRouteResolution) -> Bool {
         guard resolution.route == .paired,
               !resolution.hasFinishedFirstDay,
-              let pairID = resolution.pairingCelebrationPairID
+              let coupleID = resolution.activeCoupleID
         else {
             return false
         }
-        return store.postPairingProgress(forPairID: pairID)?.isFinished == true
+        return store.postPairingProgress(forCoupleID: coupleID)?.isFinished == true
     }
 
     /// This phone dismissed the reunion celebration and the server has not recorded
@@ -170,21 +171,21 @@ struct RootPairingCelebrationState {
         return reunion
     }
 
-    /// Records the celebration as seen and starts the pair's first day progress.
+    /// Records the celebration as seen and starts the couple's first day progress.
     private func markSeen(_ resolution: AccessRouteResolution) -> Bool {
-        guard let pairID = resolution.pairingCelebrationPairID else {
+        guard let coupleID = resolution.activeCoupleID else {
             return false
         }
 
-        store.markCelebrationSeen(forPairID: pairID)
-        startProgressIfNeeded(forPairID: pairID)
+        store.markCelebrationSeen(forCoupleID: coupleID)
+        startProgressIfNeeded(forCoupleID: coupleID)
         return true
     }
 
-    private func startProgressIfNeeded(forPairID pairID: UUID) {
-        guard store.postPairingProgress(forPairID: pairID) == nil else {
+    private func startProgressIfNeeded(forCoupleID coupleID: UUID) {
+        guard store.postPairingProgress(forCoupleID: coupleID) == nil else {
             return
         }
-        store.savePostPairingProgress(PostPairingProgress(), forPairID: pairID)
+        store.savePostPairingProgress(PostPairingProgress(), forCoupleID: coupleID)
     }
 }
