@@ -4,9 +4,13 @@ import Foundation
 import ImageIO
 
 // Measures the rendered swatches in the accessibility-colors developer scenarios.
+// With a frame in points, as an accessibility audit or tree reports it, it measures the
+// text in that part of a 3x screenshot instead: the most common colour is the background,
+// and the most common of the colours furthest from it is the text.
 // Convert the PNG's embedded color profile to sRGB before computing luminance.
-guard CommandLine.arguments.count == 2 else {
-    fputs("usage: swift scripts/accessibility-contrast.swift <screenshot.png>\n", stderr)
+let usage = "usage: swift scripts/accessibility-contrast.swift <screenshot.png> [<x> <y> <width> <height>]\n"
+guard [2, 6].contains(CommandLine.arguments.count) else {
+    fputs(usage, stderr)
     exit(64)
 }
 let url = URL(fileURLWithPath: CommandLine.arguments[1])
@@ -40,6 +44,37 @@ func luminance(_ color: [UInt8]) -> Double {
 }
 func hex(_ color: [UInt8]) -> String {
     color.map { String(format: "%02X", $0) }.joined()
+}
+func contrast(_ first: [UInt8], _ second: [UInt8]) -> Double {
+    let lighter = max(luminance(first), luminance(second))
+    let darker = min(luminance(first), luminance(second))
+    return (lighter + 0.05) / (darker + 0.05)
+}
+if CommandLine.arguments.count == 6 {
+    let frame = CommandLine.arguments[2...].compactMap(Double.init).map { Int($0 * 3) }
+    guard frame.count == 4 else {
+        fputs(usage, stderr)
+        exit(64)
+    }
+    var counts: [[UInt8]: Int] = [:]
+    for y in max(0, frame[1])..<min(height, frame[1] + frame[3]) {
+        for x in max(0, frame[0])..<min(width, frame[0] + frame[2]) {
+            counts[pixel(x: x, y: y), default: 0] += 1
+        }
+    }
+    guard let background = counts.max(by: { $0.value < $1.value })?.key else {
+        fputs("The frame is outside the screenshot\n", stderr)
+        exit(65)
+    }
+    let others = counts.filter { $0.key != background }
+    let furthest = others.keys.map { contrast($0, background) }.max() ?? 1
+    let text = others.filter { contrast($0.key, background) >= 1 + (furthest - 1) * 0.85 }
+        .max(by: { $0.value < $1.value })?.key ?? background
+    let ratio = contrast(text, background)
+    let fields = [hex(text), hex(background), String(format: "%.2f", ratio), String(ratio >= 4.5), String(ratio >= 3)]
+    FileHandle.standardOutput.write(Data(("foreground_sRGB,background_sRGB,contrast,text_4_5,nontext_3\n"
+        + fields.joined(separator: ",") + "\n").utf8))
+    exit(0)
 }
 var start = 0
 var previous: [[UInt8]] = []
