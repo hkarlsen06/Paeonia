@@ -25,6 +25,10 @@ The app runs on iPhone and iPad, and on iPad it can be any width from a narrow S
 - Size from the space the view is given, not from `UIScreen` or the device type. Check new screens on an iPad simulator in portrait and landscape, and in a narrow window. To get one, open the app on the Shared iPad and drag the window's bottom trailing corner, or long-press the green window control and pick a size. Check it on the Shared iPhone Duo too, unfolded and folded (`scripts/scenario-screenshot <scenario-id> --duo`, then `--fold closed`). An unfolded Duo has a regular width but is still an iPhone to `userInterfaceIdiom`.
 - In an iPad window the close and resize controls sit in the top leading corner. A navigation bar keeps its items clear of them. A screen that draws its own top row instead puts `.containerCornerOffset(.leading, sizeToFit: true)` on that row, as Home's header does.
 
+### Tap targets
+
+Every control takes taps over at least 44 by 44 points. A button with `.buttonStyle(.plain)` takes taps only on what its label draws, so a 44-point `frame` around a glyph needs `.contentShape(Rectangle())` after it, unless a filled background covers the frame. In a compact row, put `paeoniaTapTarget()` on the label, so the target reaches into the row's padding without making the row taller. `AccessibilityReleaseChecksUITests` reads the frames and fails below 44 points.
+
 ### List rows
 
 Every row in a list or settings screen uses primary text and tints its icon with `paeoniaAccentPrimary`. Rows on the More tab's menu draw their label with `SettingsMenuLabel`, which puts the symbol on a soft plum tile and shows the row's state in secondary text at the end. Pushed settings screens keep plain glyphs, except the date rows that the Important dates screen reuses from the menu. Only irreversible destructive actions, such as leaving the relationship or deleting the account, are red. Do not use system blue, warning colours or per-row accents. `paeoniaGroupedList()` sets the brand tint for native `List` and `Form` screens.

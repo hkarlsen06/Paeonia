@@ -97,18 +97,12 @@ Production is self-hosted Convex on `one-s` (see `backend/AGENTS.md`). The earli
 
 ## Accessibility And Device QA
 
-- [ ] Small iPhone layout pass.
+- [ ] Small iPhone layout pass at 375 points wide (iPhone SE, 375 by 667). The shared simulator pool has no phone this narrow, so it needs a device or an approved temporary simulator. The closed iPhone Duo (466 by 678) passed at Large and AX5, as [the accessibility report](accessibility-report.md#release-checklist-checks-november-2026) records.
 - [ ] Video call on a real iPhone Duo, unfolded and closed, held upright and on its side. Needs a device. The call must stand upright on both phones and use the camera beside the screen in use. The open question in [the calling plan](calling-plan.md#open-questions) says what the simulator showed.
 - [ ] Latest supported iOS version pass.
 - [ ] Minimum supported iOS version pass.
 - [ ] Complete the device-specific release gate in [the accessibility report](accessibility-report.md), including real VoiceOver and Voice Control journeys. A smoke check or automated audit does not close this gate.
-- [ ] Color contrast is acceptable against plum surfaces.
-- [ ] Touch targets are large enough.
-- [ ] Sheet dismissal and keyboard behavior are sane.
-- [ ] Invite code entry works with paste and accessibility.
-- [ ] Daily answer composer works with keyboard, camera/photo picker, microphone, and VoiceOver.
-- [ ] Widget drawing controls are reachable and understandable.
-- [ ] Map is not the only way location state is communicated.
+- [ ] Daily answer composer camera on a device. The simulator has no camera, so its button never shows there. Take a photo answer with the camera, and refuse camera access once to see that the composer still offers the photo library.
 
 ## Manual Happy Path QA
 
