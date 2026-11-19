@@ -30,6 +30,7 @@ IPAD_UDID="00008112-000E04523C06201E"
 BUNDLE_ID="no.paeonia.app"
 
 ROOT="$(git rev-parse --show-toplevel)"
+PRODUCTION_BACKEND="https://api.paeonia.no"
 STATE_ROOT="$(git rev-parse --path-format=absolute --git-common-dir)/paeonia-devices"
 
 usage() {
@@ -147,6 +148,15 @@ cmd_install() {
     fi
   done
   [[ -d "$app" ]] || { echo "devices: found no device build for $ROOT" >&2; exit 1; }
+  # The developer's devices are signed in to production. A build for a local
+  # backend (ios/local.xcconfig from scripts/local-backend) uses the development
+  # Clerk instance, so installing it signs the partner on that device out.
+  local backend
+  backend="$(/usr/libexec/PlistBuddy -c "Print PaeoniaConvexURL" "$app/Info.plist" 2>/dev/null || true)"
+  if [[ "$backend" != "$PRODUCTION_BACKEND" ]]; then
+    echo "devices: this build talks to ${backend:-no backend}, not $PRODUCTION_BACKEND. The devices are signed in to production, so installing it would sign them out. Delete ios/local.xcconfig and build again, or test on a simulator." >&2
+    exit 1
+  fi
   for device in "${targets[@]}"; do
     take_lock "$device"
     local udid
