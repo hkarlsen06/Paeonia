@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import { answerDetails, currentQuestionFor, dailyQuestionsFor, insertAnswerAsset, seedCatalog, textQuestions } from "./daily.setup";
+import { buildAppApsPayload } from "./lib/apns";
 import { updateDailyAnswerText } from "./lib/dailyAnswers";
 import { newUuid } from "./lib/ids";
 import { deliverDuePushes } from "./push.testing";
@@ -35,8 +36,8 @@ const shuffle = (user: TestUser, args = op()) =>
 const today = (user: TestUser) =>
   user.as.query(api.daily.get_today_daily_challenge_snapshot, {}).then(([snapshot]) => snapshot.questions);
 
-function submit(user: TestUser, instanceId: string, payload: Record<string, unknown>, at?: string) {
-  return user.as.mutation(api.daily.submit_daily_answer, { p_instance_id: instanceId, p_payload: payload, ...op(at) });
+function submit(user: TestUser, instanceId: string, payload: Record<string, unknown>, at?: string, args = op(at)) {
+  return user.as.mutation(api.daily.submit_daily_answer, { p_instance_id: instanceId, p_payload: payload, ...args });
 }
 
 /** The text edit that `firstDay:save_first_day_answer` runs when the answer already exists. */
@@ -362,7 +363,7 @@ describe("partner pushes", () => {
     t.run(async (ctx) =>
       (await ctx.db.query("notification_outbox").collect()).filter((row) => row.recipient_user_id === user.userId),
     );
-  const pushesDue = async (t: TestConvex, at = "2026-10-10T10:01:15.000Z") => {
+  const pushesDue = async (t: TestConvex, at = "2026-10-10T10:00:10.000Z") => {
     const timestamp = await transactionClock(t);
     vi.setSystemTime(new Date(timestamp(at)));
     return await deliverDuePushes(t);
@@ -387,7 +388,7 @@ describe("partner pushes", () => {
     vi.setSystemTime(new Date("2026-10-10T11:00:00.000Z"));
     await submit(b, question.id, { text: "hi" });
     expect((await outboxFor(t, a)).map((row) => row.kind)).toEqual(["partner_answered"]);
-    const [toA] = await pushesDue(t, "2026-10-10T11:01:15.000Z");
+    const [toA] = await pushesDue(t, "2026-10-10T11:00:10.000Z");
     expect(toA).toMatchObject({ title: "Second Partner answered too" });
     expect(toA.payload).toMatchObject({
       type: "partner_answered",
@@ -408,7 +409,7 @@ describe("partner pushes", () => {
     vi.setSystemTime(new Date("2026-10-10T10:00:30.000Z"));
     await submit(b, question.id, { text: "hi" });
     // b answered second and has the setting on, so b still hears that a's answer is ready.
-    const delivered = await pushesDue(t, firstAnswerClock("2026-10-10T10:01:15.000Z"));
+    const delivered = await pushesDue(t, firstAnswerClock("2026-10-10T10:00:10.000Z"));
     expect(delivered.map((push) => [push.target_device_id, push.payload.type])).toEqual([
       [(await outboxFor(t, b))[0].target_device_id, "partner_answered"],
     ]);
@@ -482,13 +483,89 @@ describe("partner pushes", () => {
     await submit(a, yesterday.id, { text: "sorry, late" });
     await submit(a, todays.id, { text: "today" });
     expect(await outboxFor(t, b)).toHaveLength(1);
-    const [push] = await pushesDue(t, "2026-10-11T10:01:15.000Z");
+    const [push] = await pushesDue(t, "2026-10-11T10:00:10.000Z");
     // Today's question still waits for b, so the push asks for that answer.
     expect(push.payload).toMatchObject({
       type: "daily_challenge_completed",
       deeplink: `paeonia://daily/today?coupleDayId=${todays.couple_day_id}`,
     });
     expect([...(push.payload.instance_ids as string[])].sort()).toEqual([yesterday.id, todays.id].sort());
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("the first answer rings ten seconds later", async () => {
+    const { t, a, b, question } = await readyCouple();
+    await addDevice(t, b.userId);
+    await submit(a, question.id, { text: "hello" });
+    expect(await pushesDue(t, "2026-10-10T10:00:09.999Z")).toEqual([]);
+    const [push] = await pushesDue(t, "2026-10-10T10:00:10.000Z");
+    expect(push).toMatchObject({ title: "First Partner answered today's question", deliver_quietly: false });
+    expect(buildAppApsPayload(push).aps).toMatchObject({ sound: "default" });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("answering within the ten seconds turns the partner's push into 'answered too'", async () => {
+    const { t, a, b, question } = await readyCouple();
+    await addDevice(t, b.userId);
+    await submit(a, question.id, { text: "hello" });
+    const firstAnswerClock = await transactionClock(t);
+    expect((await outboxFor(t, b)).map((row) => row.kind)).toEqual(["daily_challenge_completed"]);
+    vi.setSystemTime(new Date("2026-10-10T10:00:05.000Z"));
+    await submit(b, question.id, { text: "together" });
+    const [push] = await pushesDue(t, firstAnswerClock("2026-10-10T10:00:10.000Z"));
+    expect(push).toMatchObject({ title: "First Partner answered too" });
+    expect(push.payload).toMatchObject({ type: "partner_answered", question_count: 1 });
+    expect((await outboxFor(t, b)).map((row) => row.kind)).toEqual(["partner_answered"]);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  /** b answered yesterday's and today's question, and a answers yesterday's late. b's push about it has gone out. */
+  async function afterLateAnswerPush() {
+    const { t, couple, a, b, question: yesterday } = await readyCouple();
+    const device = await addDevice(t, b.userId);
+    await submit(b, yesterday.id, { text: "waiting for you" });
+    await nextDay(a, "11");
+    const todays = await currentQuestionFor(t, a.userId);
+    await submit(b, todays.id, { text: "today too" });
+    await t.run(async (ctx) => {
+      for (const row of await ctx.db.query("notification_outbox").collect()) await ctx.db.delete(row._id);
+    });
+    const lateAnswer = op();
+    await submit(a, yesterday.id, { text: "sorry, late" }, undefined, lateAnswer);
+    const [first] = await pushesDue(t, "2026-10-11T10:00:10.000Z");
+    expect(first).toMatchObject({ target_device_id: device.id, deliver_quietly: false, apns_collapse_id: `daily:${couple.coupleId}` });
+    expect(first.payload).toMatchObject({ type: "partner_answered", question_count: 1 });
+    return { t, a, b, yesterday, todays, first, lateAnswer };
+  }
+
+  test("an answer soon after the push replaces it quietly and counts both questions", async () => {
+    const { t, a, b, yesterday, todays, first, lateAnswer } = await afterLateAnswerPush();
+    // The phone retries the late answer. It was saved already, so nothing new goes out.
+    await submit(a, yesterday.id, { text: "sorry, late" }, undefined, lateAnswer);
+    expect(await outboxFor(t, b)).toHaveLength(1);
+    vi.setSystemTime(new Date("2026-10-11T10:03:00.000Z"));
+    await submit(a, todays.id, { text: "and today" });
+    expect(await outboxFor(t, b)).toHaveLength(2);
+    const [update] = await pushesDue(t, "2026-10-11T10:03:10.000Z");
+    expect(update).toMatchObject({
+      title: "First Partner answered too",
+      apns_collapse_id: first.apns_collapse_id,
+      deliver_quietly: true,
+    });
+    expect(update.payload).toMatchObject({ type: "partner_answered", question_count: 2 });
+    const aps = buildAppApsPayload(update).aps as Record<string, unknown>;
+    expect(aps["interruption-level"]).toBe("passive");
+    expect(aps.sound).toBeUndefined();
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+  });
+
+  test("an answer after the follow-up window rings again with a fresh push", async () => {
+    const { t, a, todays } = await afterLateAnswerPush();
+    vi.setSystemTime(new Date("2026-10-11T10:06:00.000Z"));
+    await submit(a, todays.id, { text: "and today" });
+    const [push] = await pushesDue(t, "2026-10-11T10:06:10.000Z");
+    expect(push).toMatchObject({ deliver_quietly: false });
+    expect(push.payload).toMatchObject({ type: "partner_answered", question_count: 1, instance_ids: [todays.id] });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
   });
 });

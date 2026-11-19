@@ -18,7 +18,7 @@ export type PreparedNotification = {
   title: string | null;
   body: string | null;
   payload: Record<string, unknown>;
-  /** Night where the phone is, so the alert lands in Notification Center without sound or a lit screen. */
+  /** Night where the phone is, or an update to a daily push the phone shows, so the alert lands without sound or a lit screen. */
   deliver_quietly: boolean;
   /** The app icon number at send time (lib/badges.ts), or null to leave the icon as it is. */
   badge: number | null;
@@ -115,7 +115,7 @@ export function buildAppApsPayload(notification: PreparedNotification): Record<s
   const alert: Record<string, string> = {};
   if (notification.title) alert.title = notification.title;
   if (notification.body) alert.body = notification.body;
-  // At night a passive alert with no sound waits in Notification Center instead of waking the phone.
+  // A passive alert with no sound waits in Notification Center instead of waking the phone.
   const interruption = notification.deliver_quietly ? { "interruption-level": "passive" } : { sound: "default" };
   // `mutable-content` lets the Notification Service Extension upgrade into a
   // communication notification. `content-available` also wakes the app so the

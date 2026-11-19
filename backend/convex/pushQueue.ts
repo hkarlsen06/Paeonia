@@ -13,7 +13,7 @@ import type { WriterCtx } from "./lib/db";
 import { canAccessCoupleContent, findCurrentCouple } from "./lib/access";
 import { badgeCountForUser } from "./lib/badges";
 import { getByUuid, withTouch } from "./lib/db";
-import { isDailyPartnerPushKind, resolveDailyPartnerPush } from "./lib/dailyPartnerPush";
+import { dailyPartnerPushFollowsUp, isDailyPartnerPushKind, resolveDailyPartnerPush } from "./lib/dailyPartnerPush";
 import { activitySaysYourTurn, GAME_PUSH_HOLD_MS } from "./lib/liveActivities";
 import { liveActivityAlert, notificationAlertTitle, notificationLocaleLanguage, subscriptionTrialReminderBody } from "./lib/notificationCopy";
 import { notificationStillWanted } from "./lib/notificationState";
@@ -131,8 +131,9 @@ async function sendBadge(ctx: WriterCtx, row: Doc<"notification_outbox">, userId
 const LOUD_AT_NIGHT_KINDS: readonly string[] = ["question_time_reminder"];
 
 /**
- * Whether an alert should land quietly because it is night where the phone is. Uses the device's
- * zone, else the profile zone. With neither, the alert keeps its sound rather than guess.
+ * Whether an alert should land quietly: when it is night where the phone is, or when it is a daily
+ * lane update that replaces a push this phone showed a moment ago (lib/dailyPartnerPush.ts). Night
+ * uses the device's zone, else the profile zone. With neither, the alert keeps its sound rather than guess.
  */
 async function deliverQuietly(
   ctx: WriterCtx,
@@ -140,6 +141,7 @@ async function deliverQuietly(
   device: Doc<"user_devices">,
 ): Promise<boolean> {
   if (row.apns_push_type !== "alert" || LOUD_AT_NIGHT_KINDS.includes(row.kind)) return false;
+  if (isDailyPartnerPushKind(row.kind) && (await dailyPartnerPushFollowsUp(ctx, row))) return true;
   return await isNightFor(ctx, device.user_id, device.time_zone_id);
 }
 
@@ -208,8 +210,8 @@ async function freshBody(
  * Runs right before each send, so a row queued for later is checked when it is due. Fails the row
  * when its device is gone or disabled, the user turned its kind off, its couple or game turn no
  * longer needs it, or its reminder passed. A partner's daily answer push decides here what it says.
- * Returns what the send needs, or null. An alert sent at night goes out at once but quietly
- * (`deliverQuietly`).
+ * Returns what the send needs, or null. An alert sent at night, and a daily lane update, go out at
+ * once but quietly (`deliverQuietly`).
  */
 export const prepare_notification = internalMutation({
   args: { outbox_id: v.string() },

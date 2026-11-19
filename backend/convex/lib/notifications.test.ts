@@ -479,7 +479,7 @@ describe("trigger helpers", () => {
       title: "Second Partner answered too",
       apns_collapse_id: `daily:${couple.coupleId}`,
       // The push waits in the recipient's daily lane, so more answers right after join it.
-      scheduled_for: timestamp("2026-10-10T12:01:15.000Z"),
+      scheduled_for: timestamp("2026-10-10T12:00:10.000Z"),
     });
     expect(rows[0].payload).toMatchObject({
       instance_ids: [instanceId],
