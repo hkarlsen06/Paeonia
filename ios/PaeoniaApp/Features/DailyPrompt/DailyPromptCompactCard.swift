@@ -9,10 +9,6 @@ struct DailyPromptCompactCard: View {
     let state: DailyChallengeCardState
     let copy: DailyPromptCardCopy
     let partnerPhotoAssetID: UUID?
-    let seal: DailyPromptCardArt.Seal
-    let opening: DailyPromptEnvelopeOpening
-    /// How far the seal has broken, from 0 to 1, while the envelope opens.
-    var sealBreak: Double = 0
     var zoomNamespace: Namespace.ID?
     var onAnswer: () -> Void
     var onOpenPartnerQuestion: (UUID) -> Void
@@ -110,30 +106,14 @@ struct DailyPromptCompactCard: View {
 
     /// The envelope sits at the bottom of a square, leaving room above for the letter to
     /// rise. The words center on the envelope itself, not on the empty room above it.
+    /// `DailyPromptCard` draws the envelope on the spot.
     private var envelope: some View {
         let envelopeHeight = Self.envelopeSize / PaeoniaEnvelopeLayer.aspect
-        return DailyPromptEnvelope(width: Self.envelopeSize, opening: opening)
-            .overlay { waxSeal }
+        return DailyPromptEnvelopeSpot(width: Self.envelopeSize)
             .frame(width: Self.envelopeSize, height: Self.envelopeSize, alignment: .bottom)
             .alignmentGuide(VerticalAlignment.center) { dimensions in
                 dimensions.height - envelopeHeight / 2
             }
-    }
-
-    /// On the tip of the closed flap, sized like the picture card's. When it breaks it
-    /// lifts, turns and fades.
-    private var waxSeal: some View {
-        let height = Self.envelopeSize / PaeoniaEnvelopeLayer.aspect
-        return Image(seal == .pink ? .homeWaxSealPink : .homeWaxSealLavender)
-            .resizable()
-            .scaledToFit()
-            .frame(width: Self.envelopeSize * 150 / 560)
-            .scaleEffect(1 + 0.4 * sealBreak)
-            .rotationEffect(.degrees(24 * sealBreak))
-            .offset(y: height * (0.614 - 0.5) - 10 * sealBreak)
-            .offset(x: Self.envelopeSize * (0.495 - 0.5))
-            .opacity(opening == .closed ? 1 - sealBreak : 0)
-            .accessibilityHidden(true)
     }
 
     @ViewBuilder

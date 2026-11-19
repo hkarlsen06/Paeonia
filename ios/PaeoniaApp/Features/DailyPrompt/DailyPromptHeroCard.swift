@@ -26,8 +26,6 @@ struct DailyPromptHeroCard: View {
                 art: art,
                 copy: copy,
                 partnerPhotoAssetID: partnerPhotoAssetID,
-                sealBreak: sealBreak,
-                envelopeOpening: envelopeOpening,
                 zoomNamespace: zoomNamespace,
                 onAnswer: onAnswer,
                 onOpenPartnerQuestion: onOpenPartnerQuestion

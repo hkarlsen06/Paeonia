@@ -10,14 +10,13 @@ extension EnvironmentValues {
 /// title and the question, then the button and the partner's waiting questions, with no
 /// card around them. The envelope sits beside the words so the map above keeps its height,
 /// and with it room to show both partners north up. At accessibility text sizes the words
-/// need the full width, so the envelope goes back above them.
+/// need the full width, so the envelope goes back above them. `DailyPromptCard` draws the
+/// envelope on `DailyPromptEnvelopeSpot`.
 struct DailyPromptInlineHero: View {
     let state: DailyChallengeCardState
     let art: DailyPromptCardArt
     let copy: DailyPromptCardCopy
     let partnerPhotoAssetID: UUID?
-    let sealBreak: Double
-    let envelopeOpening: DailyPromptEnvelopeOpening
     var zoomNamespace: Namespace.ID?
     var onAnswer: () -> Void
     var onOpenPartnerQuestion: (UUID) -> Void
@@ -65,18 +64,11 @@ struct DailyPromptInlineHero: View {
             : AnyLayout(HStackLayout(spacing: PaeoniaSpacing.space16))
         return layout {
             Button(action: onAnswer) {
-                DailyPromptSealedEnvelope(
-                    width: isStacked ? Self.stackedEnvelopeWidth : Self.envelopeWidth,
-                    seal: art.seal, sealBreak: sealBreak, opening: envelopeOpening
-                )
+                DailyPromptEnvelopeSpot(width: isStacked ? Self.stackedEnvelopeWidth : Self.envelopeWidth)
             }
             .buttonStyle(.plain)
             .disabled(copy.isLoading)
             .accessibilityHidden(true)
-            // Not part of the loading look, since the day may turn out done and swap to
-            // the short row. It fades in when a question to answer arrives.
-            .opacity(copy.isLoading ? 0 : 1)
-            .animation(PaeoniaMotion.loadingReveal, value: copy.isLoading)
 
             titleAndMessage
         }
@@ -135,7 +127,7 @@ extension View {
 }
 
 /// The daily envelope with its wax seal on the tip of the flap, `width` wide. When the
-/// seal breaks it lifts, turns and fades, as on the short row.
+/// seal breaks it lifts, turns and fades.
 struct DailyPromptSealedEnvelope: View {
     let width: CGFloat
     let seal: DailyPromptCardArt.Seal
@@ -158,6 +150,34 @@ struct DailyPromptSealedEnvelope: View {
                     .accessibilityHidden(true)
             }
             .frame(width: width, height: height)
-            .shadow(color: .black.opacity(0.3), radius: 14, y: 8)
+    }
+}
+
+extension EnvironmentValues {
+    /// Set by `DailyPromptCard`, so its shapes' envelope spots and the one envelope it
+    /// draws share a frame.
+    @Entry var dailyPromptEnvelopeSpace: Namespace.ID?
+}
+
+/// Where a shape of the daily card puts its envelope, `width` wide. The spot is empty.
+/// `DailyPromptCard` draws one envelope that follows the spot of the shape it shows, so
+/// when the card changes shape the same envelope moves and shrinks or grows into its new
+/// place instead of one envelope fading out while another fades in.
+struct DailyPromptEnvelopeSpot: View {
+    static let id = "dailyPromptEnvelope"
+
+    let width: CGFloat
+
+    @Environment(\.dailyPromptEnvelopeSpace) private var space
+
+    var body: some View {
+        let spot = Color.clear
+            .frame(width: width, height: width / PaeoniaEnvelopeLayer.aspect)
+            .contentShape(Rectangle())
+        if let space {
+            spot.matchedGeometryEffect(id: Self.id, in: space)
+        } else {
+            spot
+        }
     }
 }

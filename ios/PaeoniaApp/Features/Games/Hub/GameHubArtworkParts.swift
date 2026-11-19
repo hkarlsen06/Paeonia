@@ -30,8 +30,7 @@ struct GameHubArtwork<Scene: View & Animatable>: View {
         GeometryReader { proxy in
             let canvasSize = PaeoniaIllustratedCardLayout.canvasSize
             let scale = proxy.size.width / canvasSize.width
-            let objectScale = scale * layout.objectScale
-            let base = PaeoniaIllustratedCardLayout.Scene.fullObjectBase
+            let canvas = GameHubCanvasPlacement(width: proxy.size.width, layout: layout)
             ZStack(alignment: .topLeading) {
                 if let paletteSource {
                     GameHubFluidBackdrop(palette: GameHubPalettes.shared[paletteSource] ?? .fallback)
@@ -51,12 +50,8 @@ struct GameHubArtwork<Scene: View & Animatable>: View {
                     }
                 }
                 .frame(width: canvasSize.width, height: canvasSize.height)
-                .scaleEffect(objectScale, anchor: .topLeading)
-                // The middle of the main object's lower edge lands where the layout puts it.
-                .offset(
-                    x: canvasSize.width / 2 * (scale - objectScale),
-                    y: (layout.objectBase - layout.top) * scale - base * objectScale
-                )
+                .scaleEffect(canvas.scale, anchor: .topLeading)
+                .offset(canvas.offset)
             }
         }
         // The room ends in deep plum, so a card taller than the canvas continues it.
@@ -117,6 +112,35 @@ struct GameHubBackdrop: View {
         Image(.gameHubBackdrop)
             .resizable()
             .accessibilityHidden(true)
+    }
+}
+
+/// Where a hub picture's canvas lands in a card `width` wide: scaled from its top leading
+/// corner, then moved so the middle of the main object's lower edge lands where the layout
+/// puts it.
+struct GameHubCanvasPlacement {
+    let scale: CGFloat
+    let offset: CGSize
+
+    init(width: CGFloat, layout: PaeoniaIllustratedCardLayout.Scene) {
+        let canvasSize = PaeoniaIllustratedCardLayout.canvasSize
+        let cardScale = width / canvasSize.width
+        scale = cardScale * layout.objectScale
+        let objectBase = PaeoniaIllustratedCardLayout.Scene.fullObjectBase
+        offset = CGSize(
+            width: canvasSize.width / 2 * (cardScale - scale),
+            height: (layout.objectBase - layout.top) * cardScale - objectBase * scale
+        )
+    }
+
+    /// A rectangle in the canvas's pixels, in the card's points.
+    func rect(_ canvasRect: CGRect) -> CGRect {
+        CGRect(
+            x: canvasRect.minX * scale + offset.width,
+            y: canvasRect.minY * scale + offset.height,
+            width: canvasRect.width * scale,
+            height: canvasRect.height * scale
+        )
     }
 }
 

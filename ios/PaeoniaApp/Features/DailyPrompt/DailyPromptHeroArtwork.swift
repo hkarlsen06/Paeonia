@@ -13,9 +13,21 @@ struct DailyPromptHeroArtwork: View {
     let sealBreak: Double
     var opening = DailyPromptEnvelopeOpening.closed
 
+    @Environment(\.paeoniaIllustratedScene) private var layout
+
     var body: some View {
         GameHubArtwork(duration: 1.2) { progress in
             DailyPromptHeroScene(progress: progress, sealBreak: sealBreak, seal: seal, opening: opening)
+        }
+        // The envelope that shrinks into the short row starts here. Outside the scene,
+        // whose scale a matched frame doesn't see.
+        .overlay {
+            GeometryReader { proxy in
+                let frame = GameHubCanvasPlacement(width: proxy.size.width, layout: layout)
+                    .rect(DailyPromptHeroScene.envelopeFrame)
+                DailyPromptEnvelopeSpot(width: frame.width)
+                    .position(x: frame.midX, y: frame.midY)
+            }
         }
     }
 }
@@ -61,6 +73,10 @@ private struct DailyPromptHeroScene: View, Animatable {
     }
 
     private static let envelope = GameHubPlacement(base: CGPoint(x: 512, y: 640), width: 560, aspect: 1.807)
+    static let envelopeFrame = CGRect(
+        x: envelope.base.x - envelope.width / 2, y: envelope.base.y - envelope.height,
+        width: envelope.width, height: envelope.height
+    )
     private static let flapTip = envelope.point(0.495, 0.614)
     private static let sealWidth: CGFloat = 150
     private static let glowRadius: CGFloat = 240
