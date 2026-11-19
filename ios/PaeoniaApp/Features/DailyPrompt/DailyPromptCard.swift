@@ -89,31 +89,19 @@ struct DailyPromptCard: View {
         // of to each shape: one envelope follows the spots, and the card stays on screen
         // while it changes shape.
         ZStack(alignment: .top) {
-            switch art.shape {
-            case .hero:
-                DailyPromptHeroCard(
+            if isInline {
+                // One view for both shapes, so its parts change instead of crossfading.
+                DailyPromptInlineCard(
                     state: shown,
                     art: art,
                     copy: copy,
                     partnerPhotoAssetID: partnerPhotoAssetID,
-                    sealBreak: sealBreak,
-                    envelopeOpening: envelopeOpening,
                     zoomNamespace: zoomNamespace,
                     onAnswer: onAnswer,
                     onOpenPartnerQuestion: onOpenPartnerQuestion
                 )
-                .transition(.opacity)
-            case .compact:
-                DailyPromptCompactCard(
-                    state: shown,
-                    copy: copy,
-                    partnerPhotoAssetID: partnerPhotoAssetID,
-                    zoomNamespace: zoomNamespace,
-                    onAnswer: onAnswer,
-                    onOpenPartnerQuestion: onOpenPartnerQuestion
-                )
-                // No scale, so the words stay beside the envelope drawn over the spot.
-                .transition(.opacity)
+            } else {
+                card(shown: shown, art: art, copy: copy)
             }
         }
         .overlay { envelope(art: art, isLoading: copy.isLoading) }
@@ -145,42 +133,6 @@ struct DailyPromptCard: View {
         }
         .sensoryFeedback(.impact(weight: .medium), trigger: sealBreaks)
     }
-
-    /// One view for both shapes, so the envelope moves and shrinks into the short row, or
-    /// grows out of it on a new day, instead of crossfading. It follows the shown shape's
-    /// `DailyPromptEnvelopeSpot`. The picture card draws its own envelope in its scene, so
-    /// there this one stays hidden until the card shrinks. It then covers the picture's
-    /// envelope at once and shrinks while the picture fades out under it.
-    private func envelope(art: DailyPromptCardArt, isLoading: Bool) -> some View {
-        let isHero = art.shape == .hero
-        let drawnWidth = Self.envelopeDrawnWidth
-        let pictureDrawsItsOwn = isHero && !isInline
-        return GeometryReader { proxy in
-            // Drawn at one size and scaled, so it shrinks as one picture. Drawn at each
-            // size, its layers come apart on the way, and the letter shows through the pocket.
-            DailyPromptSealedEnvelope(
-                width: drawnWidth,
-                seal: art.seal,
-                sealBreak: isHero ? sealBreak : compactSealBreak,
-                opening: isHero ? envelopeOpening : compactOpening ?? (art.isEnvelopeOpen ? .letterOut : .closed)
-            )
-            .scaleEffect(proxy.size.width / drawnWidth, anchor: .topLeading)
-            .shadow(color: .black.opacity(isHero && isInline ? 0.3 : 0), radius: 14, y: 8)
-        }
-        .matchedGeometryEffect(id: DailyPromptEnvelopeSpot.id, in: envelopeSpace, isSource: false)
-        // With Reduce Motion each shape has its own envelope, and they crossfade.
-        .id(reduceMotion ? art.shape : .hero)
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-        .animation(nil) { $0.opacity(pictureDrawsItsOwn ? 0 : 1) }
-        // Not part of the loading look, since the day may turn out done and swap to the
-        // short row. It fades in when a question to answer arrives.
-        .opacity(isLoading ? 0 : 1)
-        .animation(PaeoniaMotion.loadingReveal, value: isLoading)
-    }
-
-    /// Larger than any spot, so the envelope is only ever scaled down.
-    private static let envelopeDrawnWidth: CGFloat = 240
 
     // MARK: Seal moment
 
@@ -337,4 +289,75 @@ struct DailyPromptCard: View {
         sealBreak = 0
         onMomentEnd()
     }
+}
+
+extension DailyPromptCard {
+    /// Outside Home's map layout, the picture card or the short row, each a card of its own.
+    @ViewBuilder
+    fileprivate func card(
+        shown: DailyChallengeCardState, art: DailyPromptCardArt, copy: DailyPromptCardCopy
+    ) -> some View {
+        switch art.shape {
+        case .hero:
+            DailyPromptHeroCard(
+                state: shown,
+                art: art,
+                copy: copy,
+                partnerPhotoAssetID: partnerPhotoAssetID,
+                sealBreak: sealBreak,
+                envelopeOpening: envelopeOpening,
+                zoomNamespace: zoomNamespace,
+                onAnswer: onAnswer,
+                onOpenPartnerQuestion: onOpenPartnerQuestion
+            )
+            .transition(.opacity)
+        case .compact:
+            DailyPromptCompactCard(
+                state: shown,
+                copy: copy,
+                partnerPhotoAssetID: partnerPhotoAssetID,
+                zoomNamespace: zoomNamespace,
+                onAnswer: onAnswer,
+                onOpenPartnerQuestion: onOpenPartnerQuestion
+            )
+            // No scale, so the words stay beside the envelope drawn over the spot.
+            .transition(.opacity)
+        }
+    }
+
+    /// One view for both shapes, so the envelope moves and shrinks into the short row, or
+    /// grows out of it on a new day, instead of crossfading. It follows the shown shape's
+    /// `DailyPromptEnvelopeSpot`. The picture card draws its own envelope in its scene, so
+    /// there this one stays hidden until the card shrinks. It then covers the picture's
+    /// envelope at once and shrinks while the picture fades out under it.
+    fileprivate func envelope(art: DailyPromptCardArt, isLoading: Bool) -> some View {
+        let isHero = art.shape == .hero
+        let drawnWidth = Self.envelopeDrawnWidth
+        let pictureDrawsItsOwn = isHero && !isInline
+        return GeometryReader { proxy in
+            // Drawn at one size and scaled, so it shrinks as one picture. Drawn at each
+            // size, its layers come apart on the way, and the letter shows through the pocket.
+            DailyPromptSealedEnvelope(
+                width: drawnWidth,
+                seal: art.seal,
+                sealBreak: isHero ? sealBreak : compactSealBreak,
+                opening: isHero ? envelopeOpening : compactOpening ?? (art.isEnvelopeOpen ? .letterOut : .closed)
+            )
+            .scaleEffect(proxy.size.width / drawnWidth, anchor: .topLeading)
+            .shadow(color: .black.opacity(isHero && isInline ? 0.3 : 0), radius: 14, y: 8)
+        }
+        .matchedGeometryEffect(id: DailyPromptEnvelopeSpot.id, in: envelopeSpace, isSource: false)
+        // With Reduce Motion each shape has its own envelope, and they crossfade.
+        .id(reduceMotion ? art.shape : .hero)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+        .animation(nil) { $0.opacity(pictureDrawsItsOwn ? 0 : 1) }
+        // Not part of the loading look, since the day may turn out done and swap to the
+        // short row. It fades in when a question to answer arrives.
+        .opacity(isLoading ? 0 : 1)
+        .animation(PaeoniaMotion.loadingReveal, value: isLoading)
+    }
+
+    /// Larger than any spot, so the envelope is only ever scaled down.
+    fileprivate static let envelopeDrawnWidth: CGFloat = 240
 }

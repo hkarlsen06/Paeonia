@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The daily question card while there is something to do, and while the question loads.
+/// The daily question card while there is something to do, and while the question loads,
+/// where it is a card (`DailyPromptInlineCard` is Home's map layout).
 /// It is a game hub card with a sealed envelope as its picture: the title, today's
 /// question, the main button, and the partner's waiting questions from earlier days sit
 /// under the picture. The card glows while a question waits.
@@ -17,25 +18,7 @@ struct DailyPromptHeroCard: View {
     var onAnswer: () -> Void
     var onOpenPartnerQuestion: (UUID) -> Void
 
-    @Environment(\.dailyPromptIsInline) private var isInline
-
     var body: some View {
-        if isInline {
-            DailyPromptInlineHero(
-                state: state,
-                art: art,
-                copy: copy,
-                partnerPhotoAssetID: partnerPhotoAssetID,
-                zoomNamespace: zoomNamespace,
-                onAnswer: onAnswer,
-                onOpenPartnerQuestion: onOpenPartnerQuestion
-            )
-        } else {
-            card
-        }
-    }
-
-    private var card: some View {
         PaeoniaIllustratedCard(
             title: copy.title,
             status: status,

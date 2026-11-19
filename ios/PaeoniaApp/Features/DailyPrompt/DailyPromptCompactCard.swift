@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The daily question card once today's question is answered: a short row that leaves the
+/// The daily question card once today's question is answered, where it is a card
+/// (`DailyPromptInlineCard` is Home's map layout): a short row that leaves the
 /// screen to the other cards. The envelope sits beside the title and one line about what
 /// happens next, with the button below and the partner's waiting questions under it. While
 /// the partner has not answered, the row opens this person's answer and has no button. The
@@ -17,16 +18,8 @@ struct DailyPromptCompactCard: View {
 
     private static let envelopeSize: CGFloat = 68
 
-    @Environment(\.dailyPromptIsInline) private var isInline
-    @Environment(\.homeMapExplorer) private var homeMapExplorer
-
     var body: some View {
-        if isInline {
-            // PROTOTYPE: on Home's map layout the row sits on the page, with no card.
-            content
-        } else {
-            PaeoniaCard { content }
-        }
+        PaeoniaCard { content }
     }
 
     private var content: some View {
@@ -39,11 +32,8 @@ struct DailyPromptCompactCard: View {
                 .buttonStyle(.paeoniaPressableCard)
                 .accessibilityHint(Text(copy.actionTitle))
                 .accessibilityIdentifier("home.dailyPrompt.action")
-                // On the map, the row lies on it, so a drag or a pinch there moves the map.
-                .homeMapRows("questionRow", isInline ? homeMapExplorer : nil)
             } else {
                 headline
-                    .homeMapRows("questionRow", isInline ? homeMapExplorer : nil)
 
                 actionButton
             }
@@ -77,12 +67,10 @@ struct DailyPromptCompactCard: View {
                     .font(waitsForPartner ? PaeoniaTypography.sectionTitle : PaeoniaTypography.title)
                     .foregroundStyle(.paeoniaTextPrimary)
                     .accessibilityAddTraits(.isHeader)
-                    .oneLineBesideEnvelope(isOneLine)
                 if let message = copy.message {
                     Text(verbatim: message)
                         .font(PaeoniaTypography.caption)
                         .foregroundStyle(.paeoniaTextSecondary)
-                        .oneLineBesideEnvelope(isOneLine)
                 }
             }
             .fixedSize(horizontal: false, vertical: true)
@@ -94,14 +82,6 @@ struct DailyPromptCompactCard: View {
                     .accessibilityHidden(true)
             }
         }
-        // On the map, no wider than the calendar and the drawing under it. The button and
-        // the rows below keep the full width.
-        .narrowsToHomeTiles()
-    }
-
-    /// On the map the words beside the envelope keep to one line.
-    private var isOneLine: Bool {
-        isInline && !dynamicTypeSize.isAccessibilitySize
     }
 
     /// The envelope sits at the bottom of a square, leaving room above for the letter to
