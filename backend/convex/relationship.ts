@@ -137,6 +137,25 @@ export const mark_first_day_finished = mutation({
   },
 });
 
+/** Records that the caller saw the reunion celebration after a restore. Returns false for anyone who is not an active member. */
+export const mark_reunion_celebration_seen = mutation({
+  args: { p_couple_id: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const coupleId = uuidArg(args.p_couple_id);
+    const member = await ctx.db
+      .query("couple_members")
+      .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", userId))
+      .unique();
+    const couple = await getByUuid(ctx, "couples", coupleId);
+    if (!member || member.status !== "active" || couple?.status !== "active") return false;
+    if (member.reunion_celebration_due_at) {
+      await ctx.db.patch(member._id, withUpdatedAt({ reunion_celebration_due_at: undefined }));
+    }
+    return true;
+  },
+});
+
 export const set_couple_started_on = mutation({
   args: { p_started_on: v.union(v.null(), v.string()), ...clientOperationArgs },
   handler: async (ctx, args) => {

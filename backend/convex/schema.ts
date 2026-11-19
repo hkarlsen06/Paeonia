@@ -668,6 +668,10 @@ export default defineSchema({
     // Set when this member finished the celebration and the first day sequence after pairing.
     // The app shows that sequence only while it is unset, so signing out or a new phone never replays it.
     first_day_finished_at: optTs,
+    // Set when a restore (`lib/relationshipRestore.ts`) brought this member back into the couple.
+    // While it is set, the app plays the pairing celebration as a reunion, without the first day
+    // sequence, and then clears it through `mark_reunion_celebration_seen`.
+    reunion_celebration_due_at: optTs,
     updated_at: ts,
   })
     .index("by_couple_id_user_id", ["couple_id", "user_id"])

@@ -3,6 +3,7 @@ import { findCurrentCouple, findRelationshipPairId, hasRelationshipBlock } from 
 import { getByUuid, type ReaderCtx, type WriterCtx, withUpdatedAt } from "./db";
 import { nameForViewer } from "./partnerNames";
 import { createRelationshipSyncEvent } from "./syncEvents";
+import { nowIso } from "./time";
 
 /**
  * Bringing back an ended relationship. When the same two people pair again before their old
@@ -108,16 +109,25 @@ async function membersOf(ctx: ReaderCtx, coupleId: string) {
  * Opens a couple from `findRestorableCouple` again: both members are active, the cleanup deadline
  * is gone, and each member gets a `relationship_started` event that tells the app to load the
  * couple's content again. Out of the `ended` status the cleanup and purge crons never reach it.
+ * Each member owes the pairing celebration once more, as a reunion. The first day sequence made
+ * the couple's first things, which came back with it, so a member who never finished it skips it.
  */
 export async function reopenCouple(ctx: WriterCtx, couple: Doc<"couples">, initiatedByUserId: string): Promise<void> {
   await ctx.db.patch(
     couple._id,
     withUpdatedAt({ status: "active" as const, ended_at: undefined, end_reason: undefined, delete_after: undefined }),
   );
+  const now = nowIso();
   for (const member of await membersOf(ctx, couple.id)) {
     await ctx.db.patch(
       member._id,
-      withUpdatedAt({ status: "active" as const, left_at: undefined, ended_notice_seen_at: undefined }),
+      withUpdatedAt({
+        status: "active" as const,
+        left_at: undefined,
+        ended_notice_seen_at: undefined,
+        first_day_finished_at: member.first_day_finished_at ?? now,
+        reunion_celebration_due_at: now,
+      }),
     );
     await createRelationshipSyncEvent(ctx, {
       user_id: member.user_id,
