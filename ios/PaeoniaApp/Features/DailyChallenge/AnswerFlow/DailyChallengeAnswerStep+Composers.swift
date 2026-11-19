@@ -76,6 +76,7 @@ extension DailyChallengeAnswerStep {
                     Button(action: removeStagedMedia) {
                         Image(systemName: "xmark")
                             .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(DailyAnswerComposerColors.composer.secondary)
@@ -153,6 +154,7 @@ extension DailyChallengeAnswerStep {
                 Text(.dailyChallengeComposerChange)
                     .font(PaeoniaTypography.caption)
                     .frame(minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }

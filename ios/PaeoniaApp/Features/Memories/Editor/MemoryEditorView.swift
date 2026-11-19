@@ -222,10 +222,10 @@ struct MemoryEditorView: View {
             isFocused: $focusedField,
             field: .title,
             lineLimit: nil,
-            characterLimit: MemoryDataService.titleCharacterLimit
+            characterLimit: MemoryDataService.titleCharacterLimit,
+            onReturn: { focusedField = .note }
         )
         .submitLabel(.next)
-        .onSubmit { focusedField = .note }
     }
 
     private var dateField: some View {

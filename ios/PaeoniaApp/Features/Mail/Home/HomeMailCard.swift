@@ -48,7 +48,7 @@ struct HomeMailCard: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .contentShape(Rectangle())
+                    .paeoniaTapTarget()
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier(isDraft ? "home.mail.draft" : "home.mail.write")
@@ -78,10 +78,7 @@ struct HomeMailCard: View {
             Text(.mailMailboxTitle)
                 .font(PaeoniaTypography.caption.weight(.semibold))
                 .foregroundStyle(.paeoniaAccentPrimary)
-                .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
-                // The whole height stays tappable, but the row keeps the icon's height.
-                .padding(.vertical, (Self.iconSize - PaeoniaSpacing.compactButtonHeight) / 2)
-                .contentShape(Rectangle())
+                .paeoniaTapTarget()
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("home.mail.mailbox")

@@ -36,6 +36,7 @@ extension HomeMapLayout {
                         partner: couple.partner,
                         partnerCoordinate: couple.partner.coordinate,
                         partnerWasStaleAtLastRefresh: couple.partnerWasStaleAtLastRefresh,
+                        partnerName: partnerName,
                         compass: compass
                     )
                     .accessibilityAction(named: Text(.heartsSendAction)) { sendHeart() }

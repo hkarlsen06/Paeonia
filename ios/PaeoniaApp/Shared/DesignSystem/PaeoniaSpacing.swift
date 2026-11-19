@@ -59,11 +59,38 @@ extension View {
     /// Sets `isWide` while this view is at least `PaeoniaSpacing.wideLayoutMinWidth`
     /// wide, which in practice means an iPad in landscape. Put it on a view that
     /// fills the screen width, such as the scroll view.
+    /// A tap target at least 44 points tall for a button label in a compact row. The row
+    /// lays out at the label's own height, and the hit area and VoiceOver frame reach into
+    /// the padding above and below it. Put it on a button's label.
+    func paeoniaTapTarget() -> some View {
+        PaeoniaTapTargetLayout {
+            frame(maxHeight: .infinity)
+                .contentShape(Rectangle())
+        }
+    }
+
     func paeoniaWideLayout(_ isWide: Binding<Bool>) -> some View {
         onGeometryChange(for: Bool.self) { proxy in
             proxy.size.width >= PaeoniaSpacing.wideLayoutMinWidth
         } action: { newValue in
             isWide.wrappedValue = newValue
         }
+    }
+}
+
+/// Reports its content's own height to the row, then gives the content at least
+/// `PaeoniaSpacing.compactButtonHeight`, centered on the same line.
+private struct PaeoniaTapTargetLayout: Layout {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        subviews.first?.sizeThatFits(ProposedViewSize(width: proposal.width, height: nil)) ?? .zero
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let height = max(bounds.height, PaeoniaSpacing.compactButtonHeight)
+        subviews.first?.place(
+            at: CGPoint(x: bounds.midX, y: bounds.midY),
+            anchor: .center,
+            proposal: ProposedViewSize(width: bounds.width, height: height)
+        )
     }
 }

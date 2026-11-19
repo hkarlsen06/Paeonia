@@ -219,10 +219,11 @@ struct DailyVoicePlaybackView: View {
                 attempt += 1
             } label: {
                 Text(.dailyChallengeVoiceRetry)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .foregroundStyle(colors.accent)
-            .frame(minHeight: 44)
         }
     }
 

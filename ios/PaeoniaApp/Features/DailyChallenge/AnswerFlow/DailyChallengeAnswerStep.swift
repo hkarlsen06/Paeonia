@@ -41,20 +41,30 @@ struct DailyChallengeAnswerStep: View {
     @ScaledMetric(relativeTo: .title) private var questionSize: CGFloat = 32
     @ScaledMetric(relativeTo: .title2) private var compactQuestionSize: CGFloat = 24
     @ScaledMetric(relativeTo: .body) private var smallQuestionSize: CGFloat = 20
+    private static let composerID = "daily.answer.composer"
 
     var body: some View {
         Group {
             if dynamicTypeSize.isAccessibilitySize {
                 // Keep the requested prompt size when the keyboard opens. The
                 // whole answer scrolls so neither the prompt nor input has to shrink.
-                ScrollView {
-                    VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
-                        questionHeader(size: questionSize)
-                        composer
+                ScrollViewReader { scroller in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: PaeoniaSpacing.space16) {
+                            questionHeader(size: questionSize)
+                            composer
+                                .id(Self.composerID)
+                        }
+                    }
+                    .scrollDismissesKeyboard(.interactively)
+                    .scrollBounceBehavior(.basedOnSize)
+                    // The keyboard would cover Send under the field, so the answer scrolls
+                    // the composer's bottom edge above it when it opens.
+                    .onChange(of: isKeyboardPresented) { _, presented in
+                        guard presented else { return }
+                        withAnimation(PaeoniaMotion.keyboard) { scroller.scrollTo(Self.composerID, anchor: .bottom) }
                     }
                 }
-                .scrollDismissesKeyboard(.interactively)
-                .scrollBounceBehavior(.basedOnSize)
             } else {
                 regularContent
             }
@@ -184,6 +194,7 @@ struct DailyChallengeAnswerStep: View {
                 } label: {
                     Image(systemName: "keyboard.chevron.compact.down")
                         .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(DailyAnswerComposerColors.composer.secondary)

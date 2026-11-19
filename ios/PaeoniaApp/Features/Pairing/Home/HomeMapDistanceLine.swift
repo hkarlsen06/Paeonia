@@ -8,6 +8,7 @@ struct HomeMapDistanceLine: View {
     let partner: LocationPoint
     let partnerCoordinate: CLLocationCoordinate2D
     let partnerWasStaleAtLastRefresh: Bool
+    let partnerName: String
     let compass: PartnerCompass
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -75,6 +76,16 @@ struct HomeMapDistanceLine: View {
         .font(PaeoniaTypography.bodyEmphasis)
         .foregroundStyle(.paeoniaTextPrimary)
         .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
+        // One sentence, the same as the map card's, instead of "306 km" and "3 min" read apart.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(isTogether ? .homeMapTogetherAccessibility : .homeMapDistanceAccessibility(distance)))
+        .accessibilityValue(Text(PartnerLocationRecordedStatus.accessibilityText(
+            partnerName: partnerName,
+            capturedAt: partner.capturedAt,
+            wasStaleAtLastRefresh: partnerWasStaleAtLastRefresh,
+            now: date
+        )))
+        .accessibilityIdentifier("home.map.distance")
     }
 
     private var direction: Double? {

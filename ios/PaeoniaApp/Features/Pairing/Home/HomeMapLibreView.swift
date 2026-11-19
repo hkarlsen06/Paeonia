@@ -301,9 +301,22 @@ struct HomeMapLibreView: UIViewRepresentable {
     }
 
     /// Tells its owner when its size changes, after layout.
+    ///
+    /// It has no accessibility elements. The map takes no touches, and the distance line,
+    /// avatars and map controls say what it shows. MLNMapView lists "Map, zoom 12x" and
+    /// its hidden compass itself, past `accessibilityElementsHidden`.
     final class FramingMapView: MLNMapView {
         var onResize: (() -> Void)?
         private var lastSize = CGSize.zero
+
+        override var isAccessibilityElement: Bool {
+            get { false }
+            set { _ = newValue }
+        }
+
+        override func accessibilityElementCount() -> Int { 0 }
+
+        override func accessibilityElement(at index: Int) -> Any? { nil }
 
         override func layoutSubviews() {
             super.layoutSubviews()

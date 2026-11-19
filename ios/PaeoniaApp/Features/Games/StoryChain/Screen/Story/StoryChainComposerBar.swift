@@ -123,6 +123,7 @@ struct StoryChainComposerBar: View {
                 .padding(.leading, PaeoniaSpacing.space12)
                 .padding(.vertical, PaeoniaSpacing.space8)
                 .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(.storyChainWriteDareChip(viewModel.partnerName, dare.word.uppercased())))

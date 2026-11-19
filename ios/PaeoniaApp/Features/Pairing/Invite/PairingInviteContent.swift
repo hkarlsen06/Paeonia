@@ -14,6 +14,7 @@ struct PairingInviteContent: View {
     let onRefreshAccess: () -> Void
 
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(PaeoniaBannerCenter.self) private var bannerCenter
     @State private var isConfirmingNewCode = false
     @State private var isEnteringCode = false
@@ -94,18 +95,28 @@ struct PairingInviteContent: View {
     }
 
     private func readyContent(_ invite: PairingInvite) -> some View {
-        PaeoniaScreenScroll {
+        // At accessibility text sizes the buttons alone can be taller than a small phone,
+        // so they follow the code in the scroll instead of covering it.
+        let actionsScroll = dynamicTypeSize.isAccessibilitySize
+        return PaeoniaScreenScroll {
             VStack(spacing: 0) {
-                if showsManageSubscription {
+                if showsManageSubscription && !actionsScroll {
                     // The invite fills the first screen, so the subscription button
                     // only shows once someone scrolls to it.
                     inviteDetails(invite)
                         .frame(minHeight: max(visibleHeight - 2 * PaeoniaSpacing.space24, 0))
-
-                    PairingInviteManageSubscriptionButton()
-                        .padding(.top, PaeoniaSpacing.space24)
                 } else {
                     inviteDetails(invite)
+                }
+
+                if actionsScroll {
+                    actionCluster(invite)
+                        .padding(.top, PaeoniaSpacing.space24)
+                }
+
+                if showsManageSubscription {
+                    PairingInviteManageSubscriptionButton()
+                        .padding(.top, PaeoniaSpacing.space24)
                 }
             }
         }
@@ -115,18 +126,24 @@ struct PairingInviteContent: View {
             visibleHeight = height
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            PairingInviteActionCluster(
-                invite: invite,
-                shareMessage: firstDay?.shareMessage ?? .pairingInviteShareMessage,
-                didCopyCode: viewModel.didCopyCode,
-                isBusy: viewModel.isBusy,
-                onCopy: { copyInviteCode(invite.code) },
-                onNewCode: { isConfirmingNewCode = true },
-                onEnterCode: { isEnteringCode = true }
-            )
-            .paeoniaBannerBottomEdge()
+            if !actionsScroll {
+                actionCluster(invite)
+                    .paeoniaBannerBottomEdge()
+            }
         }
         .animation(PaeoniaMotion.stateChange, value: invite.id)
+    }
+
+    private func actionCluster(_ invite: PairingInvite) -> some View {
+        PairingInviteActionCluster(
+            invite: invite,
+            shareMessage: firstDay?.shareMessage ?? .pairingInviteShareMessage,
+            didCopyCode: viewModel.didCopyCode,
+            isBusy: viewModel.isBusy,
+            onCopy: { copyInviteCode(invite.code) },
+            onNewCode: { isConfirmingNewCode = true },
+            onEnterCode: { isEnteringCode = true }
+        )
     }
 
     private func inviteDetails(_ invite: PairingInvite) -> some View {

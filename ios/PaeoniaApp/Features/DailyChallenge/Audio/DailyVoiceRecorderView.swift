@@ -53,6 +53,7 @@ struct DailyVoiceRecorderView: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(colors.accent)
                 .frame(minHeight: 44)
+                .accessibilityIdentifier("daily.answer.voice.openSettings")
             }
         }
         .frame(maxWidth: .infinity)
@@ -121,6 +122,7 @@ struct DailyVoiceRecorderView: View {
         .disabled(recorder.phase == .starting)
         .accessibilityLabel(Text(isRecording ? .dailyChallengeVoiceStopRecording : .dailyChallengeVoiceRecord))
         .accessibilityValue(isRecording ? voiceClock(recorder.elapsed) : "")
+        .accessibilityIdentifier("daily.answer.voice.record")
     }
 
     /// "Tap to record", or the running clock while recording. The button already

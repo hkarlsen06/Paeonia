@@ -91,6 +91,7 @@ struct TopicQuestionRow: View {
                     .foregroundStyle(.paeoniaAccentPrimary)
                     .padding(.horizontal, PaeoniaSpacing.space12)
                     .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         } else if isSending {

@@ -134,7 +134,7 @@ struct HomeVisitCard: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         chevron
                     }
-                    .contentShape(Rectangle())
+                    .paeoniaTapTarget()
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("home.visit.prompt")
@@ -151,10 +151,8 @@ struct HomeVisitCard: View {
             Image(systemName: "xmark")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.paeoniaTextSecondary)
-                .frame(width: PaeoniaSpacing.compactButtonHeight, height: PaeoniaSpacing.compactButtonHeight)
-                .contentShape(Rectangle())
-                // The whole square stays tappable, but the row keeps the icon's height.
-                .padding(.vertical, (Self.iconSize - PaeoniaSpacing.compactButtonHeight) / 2)
+                .frame(width: PaeoniaSpacing.compactButtonHeight)
+                .paeoniaTapTarget()
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(.homeVisitPromptMoveDown))

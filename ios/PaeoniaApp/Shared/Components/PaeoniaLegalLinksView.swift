@@ -41,7 +41,7 @@ struct PaeoniaLegalLinksView: View {
 
     private func footerLabel(_ text: LocalizedStringResource) -> some View {
         Text(text)
-            .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+            .frame(minWidth: PaeoniaSpacing.compactButtonHeight, minHeight: PaeoniaSpacing.compactButtonHeight)
             .contentShape(Rectangle())
     }
 

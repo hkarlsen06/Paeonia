@@ -95,6 +95,7 @@ struct DailyPhotoAnswerComposer: View {
             }
             .font(PaeoniaTypography.caption)
             .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .foregroundStyle(colors.accent)
@@ -106,6 +107,7 @@ struct DailyPhotoAnswerComposer: View {
         Button(action: onRemove) {
             Image(systemName: "xmark")
                 .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .foregroundStyle(colors.foreground)
@@ -120,6 +122,7 @@ struct DailyPhotoAnswerComposer: View {
             PhotosPicker(selection: $selection, matching: .images) { label }
                 .buttonStyle(.plain)
                 .disabled(isBusy)
+                .accessibilityIdentifier("daily.answer.photo.library")
             cameraButton
         }
     }
@@ -128,7 +131,9 @@ struct DailyPhotoAnswerComposer: View {
     private var cameraButton: some View {
         if DailyCameraPicker.isAvailable {
             Button { isCameraPresented = true } label: {
-                Image(systemName: "camera").frame(minWidth: 44, minHeight: 44)
+                Image(systemName: "camera")
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .foregroundStyle(colors.accent)

@@ -168,6 +168,7 @@ struct CoupleMapCard: View {
         ].joined(separator: ", ")))
         .accessibilityHint(Text(.homeMapOpenHint))
         .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("location.map")
         .accessibilityAction {
             openInAppleMaps(current: current, partner: partner)
         }

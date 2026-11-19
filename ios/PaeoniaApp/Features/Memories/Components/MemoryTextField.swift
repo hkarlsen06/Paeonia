@@ -11,6 +11,8 @@ struct MemoryTextField<Field: Hashable>: View {
     let field: Field
     var lineLimit: ClosedRange<Int>? = 1...4
     var characterLimit: Int?
+    /// Return runs this instead of starting a new line (`PaeoniaMultilineTextField`).
+    var onReturn: (() -> Void)?
 
     private var isActive: Bool {
         isFocused.wrappedValue == field
@@ -21,7 +23,7 @@ struct MemoryTextField<Field: Hashable>: View {
         .font(PaeoniaTypography.body)
         .foregroundStyle(.paeoniaTextPrimary)
         .focused(isFocused, equals: field)
-        .paeoniaTextFieldChrome(isFocused: isActive)
+        .paeoniaTextFieldChrome(isFocused: isActive) { isFocused.wrappedValue = field }
         .animation(PaeoniaMotion.stateChange, value: isActive)
         .onChange(of: text) { _, newText in
             guard let characterLimit, MemoryDataService.isOverLimit(newText, characterLimit) else { return }
@@ -34,7 +36,8 @@ struct MemoryTextField<Field: Hashable>: View {
         let input = PaeoniaMultilineTextField(
             text: $text,
             label: placeholder,
-            prompt: Text(placeholder).foregroundStyle(.paeoniaTextSecondary)
+            prompt: Text(placeholder).foregroundStyle(.paeoniaTextSecondary),
+            onReturn: onReturn
         )
         if let lineLimit { input.lineLimit(lineLimit) } else { input }
     }

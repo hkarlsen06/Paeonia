@@ -34,6 +34,7 @@ struct GameChatResultRow: View {
                     Label(.dailyChatActionReply, systemImage: "arrowshape.turn.up.left")
                         .font(PaeoniaTypography.caption.weight(.semibold))
                         .frame(minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.paeoniaAccentPrimary)

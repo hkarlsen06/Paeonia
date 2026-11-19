@@ -481,6 +481,8 @@ extension HomeMapLayout {
             sendHeart()
         } label: {
             GlossyHeart(width: Self.heartWidth, tapCount: heartTaps)
+                .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.7), trigger: heartTaps)

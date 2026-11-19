@@ -316,10 +316,13 @@ private extension WidgetDrawingView {
                 .foregroundStyle(.paeoniaTextSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("widgetDrawing.description")
-            Button(.mediaAccessibilityDrawingDescription) { isDescriptionPresented = true }
-                .tint(.paeoniaAccentPrimary)
-                .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
-                .accessibilityIdentifier("widgetDrawing.description.edit")
+            Button { isDescriptionPresented = true } label: {
+                Text(.mediaAccessibilityDrawingDescription)
+                    .frame(minHeight: PaeoniaSpacing.compactButtonHeight)
+                    .contentShape(Rectangle())
+            }
+            .tint(.paeoniaAccentPrimary)
+            .accessibilityIdentifier("widgetDrawing.description.edit")
         }
 
         if viewModel.draftSaveFailed {

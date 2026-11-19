@@ -206,6 +206,7 @@ struct WelcomeView: View {
         .labelStyle(.titleAndIcon)
         .buttonBorderShape(.capsule)
         .tint(.paeoniaAccentSecondary)
+        .accessibilityIdentifier("welcome.paste")
     }
 
     private func openInviteSheet() {

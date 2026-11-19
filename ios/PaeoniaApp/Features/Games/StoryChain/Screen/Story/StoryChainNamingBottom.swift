@@ -41,7 +41,9 @@ struct StoryChainNamingBottom: View {
             PaeoniaMultilineTextField(
                 text: $viewModel.titleDraft,
                 label: .storyChainNamePlaceholder,
-                prompt: Text(.storyChainNamePlaceholder).foregroundStyle(.paeoniaTextTertiary)
+                prompt: Text(.storyChainNamePlaceholder).foregroundStyle(.paeoniaTextTertiary),
+                // A title is one line, so Return puts the keyboard away.
+                onReturn: { isFocused = false }
             )
             .textFieldStyle(.plain)
             .autocorrectionDisabled(false)
@@ -52,13 +54,6 @@ struct StoryChainNamingBottom: View {
             .lineLimit(1...3)
             .submitLabel(.done)
             .focused($isFocused)
-            // A vertical field takes Return as a new line. A title is one line,
-            // so Return puts the keyboard away instead.
-            .onChange(of: viewModel.titleDraft) { _, draft in
-                guard draft.contains(where: \.isNewline) else { return }
-                viewModel.titleDraft = draft.filter { !$0.isNewline }
-                isFocused = false
-            }
             .accessibilityIdentifier("storyChain.titleField")
 
             Rectangle()

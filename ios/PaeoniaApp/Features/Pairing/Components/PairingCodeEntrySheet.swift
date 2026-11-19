@@ -24,34 +24,37 @@ struct PairingCodeEntrySheet: View {
     var body: some View {
         // The content sits in the middle of the space above the keyboard.
         GeometryReader { proxy in
-            ScrollView {
-                VStack(spacing: PaeoniaSpacing.space24) {
-                    VStack(spacing: PaeoniaSpacing.space8) {
-                        Text(title)
-                            .font(PaeoniaTypography.title)
-                            .foregroundStyle(.paeoniaTextPrimary)
-                            .multilineTextAlignment(.center)
-                            .accessibilityAddTraits(.isHeader)
+            ScrollViewReader { scroller in
+                ScrollView {
+                    VStack(spacing: PaeoniaSpacing.space24) {
+                        VStack(spacing: PaeoniaSpacing.space8) {
+                            Text(title)
+                                .font(PaeoniaTypography.title)
+                                .foregroundStyle(.paeoniaTextPrimary)
+                                .multilineTextAlignment(.center)
+                                .accessibilityAddTraits(.isHeader)
 
-                        Text(message)
-                            .font(PaeoniaTypography.body)
-                            .foregroundStyle(.paeoniaTextSecondary)
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
+                            Text(message)
+                                .font(PaeoniaTypography.body)
+                                .foregroundStyle(.paeoniaTextSecondary)
+                                .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        codeField
+
+                        pasteButton
+
+                        submitButton
                     }
-
-                    codeField
-
-                    pasteButton
-
-                    submitButton
+                    .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                    .padding(.top, PaeoniaSpacing.space32)
+                    .padding(.bottom, PaeoniaSpacing.space16)
+                    .frame(maxWidth: .infinity, minHeight: proxy.size.height)
                 }
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.top, PaeoniaSpacing.space32)
-                .padding(.bottom, PaeoniaSpacing.space16)
-                .frame(maxWidth: .infinity, minHeight: proxy.size.height)
+                .scrollBounceBehavior(.basedOnSize)
+                .keepsCodeCellsInView(scroller, visibleHeight: proxy.size.height, code: code)
             }
-            .scrollBounceBehavior(.basedOnSize)
         }
         .paeoniaScreenBackground()
         // The sheet covers the root's banner, so it mounts its own copy of the same
@@ -64,7 +67,13 @@ struct PairingCodeEntrySheet: View {
     }
 
     private var codeField: some View {
-        ZStack {
+        PairingCodeCellLayout { index in
+            PairingCodeCell(code: code, index: index, isFocused: fieldFocused)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+        .id(PairingCodeCellLayoutID.cells)
+        .background {
             TextField("", text: $code)
                 .focused($fieldFocused)
                 .keyboardType(.asciiCapable)
@@ -74,7 +83,6 @@ struct PairingCodeEntrySheet: View {
                 .submitLabel(.go)
                 .foregroundStyle(.clear)
                 .tint(.clear)
-                .frame(height: 1)
                 .opacity(0.01)
                 .allowsHitTesting(false)
                 .onChange(of: code) { _, newValue in
@@ -84,18 +92,14 @@ struct PairingCodeEntrySheet: View {
                     }
                 }
                 .onSubmit(submit)
-
-            PairingCodeCellLayout { index in
-                PairingCodeCell(code: code, index: index, isFocused: fieldFocused)
-            }
-            .allowsHitTesting(false)
+                .codeFieldAccessibility(
+                    label: .pairingInviteCodeLabel,
+                    hint: .pairingCodeEntryFieldHint,
+                    code: code,
+                    identifier: "pairing.codeEntry.field"
+                )
         }
         .focusesCodeFieldOnTap(isFocused: fieldFocused) { fieldFocused = $0 }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(.pairingInviteCodeLabel))
-        .accessibilityValue(Text(code).speechSpellsOutCharacters())
-        .accessibilityHint(Text(.pairingCodeEntryFieldHint))
-        .accessibilityAddTraits(.isButton)
     }
 
     private var pasteButton: some View {
@@ -105,6 +109,7 @@ struct PairingCodeEntrySheet: View {
         .labelStyle(.titleAndIcon)
         .buttonBorderShape(.capsule)
         .tint(.paeoniaAccentSecondary)
+        .accessibilityIdentifier("pairing.codeEntry.paste")
     }
 
     private var submitButton: some View {
@@ -113,6 +118,7 @@ struct PairingCodeEntrySheet: View {
         }
         .buttonStyle(PaeoniaPrimaryButtonStyle(isLoading: isSubmitting))
         .disabled(!isComplete)
+        .accessibilityIdentifier("pairing.codeEntry.submit")
     }
 
     private func submit() {
@@ -180,7 +186,37 @@ struct PairingCodeCell: View {
     }
 }
 
+enum PairingCodeCellLayoutID: Hashable {
+    case cells
+}
+
 extension View {
+    /// At the largest text sizes on a short screen the cells take two rows, and the keyboard
+    /// can cover the second. Scrolls the cells' bottom edge into view when the keyboard
+    /// changes the visible height and as the code grows. Put it on the scroll view, and
+    /// `.id(PairingCodeCellLayoutID.cells)` on the cells.
+    func keepsCodeCellsInView(_ scroller: ScrollViewProxy, visibleHeight: CGFloat, code: String) -> some View {
+        onChange(of: visibleHeight) { scroller.scrollTo(PairingCodeCellLayoutID.cells, anchor: .bottom) }
+            .onChange(of: code.count) { scroller.scrollTo(PairingCodeCellLayoutID.cells, anchor: .bottom) }
+    }
+
+    /// Makes the invisible text field behind the code cells the one element VoiceOver
+    /// reads, over the cells' whole frame, with the code spelled out. The cells are hidden
+    /// from accessibility. Otherwise VoiceOver finds a second, unnamed text field where the
+    /// keyboard's focus is.
+    func codeFieldAccessibility(
+        label: LocalizedStringResource,
+        hint: LocalizedStringResource,
+        code: String,
+        identifier: String
+    ) -> some View {
+        frame(maxWidth: .infinity, maxHeight: .infinity)
+            .accessibilityLabel(Text(label))
+            .accessibilityValue(Text(code).speechSpellsOutCharacters())
+            .accessibilityHint(Text(hint))
+            .accessibilityIdentifier(identifier)
+    }
+
     /// Focuses the hidden text field under the code cells when someone taps them.
     func focusesCodeFieldOnTap(isFocused: Bool, setFocused: @escaping (Bool) -> Void) -> some View {
         modifier(CodeFieldTap(isFocused: isFocused, setFocused: setFocused))

@@ -47,21 +47,24 @@ struct EmailSignInSheet: View {
     var body: some View {
         // The content sits in the middle of the space above the keyboard.
         GeometryReader { proxy in
-            ScrollView {
-                VStack(spacing: PaeoniaSpacing.space24) {
-                    switch step {
-                    case .email:
-                        emailStep
-                    case let .code(sentTo):
-                        codeStep(sentTo: sentTo)
+            ScrollViewReader { scroller in
+                ScrollView {
+                    VStack(spacing: PaeoniaSpacing.space24) {
+                        switch step {
+                        case .email:
+                            emailStep
+                        case let .code(sentTo):
+                            codeStep(sentTo: sentTo)
+                        }
                     }
+                    .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
+                    .padding(.top, PaeoniaSpacing.space32)
+                    .padding(.bottom, PaeoniaSpacing.space16)
+                    .frame(maxWidth: .infinity, minHeight: proxy.size.height)
                 }
-                .padding(.horizontal, PaeoniaSpacing.screenHorizontalPadding)
-                .padding(.top, PaeoniaSpacing.space32)
-                .padding(.bottom, PaeoniaSpacing.space16)
-                .frame(maxWidth: .infinity, minHeight: proxy.size.height)
+                .scrollBounceBehavior(.basedOnSize)
+                .keepsCodeCellsInView(scroller, visibleHeight: proxy.size.height, code: code)
             }
-            .scrollBounceBehavior(.basedOnSize)
         }
         .paeoniaScreenBackground()
         .preferredColorScheme(.dark)
@@ -171,14 +174,19 @@ struct EmailSignInSheet: View {
 
     /// An invisible field under the code cells, like the invite code sheet.
     private var codeField: some View {
-        ZStack {
+        PairingCodeCellLayout { index in
+            PairingCodeCell(code: code, index: index, isFocused: focusedField == .code)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+        .id(PairingCodeCellLayoutID.cells)
+        .background {
             TextField("", text: $code)
                 .focused($focusedField, equals: .code)
                 .keyboardType(.numberPad)
                 .textContentType(.oneTimeCode)
                 .foregroundStyle(.clear)
                 .tint(.clear)
-                .frame(height: 1)
                 .opacity(0.01)
                 .allowsHitTesting(false)
                 .onChange(of: code) { _, newValue in
@@ -195,20 +203,12 @@ struct EmailSignInSheet: View {
                         verifyCode(digits)
                     }
                 }
-
-            PairingCodeCellLayout { index in
-                PairingCodeCell(code: code, index: index, isFocused: focusedField == .code)
-            }
-            .allowsHitTesting(false)
+                .codeFieldAccessibility(
+                    label: .authEmailCodeLabel, hint: .authEmailCodeHint, code: code, identifier: "auth.email.codeField"
+                )
         }
         .focusesCodeFieldOnTap(isFocused: focusedField == .code) { focusedField = $0 ? .code : nil }
         .onAppear { focusedField = .code }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(.authEmailCodeLabel))
-        .accessibilityValue(Text(code).speechSpellsOutCharacters())
-        .accessibilityHint(Text(.authEmailCodeHint))
-        .accessibilityAddTraits(.isButton)
-        .accessibilityIdentifier("auth.email.codeField")
     }
 
     private func verifyCode(_ code: String) {

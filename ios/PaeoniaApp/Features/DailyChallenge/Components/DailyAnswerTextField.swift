@@ -45,7 +45,9 @@ struct DailyAnswerTextField: View {
         .tint(colors.accent)
         .focused(isFocused)
         .accessibilityIdentifier(accessibilityIdentifier)
-        .paeoniaTextFieldChrome(isFocused: isFocused.wrappedValue, accent: colors.accent, isEmbedded: isEmbedded)
+        .paeoniaTextFieldChrome(isFocused: isFocused.wrappedValue, accent: colors.accent, isEmbedded: isEmbedded) {
+            isFocused.wrappedValue = true
+        }
     }
 
     @ViewBuilder

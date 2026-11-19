@@ -208,16 +208,14 @@ struct VisitDetailView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .opacity(visits.itemDraft.isEmpty ? 1 : 0)
                 .accessibilityHidden(true)
-            PaeoniaMultilineTextField(text: draft, label: .visitListAddPlaceholder, prompt: Text(verbatim: ""))
+            PaeoniaMultilineTextField(
+                text: draft, label: .visitListAddPlaceholder, prompt: Text(verbatim: ""), onReturn: addItem
+            )
             .lineLimit(1...3)
             .focused($isAddFieldFocused)
             .submitLabel(.done)
             .onChange(of: visits.itemDraft) { _, title in
-                // The vertical field takes a return as a new line. It adds the item instead.
-                if title.contains("\n") {
-                    visits.itemDraft = title.replacingOccurrences(of: "\n", with: "")
-                    addItem()
-                } else if MemoryDataService.isOverLimit(title, TogetherListItem.maxTitleCodePoints) {
+                if MemoryDataService.isOverLimit(title, TogetherListItem.maxTitleCodePoints) {
                     visits.itemDraft = MemoryDataService.prefix(
                         title, fittingCodePoints: TogetherListItem.maxTitleCodePoints
                     )
