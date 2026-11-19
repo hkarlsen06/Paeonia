@@ -23,8 +23,6 @@ private struct PaeoniaButtonLoadingModifier: ViewModifier {
 /// While `isLoading`, the button keeps its enabled look, shows a spinner, and
 /// ignores taps. Pair it with the screen's own guard against double submits.
 struct PaeoniaPrimaryButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let isLoading: Bool
     private let isComplete: Bool
 
@@ -33,55 +31,57 @@ struct PaeoniaPrimaryButtonStyle: ButtonStyle {
         self.isComplete = isComplete
     }
 
-    private var showsEnabled: Bool { isEnabled || isLoading || isComplete }
-    private var labelColor: Color { showsEnabled ? .paeoniaTextInverse : .paeoniaTextTertiary }
-
     func makeBody(configuration: Configuration) -> some View {
-        let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
-
-        return configuration.label
-            .font(PaeoniaTypography.button)
-            .multilineTextAlignment(.center)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, PaeoniaSpacing.space16)
-            .padding(.vertical, PaeoniaSpacing.space12)
-            .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
-            .foregroundStyle(labelColor)
-            .modifier(PaeoniaButtonLoadingModifier(isLoading: isLoading, spinnerColor: labelColor))
-            .background(backgroundColor(isPressed: configuration.isPressed))
-            .clipShape(shape)
-            .contentShape(shape)
-            .scaleEffect(configuration.isPressed && showsEnabled && !reduceMotion ? 0.98 : 1)
-            .animation(reduceMotion ? nil : PaeoniaMotion.buttonPress, value: configuration.isPressed)
-            .allowsHitTesting(!isLoading && !isComplete)
-    }
-
-    private func backgroundColor(isPressed: Bool) -> Color {
-        if !showsEnabled {
-            return .paeoniaSurfaceDisabled
-        }
-
-        return isPressed ? .paeoniaAccentSecondary : .paeoniaAccentPrimary
+        PaeoniaFilledButton(
+            configuration: configuration, isProminent: true, isLoading: isLoading, isComplete: isComplete
+        )
     }
 }
 
 /// Same loading behavior as `PaeoniaPrimaryButtonStyle`.
 struct PaeoniaSecondaryButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let isLoading: Bool
 
     init(isLoading: Bool = false) {
         self.isLoading = isLoading
     }
 
-    private var showsEnabled: Bool { isEnabled || isLoading }
-    private var labelColor: Color { showsEnabled ? .paeoniaTextPrimary : .paeoniaTextTertiary }
+    func makeBody(configuration: Configuration) -> some View {
+        PaeoniaFilledButton(configuration: configuration, isProminent: false, isLoading: isLoading, isComplete: false)
+    }
+}
+
+/// The primary look while `isProminent`, otherwise the secondary one. For a button that
+/// changes between the two in place: it stays one view, so its colors animate instead of
+/// one button fading into another.
+struct PaeoniaProminenceButtonStyle: ButtonStyle {
+    let isProminent: Bool
 
     func makeBody(configuration: Configuration) -> some View {
+        PaeoniaFilledButton(configuration: configuration, isProminent: isProminent, isLoading: false, isComplete: false)
+    }
+}
+
+private struct PaeoniaFilledButton: View {
+    let configuration: ButtonStyleConfiguration
+    let isProminent: Bool
+    let isLoading: Bool
+    let isComplete: Bool
+
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var showsEnabled: Bool { isEnabled || isLoading || isComplete }
+
+    private var labelColor: Color {
+        guard showsEnabled else { return .paeoniaTextTertiary }
+        return isProminent ? .paeoniaTextInverse : .paeoniaTextPrimary
+    }
+
+    var body: some View {
         let shape = RoundedRectangle(cornerRadius: PaeoniaRadius.standard, style: .continuous)
 
-        return configuration.label
+        configuration.label
             .font(PaeoniaTypography.button)
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
@@ -90,23 +90,24 @@ struct PaeoniaSecondaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity, minHeight: PaeoniaSpacing.buttonHeight)
             .foregroundStyle(labelColor)
             .modifier(PaeoniaButtonLoadingModifier(isLoading: isLoading, spinnerColor: labelColor))
-            .background(backgroundColor(isPressed: configuration.isPressed))
+            .background(backgroundColor)
             .clipShape(shape)
             .overlay {
                 shape.strokeBorder(.paeoniaBorder, lineWidth: PaeoniaRadius.strokeDefault)
+                    .opacity(isProminent ? 0 : 1)
             }
             .contentShape(shape)
             .scaleEffect(configuration.isPressed && showsEnabled && !reduceMotion ? 0.98 : 1)
             .animation(reduceMotion ? nil : PaeoniaMotion.buttonPress, value: configuration.isPressed)
-            .allowsHitTesting(!isLoading)
+            .allowsHitTesting(!isLoading && !isComplete)
     }
 
-    private func backgroundColor(isPressed: Bool) -> Color {
-        if !showsEnabled {
-            return .paeoniaSurfaceDisabled
+    private var backgroundColor: Color {
+        guard showsEnabled else { return .paeoniaSurfaceDisabled }
+        if isProminent {
+            return configuration.isPressed ? .paeoniaAccentSecondary : .paeoniaAccentPrimary
         }
-
-        return isPressed ? .paeoniaSurfacePressed : .paeoniaSurfacePrimary
+        return configuration.isPressed ? .paeoniaSurfacePressed : .paeoniaSurfacePrimary
     }
 }
 
