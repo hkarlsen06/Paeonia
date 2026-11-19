@@ -649,6 +649,7 @@ actor StaticAccessRouteService: AccessRouteServicing {
     func markRelationshipEndedNoticeSeen(coupleID _: UUID) async throws {}
 
     func markFirstDayFinished(coupleID _: UUID) async throws {}
+    func markReunionCelebrationSeen(coupleID _: UUID) async throws {}
 }
 
 private enum AccessRouteServiceTestError: Error {
@@ -665,6 +666,7 @@ private actor FailingAccessRouteService: AccessRouteServicing {
     }
 
     func markFirstDayFinished(coupleID _: UUID) async throws {}
+    func markReunionCelebrationSeen(coupleID _: UUID) async throws {}
 }
 
 private actor BlockingAccessRouteService: AccessRouteServicing {
@@ -719,6 +721,7 @@ private actor BlockingAccessRouteService: AccessRouteServicing {
     func markRelationshipEndedNoticeSeen(coupleID _: UUID) async throws {}
 
     func markFirstDayFinished(coupleID _: UUID) async throws {}
+    func markReunionCelebrationSeen(coupleID _: UUID) async throws {}
 }
 
 /// Drives the relationship-ended acknowledge flow: resolves to the ended notice
@@ -752,6 +755,7 @@ private actor RelationshipEndedAccessRouteService: AccessRouteServicing {
     }
 
     func markFirstDayFinished(coupleID _: UUID) async throws {}
+    func markReunionCelebrationSeen(coupleID _: UUID) async throws {}
 
     private func resolution(route: AccessRoute) -> AccessRouteResolution {
         AccessRouteResolution(
@@ -962,6 +966,16 @@ final class TestPairingCelebrationStore: PairingCelebrationStoring {
 
     func markCelebrationSeen(forPairID pairID: UUID) {
         seenPairIDs.insert(pairID)
+    }
+
+    private var seenReunions: Set<ReunionCelebration> = []
+
+    func hasSeenReunionCelebration(_ reunion: ReunionCelebration) -> Bool {
+        seenReunions.contains(reunion)
+    }
+
+    func markReunionCelebrationSeen(_ reunion: ReunionCelebration) {
+        seenReunions.insert(reunion)
     }
 
     private(set) var progressByPairID: [UUID: PostPairingProgress] = [:]

@@ -216,6 +216,7 @@ describe("relationship_state in get_access_snapshot", () => {
       delete_after: null,
       ended_notice_seen_at: null,
       first_day_finished_at: null,
+      reunion_celebration_due_at: null,
     });
 
     await couple.first.as.mutation(api.relationship.leave_relationship, operation());

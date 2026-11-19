@@ -6,7 +6,16 @@ import { cleanupCoupleContent } from "./lib/relationshipCleanup";
 import { endRelationshipForPair } from "./lib/relationshipEnd";
 import { failure, setMediaEnv, uploadAsset } from "./media.testing";
 import { deliverDuePushes } from "./push.testing";
-import { addDevice, createSignedInUser, grantLifetime, newTest, relationshipStateOf, type TestConvex, type TestUser } from "./test.setup";
+import {
+  addDevice,
+  createSignedInUser,
+  grantLifetime,
+  newTest,
+  relationshipStateOf,
+  transactionClock,
+  type TestConvex,
+  type TestUser,
+} from "./test.setup";
 
 const NOW = "2026-10-10T12:00:00.000Z";
 
@@ -187,6 +196,43 @@ describe("bringing an ended relationship back", () => {
       .toEqual({ couple_id: coupleId, restored: true });
   });
 
+  test("a restore owes both members the celebration as a reunion, but not the first day, until each saw it", async () => {
+    const t = newTest();
+    const { alex, robin, coupleId, inviteId } = await leftCouple(t);
+    const earlier = "2026-10-02T09:00:00.000Z";
+    await t.run(async (ctx) => {
+      const member = await ctx.db
+        .query("couple_members")
+        .withIndex("by_couple_id_user_id", (q) => q.eq("couple_id", coupleId).eq("user_id", alex.userId))
+        .unique();
+      await ctx.db.patch(member!._id, { first_day_finished_at: earlier });
+    });
+    await join(robin, "DEF456", true);
+    await answer(alex, inviteId, robin, true);
+    const restoredAt = (await transactionClock(t))();
+
+    // Alex keeps the day they finished. Robin, who never did, skips it, because its things came back.
+    expect(await relationshipStateOf(alex)).toMatchObject({ first_day_finished_at: earlier, reunion_celebration_due_at: restoredAt });
+    expect(await relationshipStateOf(robin)).toMatchObject({ first_day_finished_at: restoredAt, reunion_celebration_due_at: restoredAt });
+
+    const stranger = await createSignedInUser(t, { name: "Sam" });
+    expect(await failure(t.mutation(api.relationship.mark_reunion_celebration_seen, { p_couple_id: coupleId }))).toMatchObject({
+      code: "42501",
+    });
+    expect(await stranger.as.mutation(api.relationship.mark_reunion_celebration_seen, { p_couple_id: coupleId })).toBe(false);
+    expect(await relationshipStateOf(alex)).toMatchObject({ reunion_celebration_due_at: restoredAt });
+
+    expect(await robin.as.mutation(api.relationship.mark_reunion_celebration_seen, { p_couple_id: coupleId })).toBe(true);
+    expect(await relationshipStateOf(robin)).toMatchObject({ reunion_celebration_due_at: null });
+    expect(await relationshipStateOf(alex)).toMatchObject({ reunion_celebration_due_at: restoredAt });
+    expect(await robin.as.mutation(api.relationship.mark_reunion_celebration_seen, { p_couple_id: coupleId })).toBe(true);
+
+    // Once the couple ends again, nobody can mark it, and the ended state shows no reunion.
+    await alex.as.mutation(api.relationship.leave_relationship, operation());
+    expect(await alex.as.mutation(api.relationship.mark_reunion_celebration_seen, { p_couple_id: coupleId })).toBe(false);
+    expect(await relationshipStateOf(alex)).toMatchObject({ relationship_status: "ended", reunion_celebration_due_at: null });
+  });
+
   test("a start fresh from the inviter pairs the two in a new, empty couple", async () => {
     const t = newTest();
     const { alex, robin, coupleId, inviteId } = await leftCouple(t);
@@ -196,6 +242,8 @@ describe("bringing an ended relationship back", () => {
     expect(result.couple_id).not.toBe(coupleId);
     expect(await memoryTitles(robin)).toEqual([]);
     expect((await coupleRow(t, coupleId))?.status).toBe("ended");
+    // A new couple is a first pairing: the first day is still ahead, and there is no reunion.
+    expect(await relationshipStateOf(robin)).toMatchObject({ first_day_finished_at: null, reunion_celebration_due_at: null });
   });
 
   test("a start fresh from the joiner while waiting pairs them new, and a late yes from the inviter gets that couple", async () => {

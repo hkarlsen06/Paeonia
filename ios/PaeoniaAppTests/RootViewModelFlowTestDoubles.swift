@@ -101,6 +101,12 @@ actor ScriptedAccessRouteService: AccessRouteServicing {
     func markFirstDayFinished(coupleID: UUID) async throws {
         firstDayFinishedCoupleIDs.append(coupleID)
     }
+
+    private(set) var reunionSeenCoupleIDs: [UUID] = []
+
+    func markReunionCelebrationSeen(coupleID: UUID) async throws {
+        reunionSeenCoupleIDs.append(coupleID)
+    }
 }
 
 enum FlowTestError: Error {
