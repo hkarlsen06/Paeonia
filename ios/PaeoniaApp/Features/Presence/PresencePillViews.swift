@@ -3,9 +3,13 @@ import SwiftUI
 /// The partner's avatar as one glass capsule, the way the Dynamic Island holds a notification. On its
 /// own the capsule is as wide as the face, so it is a circle. A notice or the buttons stretch that
 /// same glass toward the middle of the screen, and the face stays where it was at the `faceEdge` end.
+/// A notice that wraps makes the glass taller than the face, toward the middle of the screen, and the
+/// face stays in its row at the `faceRow` end.
 /// The glass is the ring pill's background (`CallMorphPart.background`), so a call grows out of it.
 struct PresenceIsland<Content: View, Face: View>: View {
     let faceEdge: HorizontalEdge
+    /// `.bottom` when the glass grows up from the face's row, and `.top` when it grows down.
+    let faceRow: VerticalAlignment
     let showsContent: Bool
     @ViewBuilder let content: Content
     @ViewBuilder let face: Face
@@ -13,7 +17,7 @@ struct PresenceIsland<Content: View, Face: View>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(alignment: faceRow, spacing: 0) {
             if faceEdge == .leading { face }
             if showsContent {
                 content
@@ -23,10 +27,15 @@ struct PresenceIsland<Content: View, Face: View>: View {
         }
         .background {
             Color.clear
-                .glassEffect(.regular.interactive(), in: Capsule())
+                .glassEffect(.regular.interactive(), in: Self.glass)
                 .callMorph(.background)
         }
         .shadow(color: .black.opacity(0.3), radius: 12, y: 4)
+    }
+
+    /// A capsule while it is one row tall. Taller, its corners stay round around the face.
+    private static var glass: RoundedRectangle {
+        RoundedRectangle(cornerRadius: PresenceAvatar.outerSize.height / 2, style: .circular)
     }
 
     private var contentTransition: AnyTransition {
@@ -56,7 +65,7 @@ private struct IslandReveal: Transition {
 nonisolated private struct IslandRevealShape: Shape {
     var progress: CGFloat
     let faceEdge: HorizontalEdge
-    /// The glass's height.
+    /// The glass's height while it is one row tall, which also sets how round its end is.
     let height: CGFloat
 
     var animatableData: CGFloat {
@@ -67,9 +76,10 @@ nonisolated private struct IslandRevealShape: Shape {
     func path(in rect: CGRect) -> Path {
         guard progress < 1 else { return Path(rect.insetBy(dx: 0, dy: -rect.height)) }
         let width = rect.width * max(progress, 0)
+        let shownHeight = max(rect.height, height)
         let shown = CGRect(
-            x: faceEdge == .leading ? rect.minX : rect.maxX - width, y: rect.midY - height / 2,
-            width: width, height: height)
+            x: faceEdge == .leading ? rect.minX : rect.maxX - width, y: rect.midY - shownHeight / 2,
+            width: width, height: shownHeight)
         let radius = min(height, width) / 2
         let end = faceEdge == .leading
             ? UnevenRoundedRectangle(bottomTrailingRadius: radius, topTrailingRadius: radius)
@@ -158,23 +168,32 @@ struct PresenceUnreadBadge: View {
     }
 }
 
-/// What the partner just did, or the chat they type in, inside the avatar's capsule: one line that
-/// says what or where, and one with the message or what a tap does. A tap opens the chat, the game
-/// or the screen it is about, unless `canOpen` is false.
+/// What the partner just did, or the chat they type in, inside the avatar's capsule: a line that
+/// says what or where, and one with the message or what a tap does. Each wraps instead of cutting
+/// the words off. A tap opens the chat, the game or the screen it is about, unless `canOpen` is false.
 struct PresenceCalloutContent: View {
-    static let textWidthCap: CGFloat = 220
+    /// Keeps a notice to a readable width on an iPad. A phone has less room than this beside the face.
+    static let textWidthCap: CGFloat = 360
 
     let callout: PresenceCallout
     let partnerName: String
     let canOpen: Bool
     let open: () -> Void
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    /// Two lines each, which fits every notification's words. A chat message can be longer, and the
+    /// chat shows the rest. Large accessibility text gets more lines, because fewer words fit in one.
+    private var lineLimit: Int {
+        dynamicTypeSize.isAccessibilitySize ? 6 : 2
+    }
+
     var body: some View {
         Button(action: open) {
             HStack(spacing: PaeoniaSpacing.space8) {
                 icon
-                // As wide as the words, up to the cap. A frame with a largest width would always
-                // take all of it and stretch the capsule.
+                // As wide as the words, up to the room beside the face or the cap. A frame with a
+                // largest width would always take all of it and stretch the capsule.
                 WidthCap(PresenceCalloutContent.textWidthCap) {
                     VStack(alignment: .leading, spacing: 0) {
                         Text(verbatim: callout.title)
@@ -186,10 +205,12 @@ struct PresenceCalloutContent: View {
                                 .foregroundStyle(.paeoniaTextPrimary)
                         }
                     }
-                    .lineLimit(1)
+                    .lineLimit(lineLimit)
+                    .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .padding(.horizontal, PaeoniaSpacing.space12)
+            .padding(.vertical, PaeoniaSpacing.space4)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)

@@ -81,24 +81,28 @@ struct PresencePillLayer: View {
     private func pill(_ status: PresencePillStatus, in placement: CallBubblePlacement) -> some View {
         let spot = overlay.spot
         let rowY = placement.center(of: spot, bubble: PresenceAvatar.outerSize).y
+        let rowHeight = PresenceAvatar.outerSize.height
         let content = islandContent(status)
-        return PresenceIsland(faceEdge: spot.edge, showsContent: content != .none) {
+        return PresenceIsland(
+            faceEdge: spot.edge,
+            faceRow: placement.growsDownward(fromY: rowY, rowHeight: rowHeight) ? .top : .bottom,
+            showsContent: content != .none
+        ) {
             islandContent(content)
         } face: {
             face(status, in: placement)
-        }
-        .overlay(alignment: spot.isLeading ? .topLeading : .topTrailing) {
-            // Message carries the count while the buttons show.
-            if !model.unreadChats.isEmpty, !content.showsActions {
-                PresenceUnreadBadge(count: model.unreadChats.count)
-                    .frame(width: PresenceAvatar.outerSize.width, alignment: .trailing)
-                    .offset(x: PaeoniaSpacing.space4, y: -PaeoniaSpacing.space4)
-                    .transition(.paeoniaPop)
-            }
+                .overlay(alignment: .topTrailing) {
+                    // Message carries the count while the buttons show.
+                    if !model.unreadChats.isEmpty, !content.showsActions {
+                        PresenceUnreadBadge(count: model.unreadChats.count)
+                            .offset(x: PaeoniaSpacing.space4, y: -PaeoniaSpacing.space4)
+                            .transition(.paeoniaPop)
+                    }
+                }
         }
         // The window passes every touch outside this frame to the app underneath.
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { overlay.avatarFrame = $0 }
-        .placed(on: spot.edge, rowY: rowY, rowHeight: PresenceAvatar.outerSize.height, in: placement)
+        .placed(on: spot.edge, rowY: rowY, rowHeight: rowHeight, in: placement)
         .offset(dragOffset)
     }
 
