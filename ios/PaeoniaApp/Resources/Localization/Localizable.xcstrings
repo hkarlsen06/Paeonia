@@ -24453,24 +24453,6 @@
         }
       }
     },
-    "home.unreadChats.eyebrow" : {
-      "comment" : "Heading of the Us tab card that lists chats with unread messages from the partner",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New messages"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nye meldinger"
-          }
-        }
-      }
-    },
     "home.unreadChats.hiddenPreview" : {
       "comment" : "Shown in the Us tab unread chats card when the newest message has no text to preview",
       "extractionState" : "manual",

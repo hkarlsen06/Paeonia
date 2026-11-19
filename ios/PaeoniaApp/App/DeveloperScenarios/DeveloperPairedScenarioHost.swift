@@ -264,6 +264,7 @@
           pairingCelebrationStore: DeveloperLocalFlowCelebrationStore(firstSteps: scenario.firstStepsProgress),
           todaysQuestionOpenings: scenario == .pairedHomeTodayOpens ? Self.todaysQuestionOpenings : nil
         )
+        .task { await seedUnreadChats() }
         .task {
           if sharesLocationLater {
             try? await Task.sleep(for: .seconds(6))
@@ -289,6 +290,30 @@
   }
 
   extension DeveloperPairedScenarioHost {
+    /// Robin's unread question chats in `home-unread-chats`, once the daily model has read its
+    /// own empty chat cache.
+    private func seedUnreadChats() async {
+      guard scenario == .homeUnreadChats else { return }
+      try? await Task.sleep(for: .seconds(4))
+      dailyChallengeViewModel.applyThreadSummaries(Self.unreadQuestionChats)
+    }
+
+    /// Two question chats where Robin wrote last, for `home-unread-chats`.
+    private static var unreadQuestionChats: [ThreadChatSummary] {
+      let questions: [(UUID, String)] = [
+        (DeveloperScenarioDailyFixture.questionID, "Haha the dog again 😂 he really wanted that sandwich"),
+        (UUID(), "Okay but you HAVE to tell me the rest of that story tonight"),
+      ]
+      return questions.enumerated().map { index, question in
+        let at = Date.now.addingTimeInterval(TimeInterval(-600 * (index + 1)))
+        return ThreadChatSummary(
+          threadID: UUID(), coupleID: DeveloperScenarioFixture.coupleID, subject: .question(question.0),
+          createdAt: at, updatedAt: at, lastMessageID: UUID(), lastMessageAt: at,
+          lastMessageSenderUserID: DeveloperScenarioFixture.partnerUserID, lastMessageBody: question.1
+        )
+      }
+    }
+
     private func partnerLeavesGame() async {
       let owner = DeveloperGamesFixture.me
       guard let overview = await gamesCache.document(ownerUserID: owner).overview else { return }

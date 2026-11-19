@@ -10,7 +10,8 @@ struct UnreadChatRow: Identifiable, Equatable {
 }
 
 /// The Home card listing chats with new partner messages. Home hides it when
-/// there are none. Each row opens its chat.
+/// there are none. Each row is the partner's newest message in one chat, under
+/// its question when today's questions include it, and opens that chat.
 struct HomeUnreadChatsCard: View {
     let chats: [UnreadChatRow]
     let partnerName: String
@@ -18,22 +19,14 @@ struct HomeUnreadChatsCard: View {
     var onOpenChat: (UUID) -> Void = { _ in }
 
     private static let maximumRows = 3
+    private static let avatarSize: CGFloat = 36
+    private static let dotSize: CGFloat = 10
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        PaeoniaCard {
-            VStack(alignment: .leading, spacing: PaeoniaSpacing.space12) {
-                HStack {
-                    PaeoniaCardEyebrow(.homeUnreadChatsEyebrow)
-                    Spacer(minLength: PaeoniaSpacing.space12)
-                    Text(chats.count, format: .number)
-                        .font(PaeoniaTypography.caption.weight(.semibold))
-                        .foregroundStyle(.paeoniaTextInverse)
-                        .padding(.horizontal, PaeoniaSpacing.space8)
-                        .padding(.vertical, PaeoniaSpacing.space2)
-                        .background(.paeoniaAccentPrimary, in: Capsule())
-                        .accessibilityHidden(true)
-                }
-
+        PaeoniaCard(padding: PaeoniaSpacing.space12) {
+            VStack(alignment: .leading, spacing: PaeoniaSpacing.space4) {
                 ForEach(chats.prefix(Self.maximumRows)) { chat in
                     Button {
                         onOpenChat(chat.id)
@@ -52,10 +45,15 @@ struct HomeUnreadChatsCard: View {
                 mediaAssetID: partnerProfilePhotoAssetID,
                 name: partnerName,
                 tint: .paeoniaPartnerTwo,
-                size: 40,
+                size: Self.avatarSize,
                 isCurrentUser: false
             )
-            .accessibilityHidden(true)
+            .overlay(alignment: .topTrailing) {
+                Circle()
+                    .fill(.paeoniaAccentPrimary)
+                    .frame(width: Self.dotSize, height: Self.dotSize)
+                    .overlay(Circle().stroke(.paeoniaBackgroundPrimary, lineWidth: 2))
+            }
 
             VStack(alignment: .leading, spacing: PaeoniaSpacing.space2) {
                 if let prompt = chat.prompt {
@@ -64,23 +62,22 @@ struct HomeUnreadChatsCard: View {
                         .foregroundStyle(.paeoniaTextTertiary)
                         .lineLimit(1)
                 }
-                Text(.dailyChatCardUnreadTitle(partnerName))
+                previewText(chat)
                     .font(PaeoniaTypography.bodyEmphasis)
                     .foregroundStyle(.paeoniaTextPrimary)
-                previewText(chat)
-                    .font(PaeoniaTypography.body)
-                    .foregroundStyle(.paeoniaTextSecondary)
-                    .lineLimit(2)
+                    // One line reads as a list. At accessibility sizes that is a word or two.
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            Circle()
-                .fill(.paeoniaAccentPrimary)
-                .frame(width: 10, height: 10)
-                .accessibilityHidden(true)
+            Image(systemName: "chevron.right")
+                .font(PaeoniaTypography.caption.weight(.semibold))
+                .foregroundStyle(.paeoniaTextTertiary)
         }
+        .paeoniaTapTarget()
         .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel(chat))
     }
 
     private func previewText(_ chat: UnreadChatRow) -> Text {
@@ -89,6 +86,15 @@ struct HomeUnreadChatsCard: View {
         } else {
             Text(.homeUnreadChatsHiddenPreview)
         }
+    }
+
+    private func accessibilityLabel(_ chat: UnreadChatRow) -> Text {
+        let parts = [
+            String(localized: .dailyChatCardUnreadTitle(partnerName)),
+            chat.preview?.trimmedNonEmpty ?? String(localized: .homeUnreadChatsHiddenPreview),
+            chat.prompt,
+        ]
+        return Text(verbatim: parts.compactMap(\.self).joined(separator: ". "))
     }
 }
 

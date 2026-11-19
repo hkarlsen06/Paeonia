@@ -22,8 +22,8 @@
       firstDayInvitedNoDate,
       paywallTrial, paywallStandard, paywallDrawing, paywallPaired, paywallPairedEnded, paywallPairedPaymentFailed,
       paywallLoading, paywallPrivacy,
-      pairedHome, pairedHomeTodayOpens, questions, chatsAttention, chatsAttentionAnswered, questionsPartial,
-      questionsRevealed, questionsEmpty, questionsLoading,
+      pairedHome, pairedHomeTodayOpens, homeUnreadChats, questions, chatsAttention, chatsAttentionAnswered,
+      questionsPartial, questionsRevealed, questionsEmpty, questionsLoading,
       questionsError, questionsHistory, questionsOfflineQueued, questionAnswerFlow, questionPartnerAnswersMeanwhile,
       streakHealthy, streakOneDay, streakAtRisk, streakFrozen, streakSaveHome, streakSaveDay, streakSaved, streakBroken,
       streakRestoreExpired, streakRestored,
@@ -224,6 +224,9 @@
 
     static let pairedHome = pairedApp(
       "paired-home", "Paired home", "Entitled, paired couple with sample questions", .questions
+    )
+    static let homeUnreadChats = pairedApp(
+      "home-unread-chats", "Home · new messages", "Robin wrote in two question chats Alex has not opened", .questions
     )
     static let pairedHomeTodayOpens = pairedApp(
       "paired-home-today-opens", "Paired home · today's question opens",
