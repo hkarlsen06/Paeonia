@@ -18,6 +18,7 @@ struct RootViewModelFlowTests {
         access: any AccessRouteServicing,
         store: InMemoryAccessSyncSnapshotRepository = InMemoryAccessSyncSnapshotRepository(),
         syncService: TestPaeoniaSyncService = TestPaeoniaSyncService(),
+        celebrationStore: TestPairingCelebrationStore = TestPairingCelebrationStore(),
         savedAccessGracePeriod: Duration = .seconds(1)
     ) -> RootViewModel {
         RootViewModel(
@@ -26,7 +27,7 @@ struct RootViewModelFlowTests {
             accessRouteService: access,
             accessSnapshotStore: store,
             inviteStore: TestPairingInviteStore(),
-            pairingCelebrationStore: TestPairingCelebrationStore(),
+            pairingCelebrationStore: celebrationStore,
             systemSideEffects: NoOpRootSystemSideEffects(),
             savedAccessGracePeriod: savedAccessGracePeriod
         )
@@ -104,6 +105,32 @@ struct RootViewModelFlowTests {
         viewModel.finishFirstDay()
         #expect(!viewModel.isFirstDayPresented)
         #expect(await waitUntil { await access.firstDayFinishedCoupleIDs == [coupleID] })
+    }
+
+    /// The same two people ended a relationship and tapped Start fresh. This phone
+    /// finished the old couple's first day, but the new couple gets its own
+    /// celebration and first day, and finishing the old one says nothing about it.
+    @Test func freshStartAfterAnEndedCoupleCelebratesTheNewCouple() async {
+        let oldCoupleID = UUID()
+        let newCoupleID = UUID()
+        let celebrationStore = TestPairingCelebrationStore(seenCoupleIDs: [oldCoupleID])
+        celebrationStore.savePostPairingProgress(PostPairingProgress(isFinished: true), forCoupleID: oldCoupleID)
+        let access = ScriptedAccessRouteService([.pairedForFlowTest(ownerUserID: userID, coupleID: newCoupleID)])
+        let viewModel = makeViewModel(
+            auth: FlowAuthService(signInSession: completeSession),
+            access: access,
+            celebrationStore: celebrationStore
+        )
+        await viewModel.start()
+
+        await viewModel.signInWithGoogle()
+        #expect(viewModel.isPairingCelebrationPresented)
+        #expect(await access.firstDayFinishedCoupleIDs.isEmpty)
+
+        viewModel.dismissPairingCelebration()
+        #expect(viewModel.isFirstDayPresented)
+        viewModel.finishFirstDay()
+        #expect(await waitUntil { await access.firstDayFinishedCoupleIDs == [newCoupleID] })
     }
 
     // MARK: - Slow cold launch
